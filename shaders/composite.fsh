@@ -36,6 +36,8 @@
 
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
+#define SE_MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
 #define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
 #define WATER_REFRACTION
@@ -510,6 +512,7 @@ void main() {
     }
 
     float minLight = MIN_LIGHT;
+    float seMinLight = SE_MIN_LIGHT;
     
     vec3 LightmapColor;
     //vec3 Lightmap = bloom();
@@ -523,7 +526,11 @@ void main() {
     #endif
     vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb;
 
-    if(dot(LightmapColor, vec3(0.333f)) < minLight) {
+    if(isBiomeEnd) {
+        if(dot(LightmapColor, vec3(0.333f)) < seMinLight) {
+            LightmapColor = vec3(minLight);
+        }
+    } else if(dot(LightmapColor, vec3(0.333f)) < minLight) {
         LightmapColor = vec3(minLight);
     }
 
@@ -554,11 +561,11 @@ void main() {
     float maxLight = MAX_LIGHT;
 
     if(isBiomeEnd) {
-        LightmapColor = pow(LightmapColor, vec3(2.55));
+        LightmapColor *= vec3(6.5025);
         Diffuse.xyz = mix(Albedo * ((mix(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * GetShadow(Depth) + Ambient) * currentColor),Albedo * ((NdotL * GetShadow(Depth) + Ambient) * currentColor),0.25);
         //Diffuse = mix(Diffuse, seColor, 0.01);
         Diffuse = mix(Diffuse,vec3(pow(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),0.5,1));
-        Diffuse.xyz = mix(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.95);
+        Diffuse.xyz = mix(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
     } else {
         /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
             LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));

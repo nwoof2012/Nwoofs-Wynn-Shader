@@ -110,6 +110,9 @@ option.FOG_SUNSET_DIST_MAX=Maximum Fog Distance
 option.MIN_LIGHT=Minimum Light
 value.MIN_LIGHT.0.0f=Dark
 
+option.SE_MIN_LIGHT=SE Minimum Light
+value.SE_MIN_LIGHT.0.0f=Dark
+
 option.MAX_LIGHT=Maximum Light
 value.MAX_LIGHT.4.1f=Unlimited
 
