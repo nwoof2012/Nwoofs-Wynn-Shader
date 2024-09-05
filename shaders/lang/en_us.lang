@@ -131,6 +131,8 @@ option.WATER_FOAM=Water Foam (§cExperimental§r)
 
 option.TILTED_RAIN=Tilted Rain
 
+option.SHADER_CLOUDS=Clouds
+
 screen.PERFORMANCE=Performance
 
 screen.SKY = Sky

@@ -53,6 +53,7 @@
 #define SKY_SE_SUNSET_B_G 0.4f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define SKY_SE_SUNSET_B_B 0.4f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 
+#define SHADER_CLOUDS
 
 varying vec2 TexCoords;
 
@@ -65,7 +66,9 @@ uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
 uniform mat4 gbufferModelView;
+uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferProjection;
 uniform vec3 fogColor;
 uniform vec3 skyColor;
 
@@ -73,16 +76,27 @@ uniform bool isBiomeEnd;
 
 uniform float blindness;
 
+uniform sampler2D noisetex;
+
+uniform sampler2D depthtex0;
+
 in vec4 starData;
 
 float fogify(float x, float w) {
     return w / (x * x + w);
 }
 
-vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB) {
+vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB, vec4 noiseColor) {
     float upDot = dot(pos, gbufferModelView[1].xyz);
     float lerpAmount = fogify(max(clamp(upDot,0,1),0.0), 0.25);
-    return mix(currentColorB, currentColorA,lerpAmount);
+    vec3 sky = mix(currentColorB, currentColorA, lerpAmount);
+    float lerpAmount2 = clamp(lerpAmount * 2 - 1, 0, 1);
+    vec3 cloudSky = mix(sky,mix(sky, vec3(1.0), noiseColor.y), pow(1-lerpAmount2, 1/2.2));
+    #ifdef SHADER_CLOUDS
+        return cloudSky;
+    #else
+        return sky;
+    #endif
 }
 
 vec3 screenToView(vec3 screenPos) {
@@ -95,7 +109,32 @@ vec3 screenToView(vec3 screenPos) {
 layout(location = 0) out vec4 outputColor;
 
 void main() {
+    vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
     vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+
+    float depth = texture2D(depthtex0, texCoord).r;
+
+    vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
+    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+    vec3 View = ViewW.xyz / ViewW.w;
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+
+    vec2 ndc = texCoord * 2.0 - 1.0;
+
+    vec4 clip = vec4(ndc, -1.0, 1.0);
+
+    vec4 viewSpace = gbufferProjectionInverse * clip;
+
+    vec3 direction = normalize(viewSpace.xyz / viewSpace.w);
+
+    vec3 transformedDir = (gbufferModelViewInverse * vec4(direction, 0.0)).xyz;
+
+    //texCoord2.xyz *= texCoord2.w;
+    //texCoord2 = gbufferProjection * texCoord2;
+    //texCoord2 = (texCoord2 + 1.0f)/2.0f;
+    //texCoord2.y = fogify(texCoord2.y, texCoord2.w);
+    
+    vec4 noise = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0));
 
     //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
     vec3 dayColorA;
@@ -172,10 +211,10 @@ void main() {
     if(starData.a > 0.5) {
         outputColor = vec4(1.0);
     } else {
-        vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
+        pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
         //float upDot = dot(pos, gbufferModelView[1].xyz);
         //gl_FragData[0] = vec4(upDot);
-        outputColor = vec4(mix(pow(calcSkyColor(normalize(pos), currentColorA, currentColorB),vec3(1/2.2)),vec3(0),blindness),1.0);
+        outputColor = vec4(mix(pow(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
         //discard;
     }
 
