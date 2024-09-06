@@ -4,6 +4,7 @@ varying vec2 TexCoords;
 
 varying float timePhase;
 varying float quadTime;
+varying float timeOfDay;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
@@ -21,7 +22,7 @@ in vec2 vaUV0;
 out vec4 starData;
 
 void main() {
-    float timeOfDay = mod(worldTime,24000);
+    timeOfDay = mod(worldTime,24000);
     quadTime = timeOfDay;
     if(timeOfDay < 250) {
         timePhase = 3;

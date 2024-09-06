@@ -55,6 +55,12 @@
 
 #define SHADER_CLOUDS
 
+#define CLOUD_SPEED_A 0.1f // [0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+#define CLOUD_SPEED_B 0.05f // [0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
+#define CLOUD_SCALE_A 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define CLOUD_SCALE_B 2.0f // [1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f]
+
 varying vec2 TexCoords;
 
 uniform float viewWidth;
@@ -62,6 +68,7 @@ uniform float viewHeight;
 
 varying float timePhase;
 varying float quadTime;
+varying float timeOfDay;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
@@ -133,8 +140,10 @@ void main() {
     //texCoord2 = gbufferProjection * texCoord2;
     //texCoord2 = (texCoord2 + 1.0f)/2.0f;
     //texCoord2.y = fogify(texCoord2.y, texCoord2.w);
-    
-    vec4 noise = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0));
+
+    vec4 noiseA = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0) * vec2(1.0/CLOUD_SCALE_A) + vec2(timeOfDay/6000 * CLOUD_SPEED_A, 0f));
+    vec4 noiseB = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0) * vec2(1.0/CLOUD_SCALE_B) - vec2(timeOfDay/6000 * CLOUD_SPEED_B, 0f));
+    vec4 noise = mix(vec4(0f), noiseB, noiseA.g);
 
     //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
     vec3 dayColorA;
