@@ -19,7 +19,7 @@ uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
 
-/* DRAWBUFFERS:0124 */
+/* DRAWBUFFERS:01245 */
 
 void main() {
     vec4 noiseMap3 = texture2D(noise, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
@@ -40,4 +40,5 @@ void main() {
     gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
     gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     gl_FragData[3] = vec4(a);
+    gl_FragData[4] = vec4(0.0, 1.0, 1.0, 1.0);
 }

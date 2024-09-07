@@ -66,6 +66,8 @@ uniform bool isBiomeEnd;
 
 uniform vec3 cameraPosition;
 
+uniform vec3 shadowLightPosition;
+
 /* DRAWBUFFERS:0265 */
 layout(location = 0) out vec4 outColor0;
 layout(location = 1) out vec4 outColor2;
@@ -78,6 +80,8 @@ in vec3 viewSpaceFragPosition;
 in vec3 playerPos;
 
 in float isWaterBlock;
+
+in vec3 Normal;
 
 vec3 aces(vec3 x) {
   float a = 2.51;
@@ -117,6 +121,13 @@ float Noise3D(vec3 p) {
 }
 
 void main() {
+
+    vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
+    vec3 worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
+
+    float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),clamp(MIN_LIGHT,0.2f, MIN_LIGHT),MAX_LIGHT);
+
     vec3 lightColor = pow(texture(lightmap, lightmapCoords).rgb,vec3(2.2));
 
     vec4 outputColorData = pow(blockColor,vec4(2.2));
@@ -180,7 +191,7 @@ void main() {
 
     float dayNightLerp = clamp(quadTime/11500,0,1);
     float sunsetLerp = clamp(quadTime/500,0,1);
-
+    
     if(worldTime%24000 > 250 && worldTime%24000 <= 11750) {
         baseOutputColorModifier = vec3(DAY_I);
         currentColor = mix(baseColor,dayColor,dayNightLerp);
@@ -233,8 +244,14 @@ void main() {
     /*if(lightmapCoords.g < MIN_LIGHT || lightmapCoords.g > MAX_LIGHT) {
         outputColor.xyz = clamp(outputColor.xyz, currentColor * MIN_LIGHT, currentColor * MAX_LIGHT);
     }*/
+    if(isBiomeEnd) {
+        if(dot(outputColor, vec3(0.333)) < 0.3f) {
+            outputColor = vec3(0.3f);
+        }
+    }
+    outputColor.xyz *= lightBrightness;
     outputColor = mix(outputColor, currentFogColor, fogBlendValue);
-    outputColor.xyz *= currentColor;
+    //outputColor.xyz *= currentColor;
     /*if(isBiomeEnd) {
         outputColor.xyz = mix(outputColor, vec3(dot(outputColor, vec3(0.333))),0.5);*/
     /*if(!isBiomeEnd) {
@@ -250,9 +267,11 @@ void main() {
     }*/
 
     if(!isBiomeEnd) {
-        outputColor.xyz = mix(outputColor.xyz,unreal(outputColor.xyz),0.333f);   
+        outputColor.xyz = mix(outputColor.xyz,unreal(outputColor.xyz),1.0f);
+        outputColor.xyz = mix(outputColor.xyz, vec3(pow(dot(outputColor,vec3(0.333f)),1/2.55)), 0.25);
     } else {
-        outputColor.xyz = mix(outputColor.xyz, vec3(dot(outputColor.xyz, vec3(0.333f))), 1-dot(lightmapCoords.rg, vec2(0.333f)));
+        //outputColor.xyz = mix(outputColor.xyz, vec3(dot(outputColor.xyz, vec3(0.333f))), 1-dot(lightmapCoords.rg, vec2(0.333f)));
+        outputColor.xyz = vec3(pow(dot(outputColor,vec3(0.333f)),1/2.55));
     }
 
     vec2 TexCoords2 = texCoord;
@@ -280,8 +299,8 @@ void main() {
     outColor0 = vec4(pow(outputColor,vec3(1/2.2)), transparency);
     outColor2 = vec4(lightmapCoords, 0f, 1.0f);
     if(Depth != Depth2 && isWaterBlock > 0) {
-        isWater = vec4(1);
+        isWater = vec4(1, 0.0, 1.0, 1.0);
     } else {
-        isWater = vec4(0);
+        isWater = vec4(0.0, 0.0, 1.0, 1.0);
     }
 }

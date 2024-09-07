@@ -8,6 +8,13 @@
 #define SKY_DAY_B_G 0.8f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define SKY_DAY_B_B 1.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 
+#define SKY_DAY_RAIN_A_R 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define SKY_DAY_RAIN_A_G 0.4f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define SKY_DAY_RAIN_A_B 0.6f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+
+#define SKY_DAY_RAIN_B_R 0.4f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define SKY_DAY_RAIN_B_G 0.5f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define SKY_DAY_RAIN_B_B 0.6f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 
 #define SKY_NIGHT_A_R 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define SKY_NIGHT_A_G 0.1f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
@@ -61,6 +68,22 @@
 #define CLOUD_SCALE_A 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define CLOUD_SCALE_B 2.0f // [1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f]
 
+#define CLOUD_COLOR_A_R 1.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_A_G 1.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_A_B 1.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+
+#define CLOUD_COLOR_B_R 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_B_G 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_B_B 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+
+#define CLOUD_COLOR_RAIN_A_R 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_RAIN_A_G 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_RAIN_A_B 0.2f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+
+#define CLOUD_COLOR_RAIN_B_R 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_RAIN_B_G 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+#define CLOUD_COLOR_RAIN_B_B 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
+
 varying vec2 TexCoords;
 
 uniform float viewWidth;
@@ -80,8 +103,11 @@ uniform vec3 fogColor;
 uniform vec3 skyColor;
 
 uniform bool isBiomeEnd;
+uniform bool isBiomeDry;
 
 uniform float blindness;
+
+uniform float rainStrength;
 
 uniform sampler2D noisetex;
 
@@ -98,7 +124,14 @@ vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB, vec4 noiseCo
     float lerpAmount = fogify(max(clamp(upDot,0,1),0.0), 0.25);
     vec3 sky = mix(currentColorB, currentColorA, lerpAmount);
     float lerpAmount2 = clamp(lerpAmount * 2 - 1, 0, 1);
-    vec3 cloudSky = mix(sky,mix(sky, vec3(1.0), noiseColor.y), pow(1-lerpAmount2, 1/2.2));
+    vec3 cloudColorA = vec3(CLOUD_COLOR_A_R, CLOUD_COLOR_A_G, CLOUD_COLOR_A_B);
+    vec3 cloudColorB = vec3(CLOUD_COLOR_B_R, CLOUD_COLOR_B_G, CLOUD_COLOR_B_B);
+    if(rainStrength > 0.2f && !isBiomeDry) {
+        cloudColorA = mix(cloudColorA,vec3(CLOUD_COLOR_RAIN_A_R, CLOUD_COLOR_RAIN_A_G, CLOUD_COLOR_RAIN_A_B), (rainStrength - 0.2)/0.8);
+        cloudColorB = mix(cloudColorB,vec3(CLOUD_COLOR_RAIN_B_R, CLOUD_COLOR_RAIN_B_G, CLOUD_COLOR_RAIN_B_B),(rainStrength - 0.2)/0.8);
+    }
+    vec3 clouds = mix(cloudColorA, cloudColorB, noiseColor.y);
+    vec3 cloudSky = mix(sky,mix(sky, clouds, noiseColor.y), pow(1-lerpAmount2, 1/2.2));
     #ifdef SHADER_CLOUDS
         return cloudSky;
     #else
@@ -112,7 +145,7 @@ vec3 screenToView(vec3 screenPos) {
     return tmp.xyz / tmp.w;
 }
 
-/* DRAWBUFFERS:0 */
+/* DRAWBUFFERS:05 */
 layout(location = 0) out vec4 outputColor;
 
 void main() {
@@ -148,6 +181,9 @@ void main() {
     //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
     vec3 dayColorA;
     vec3 dayColorB;
+
+    vec3 dayColorRainA;
+    vec3 dayColorRainB;
     //vec3 nightColor = vec3(0.9f,1.0f,1.1f);
     vec3 nightColorA;
     vec3 nightColorB;
@@ -158,6 +194,9 @@ void main() {
         //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
         dayColorA = vec3(SKY_SE_DAY_A_R,SKY_SE_DAY_A_G,SKY_SE_DAY_A_B);
         dayColorB = vec3(SKY_SE_DAY_B_R,SKY_SE_DAY_B_G,SKY_SE_DAY_B_B);
+
+        dayColorRainA = vec3(SKY_SE_DAY_A_R,SKY_SE_DAY_A_G,SKY_SE_DAY_A_B);
+        dayColorRainB = vec3(SKY_SE_DAY_B_R,SKY_SE_DAY_B_G,SKY_SE_DAY_B_B);
         //vec3 nightColor = vec3(0.9f,1.0f,1.1f);
         nightColorA = vec3(SKY_SE_NIGHT_A_R,SKY_SE_NIGHT_A_G,SKY_SE_NIGHT_A_B);
         nightColorB = vec3(SKY_SE_NIGHT_B_R,SKY_SE_NIGHT_B_G,SKY_SE_NIGHT_B_B);
@@ -168,6 +207,9 @@ void main() {
         //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
         dayColorA = vec3(SKY_DAY_A_R,SKY_DAY_A_G,SKY_DAY_A_B);
         dayColorB = vec3(SKY_DAY_B_R,SKY_DAY_B_G,SKY_DAY_B_B);
+
+        dayColorRainA = vec3(SKY_DAY_RAIN_A_R,SKY_DAY_RAIN_A_G,SKY_DAY_RAIN_A_B);
+        dayColorRainB = vec3(SKY_DAY_RAIN_B_R,SKY_DAY_RAIN_B_G,SKY_DAY_RAIN_B_B);
         //vec3 nightColor = vec3(0.9f,1.0f,1.1f);
         nightColorA = vec3(SKY_NIGHT_A_R,SKY_NIGHT_A_G,SKY_NIGHT_A_B);
         nightColorB = vec3(SKY_NIGHT_B_R,SKY_NIGHT_B_G,SKY_NIGHT_B_B);
@@ -197,8 +239,13 @@ void main() {
 
     if(worldTime > 500 && worldTime <= 11500) {
         //baseOutputColorModifier = vec3(DAY_I);
-        currentColorA = dayColorA;//mix(baseColorA,dayColorA,dayNightLerp);
-        currentColorB = mix(transitionColorB,dayColorB,dayNightLerp);//mix(baseColorB,dayColorB,dayNightLerp);
+        if(rainStrength < 0.2f) {
+            currentColorA = dayColorA;
+            currentColorB = mix(transitionColorB,dayColorB,dayNightLerp);
+        } else if(!isBiomeDry) {
+            currentColorA = dayColorRainA;//mix(baseColorA,dayColorA,dayNightLerp);
+            currentColorB = mix(transitionColorB,dayColorRainB,dayNightLerp);//mix(baseColorB,dayColorB,dayNightLerp);   
+        }
         //outputColor = mix(baseOutputColor, baseOutputColor * baseOutputColorModifier, mod(worldTime/6000f,2f));
         
     } else if(worldTime > 11500 && worldTime <= 12500) {
@@ -226,6 +273,7 @@ void main() {
         outputColor = vec4(mix(pow(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
         //discard;
     }
+    gl_FragData[1] = vec4(0.0, 1.0, 1.0, 1.0);
 
     /*if(timePhase < 4 && timePhase > 2) {
         outputColor.xyz *= vec3(0.1f);

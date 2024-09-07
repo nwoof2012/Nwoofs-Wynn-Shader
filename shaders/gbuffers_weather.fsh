@@ -29,10 +29,10 @@ void main() {
 	}
 
     if(color.b > color.g && color.b > color.a) {
-        isWater = vec4(1f);
+        isWater = vec4(1f, 1f, 1f, 1f);
         isRain = vec4(1f);
     } else {
-        isWater = vec4(0f);
+        isWater = vec4(0f, 1f, 1f, 1f);
         isRain = vec4(0f);
     }
 

@@ -217,5 +217,5 @@ void main() {
     gl_FragData[1] = vec4(normalM,1);
     gl_FragData[2] = vec4(LightmapCoords.x + noiseMap.x, LightmapCoords.x + noiseMap.y, LightmapCoords.y + noiseMap.z, 1.0f);
     gl_FragData[3] = vec4(1.0);
-    gl_FragData[4] = vec4(1.0);
+    gl_FragData[4] = vec4(1.0,1.0,1.0,1.0);
 }

@@ -13,6 +13,8 @@ out vec3 playerPos;
 
 out float isWaterBlock;
 
+out vec3 Normal;
+
 varying float timePhase;
 varying float quadTime;
 uniform int worldTime;
@@ -56,4 +58,6 @@ void main() {
     playerPos = (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
 
     gl_Position = ftransform();
+
+    Normal = gl_NormalMatrix * gl_Normal;
 }

@@ -66,11 +66,13 @@ uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 
-uniform sampler2D noise;
+uniform sampler2D noisetex;
 
 uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferProjection;
 
 uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -397,36 +399,42 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
 void main() {
     float aspectRatio = float(viewWidth)/float(viewHeight);
     float waterTest = texture2D(colortex5, TexCoords).r;
+    float dhTest = texture2D(colortex5, TexCoords).g;
+
     vec2 TexCoords2 = TexCoords;
+
+    float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
+    float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+    
     float Depth = texture2D(depthtex0, TexCoords).r;
     float Depth2 = texture2D(depthtex1, TexCoords).r;
     vec3 Albedo;
 
-    vec4 noiseMap = texture2D(noise, TexCoords + sin(TexCoords.y*32f + ((frameCounter)/90f)*0.05f) * 0.001f);
-    vec4 noiseMap2 = texture2D(noise, TexCoords - sin(TexCoords.y*16f + ((frameCounter)/90f)*0.05f) * 0.001f);
+    vec4 noiseMap = texture2D(noisetex, TexCoords + sin(TexCoords.y*64f + ((frameCounter)/90f)*0.05f) * 0.001f);
+    vec4 noiseMap2 = texture2D(noisetex, TexCoords - sin(TexCoords.y*32f + ((frameCounter)/90f)*0.05f) * 0.001f);
     vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
 
-    vec4 noiseMap3 = texture2D(noise, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
-    
-    float underwaterDepth = texture2D(depthtex0, TexCoords).r;
-    float underwaterDepth2 = texture2D(depthtex1, TexCoords).r;
+    vec4 noiseMap3 = texture2D(noisetex, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
 
     vec3 Normal;
     
     if(waterTest > 0) {
+
         #ifdef WATER_REFRACTION
 
-            TexCoords2 += finalNoise.xy * vec2(0.125f);
+            TexCoords2 += finalNoise.xy * vec2(0.03125f);
             underwaterDepth = texture2D(depthtex0, TexCoords2).r;
             underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
         #endif
         
         if(underwaterDepth2 - underwaterDepth > 0f)
         {
-            Albedo = pow(mix(texture2D(colortex0, TexCoords2).rgb,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (Depth - Depth2)) * 0.5,0,1)), vec3(2.2f));
+            Albedo = pow(mix(texture2D(colortex0, TexCoords2).rgb,vec3(0.0f,0.33f,0.55f),clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(2.2f));
             Normal = normalize(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
         } else {
-            Albedo = pow(mix(texture2D(colortex0, TexCoords).rgb,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (Depth - Depth2)) * 0.5,0,1)), vec3(2.2f));
+            underwaterDepth = texture2D(depthtex0, TexCoords).r;
+            underwaterDepth2 = texture2D(depthtex1, TexCoords).r;
+            Albedo = pow(mix(texture2D(colortex0, TexCoords).rgb,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (underwaterDepth2 - underwaterDepth)) * 0.5,0,1)), vec3(2.2f));
             Normal = normalize(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
             TexCoords2 = TexCoords;
         }
@@ -474,8 +482,14 @@ void main() {
     float dayNightLerp = clamp(quadTime/11500,0,1);
     float sunsetLerp = clamp(quadTime/500,0,1);
 
+    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
     if(isBiomeEnd) {
-        currentColor = seColor;
+        if(dhTest <= 0) {
+            currentColor = vec3(0.3f);
+        } else {
+            currentColor = seColor;
+        }
     } else if(timePhase < 1) {
         baseDiffuseModifier = vec3(DAY_I);
         currentColor = mix(baseColor,dayColor,dayNightLerp);
@@ -528,7 +542,7 @@ void main() {
 
     if(isBiomeEnd) {
         if(dot(LightmapColor, vec3(0.333f)) < seMinLight) {
-            LightmapColor = vec3(minLight);
+            LightmapColor = vec3(seMinLight);
         }
     } else if(dot(LightmapColor, vec3(0.333f)) < minLight) {
         LightmapColor = vec3(minLight);
@@ -578,8 +592,6 @@ void main() {
     }
 
     //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
-    
-    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     float maxBlindnessDistance = 30;
     float minBlindnessDistance = 20;
