@@ -21,7 +21,7 @@ uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
 
-attribute vec4 mc_Entity;
+in vec4 mc_Entity;
 
 void main() {
     blockColor = gl_Color;

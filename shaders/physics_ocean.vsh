@@ -52,7 +52,7 @@ uniform sampler2D physics_lightmap;
 
 uniform sampler2D depthtex0;
 
-attribute vec4 mc_Entity;
+//flat in vec4 mc_Entity;
 
 out vec3 physics_localPosition;
 out vec3 physics_foamColor;
@@ -136,7 +136,7 @@ void main() {
 	physics_localPosition = physics_finalPosition.xyz;
 
 	mat3 tbnMatrix = mat3(1.0);
-	if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
+	//if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
 		float depth = texture2D(depthtex0, TexCoords).r;
 		vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
 		vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
@@ -151,7 +151,7 @@ void main() {
 		//LightmapCoords += gl_Position.xy;
 
 		//gl_Position.y /= ViewW.y;
-	}
+	//}
 	#ifdef WAVING_WATER_VERTEX
 		vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * physics_finalPosition;
 

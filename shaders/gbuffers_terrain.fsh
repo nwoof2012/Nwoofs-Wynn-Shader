@@ -11,7 +11,7 @@ uniform sampler2D lightmap;
 
 uniform float blindness;
 
-attribute vec4 mc_Entity;
+//flat in vec4 mc_Entity;
 
 in vec3 viewSpaceFragPosition;
 
@@ -30,9 +30,9 @@ void main() {
         discard;
     }
 
-    if(mc_Entity.x < 10005 || mc_Entity.x > 10010) {
+    /*if(mc_Entity.x < 10005 || mc_Entity.x > 10010) {
         lightColor = vec3(0);
-    }
+    }*/
 
     albedo.xyz = pow(albedo.xyz, vec3(1/2.2));
 

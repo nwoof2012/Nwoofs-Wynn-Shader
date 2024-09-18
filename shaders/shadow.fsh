@@ -19,7 +19,7 @@ uniform int entityId;
 
 in vec3 vaPosition;
 
-in vec3 mc_Entity;
+//flat in vec3 mc_Entity;
 
 void main() {
     #ifndef SHADOWS_ENABLED
@@ -34,9 +34,9 @@ void main() {
     }
 
     #ifndef ENTITY_SHADOWS
-        if(entityId == 10006 || mc_Entity.x == 10005) {
+        /*if(entityId == 10006 || mc_Entity.x == 10005) {
             discard;
-        }
+        }*/
         gl_FragData[0] = texture2D(texture, TexCoords) * Color;
     #else
         gl_FragData[0] = texture2D(texture, TexCoords) * Color;

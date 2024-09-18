@@ -3,6 +3,10 @@
 uniform float viewWidth;
 uniform float viewHeight;
 
+uniform sampler2D colortex0;
+
+#include "lib/includes.glsl"
+
 float weight[7] = float[7](1.0, 6.0, 15.0, 20.0, 15.0, 6.0, 1.0);
 
 vec2 view = vec2(viewWidth, viewHeight);

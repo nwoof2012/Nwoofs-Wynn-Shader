@@ -1,8 +1,4 @@
 #version 460 compatibility
-#include "distort.glsl"
-#include "lib/commonFunctions.glsl"
-#include "lib/spaceConversion.glsl"
-#include "program/underwater.glsl"
 #define SHADOW_SAMPLES 2
 #define PI 3.14159265358979323846f
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -66,6 +62,9 @@ uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 
+uniform mat4 shadowProjectionInverse;
+uniform mat4 shadowModelViewInverse;
+
 uniform sampler2D noisetex;
 
 uniform mat4 gbufferProjectionInverse;
@@ -109,13 +108,17 @@ const int ShadowSamplesPerSize = 2 * SHADOW_SAMPLES + 1;
 const int TotalSamples = ShadowSamplesPerSize * ShadowSamplesPerSize;
 varying vec2 LightmapCoords;
 
-attribute vec4 mc_Entity;
-
 uniform bool isBiomeEnd;
 
 in vec3 vaPosition;
 
 in vec3 viewSpaceFragPosition;
+
+#include "distort.glsl"
+#include "lib/commonFunctions.glsl"
+#include "lib/spaceConversion.glsl"
+#include "program/underwater.glsl"
+#include "lib/includes.glsl"
 
 float AdjustLightmapTorch(in float torch) {
     const float K = 2.0f;
@@ -242,7 +245,7 @@ vec3 bloom() {
     vec3 sum = vec3(0.0);
     float blur = radius/viewHeight;
     float hstep = 1f;
-    sum += GetLightmapColor(texture2D(colortex2, TexCoords).rg) * 1;
+    sum += GetLightmapColor(texture2D(colortex2, TexCoords).rg);
 
     /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
         GetLightmapColor(texture2D(colortex2, TexCoords).rg);

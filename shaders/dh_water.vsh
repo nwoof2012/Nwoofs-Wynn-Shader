@@ -25,7 +25,7 @@ uniform mat4 shadowProjection;
 
 uniform sampler2D depthtex0;
 
-attribute vec4 mc_Entity;
+//in vec4 mc_Entity;
 
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);

@@ -10,6 +10,8 @@ varying vec2 LightmapCoords;
 
 in ivec2 vaUV2;
 
+//in flat vec4 mc_Entity;
+
 out vec3 viewSpaceFragPosition;
 
 uniform sampler2D noise;
@@ -36,13 +38,13 @@ void main() {
         timePhase = 3;
         quadTime -= 23250;
     }
-    if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
+    /*if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
         vec4 noiseMap = texture2D(noise, TexCoords + sin(gl_Position.y*32f + ((frameCounter)/90f)*0.25f));
         vec4 noiseMap2 = texture2D(noise, TexCoords + sin(gl_Position.y*16f + ((frameCounter)/90f)*0.25f));
         vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
 
         gl_Position.xy += finalNoise.xy;
         //vec3 Normal = normalize(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f) + finalNoise.xyz;
-    }
+    }*/
     TexCoords = gl_MultiTexCoord0.st;
 }
