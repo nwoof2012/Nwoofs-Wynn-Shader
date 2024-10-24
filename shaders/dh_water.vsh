@@ -25,6 +25,8 @@ uniform mat4 shadowProjection;
 
 uniform sampler2D depthtex0;
 
+flat out int mat;
+
 //in vec4 mc_Entity;
 
 float rand(vec2 c){
@@ -70,6 +72,8 @@ void main() {
 	TexCoords = gl_MultiTexCoord0.st;
 	Normal = vec4(normalize(gl_NormalMatrix * gl_Normal), 1.0f);
 	LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
+
+	mat = dhMaterialId;
 	/*if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
 		float depth = texture2D(depthtex0, TexCoords).r;
 		vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;

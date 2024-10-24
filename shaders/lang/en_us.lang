@@ -133,6 +133,11 @@ option.TILTED_RAIN=Tilted Rain
 
 option.SHADER_CLOUDS=Clouds
 
+option.PATH_TRACING=Path Tracing
+value.PATH_TRACING.0=§eOff
+value.PATH_TRACING.1=§4§k§l§oa §4§l§oOn §4§k§l§oa
+option.PATH_TRACING.comment=Enables path-traced lighting. Severe GPU/CPU performance impact + VRAM usage increase
+
 screen.PERFORMANCE=Performance
 
 screen.SKY = Sky
@@ -145,6 +150,12 @@ screen.SKY_COLORS = Sky Colors
 screen.SKY_DAY = Day
 screen.SKY_NIGHT = Night
 screen.SKY_SUNSET = Sunrise/Sunset
+
+screen.SKY_CLOUDS = Clouds
+
+option.CLOUD_STYLE = Volumetric Clouds
+value.CLOUD_STYLE.0 = §cOff
+value.CLOUD_STYLE.1 = §aOn
 
 screen.FOG = Fog
 screen.FOG_DAY = Day
@@ -164,3 +175,4 @@ profile.MEDIUM=Medium
 profile.HIGH=High
 profile.ULTRA=Ultra
 profile.CINEMATIC=Cinematic
+profile.CINEMATIC_PATH=Cinematic Path Tracing

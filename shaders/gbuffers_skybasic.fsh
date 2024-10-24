@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define FRAGMENT_SHADER
+
 #define SKY_DAY_A_R 0.3f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define SKY_DAY_A_G 0.6f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define SKY_DAY_A_B 1.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
@@ -89,9 +91,6 @@ varying vec2 TexCoords;
 uniform float viewWidth;
 uniform float viewHeight;
 
-varying float timePhase;
-varying float quadTime;
-varying float timeOfDay;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
@@ -115,8 +114,42 @@ uniform sampler2D depthtex0;
 
 in vec4 starData;
 
+flat in vec3 upVec, sunVec;
+
+uniform vec3 sunPosition;
+
+#include "lib/dither.glsl"
+
+//vec3 dayColor = vec3(1.0f,1.0f,1.0f);
+vec3 dayColorA;
+vec3 dayColorB;
+
+vec3 dayColorRainA;
+vec3 dayColorRainB;
+//vec3 nightColor = vec3(0.9f,1.0f,1.1f);
+vec3 nightColorA;
+vec3 nightColorB;
+//vec3 transitionColor = vec3(1.1f, 1.0f, 0.8f);
+vec3 transitionColorA;
+vec3 transitionColorB;
+
+vec3 currentColorA;
+vec3 currentColorB;
+
+float minBlindnessDistance = 2.5;
+float maxBlindDistance = 5;
+
 float fogify(float x, float w) {
     return w / (x * x + w);
+}
+
+vec3 aces(vec3 x) {
+  float a = 2.51;
+  float b = 0.03;
+  float c = 2.43;
+  float d = 0.59;
+  float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
 vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB, vec4 noiseColor) {
@@ -127,10 +160,10 @@ vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB, vec4 noiseCo
     vec3 cloudColorA = vec3(CLOUD_COLOR_A_R, CLOUD_COLOR_A_G, CLOUD_COLOR_A_B);
     vec3 cloudColorB = vec3(CLOUD_COLOR_B_R, CLOUD_COLOR_B_G, CLOUD_COLOR_B_B);
     if(rainStrength > 0.2f && !isBiomeDry) {
-        cloudColorA = mix(cloudColorA,vec3(CLOUD_COLOR_RAIN_A_R, CLOUD_COLOR_RAIN_A_G, CLOUD_COLOR_RAIN_A_B), (rainStrength - 0.2)/0.8);
+        cloudColorA = mix(cloudColorA,1/vec3(CLOUD_COLOR_RAIN_A_R, CLOUD_COLOR_RAIN_A_G, CLOUD_COLOR_RAIN_A_B), (rainStrength - 0.2)/0.8);
         cloudColorB = mix(cloudColorB,vec3(CLOUD_COLOR_RAIN_B_R, CLOUD_COLOR_RAIN_B_G, CLOUD_COLOR_RAIN_B_B),(rainStrength - 0.2)/0.8);
     }
-    vec3 clouds = mix(cloudColorA, cloudColorB, noiseColor.y);
+    vec3 clouds = pow(mix(cloudColorA, cloudColorB, noiseColor.y),vec3(-1.5));
     vec3 cloudSky = mix(sky,mix(sky, clouds, noiseColor.y), pow(1-lerpAmount2, 1/2.2));
     #ifdef SHADER_CLOUDS
         return cloudSky;
@@ -147,6 +180,47 @@ vec3 screenToView(vec3 screenPos) {
 
 /* DRAWBUFFERS:05 */
 layout(location = 0) out vec4 outputColor;
+
+void noonFunc(float time, float timeFactor) {
+    float dayNightLerp = clamp(time/timeFactor,0,1);
+    if(rainStrength < 0.2f || isBiomeDry) {
+        currentColorA = dayColorA;
+        currentColorB = mix(transitionColorB,dayColorB,dayNightLerp);
+    } else {
+        currentColorA = dayColorRainA;
+        currentColorB = mix(transitionColorB,dayColorRainB,dayNightLerp);
+    }
+}
+
+void sunsetFunc(float time, float timeFactor) {
+    float sunsetLerp = clamp(time/timeFactor,0,1);
+    if(rainStrength < 0.2f || isBiomeDry) {
+        currentColorA = mix(dayColorA, nightColorA, sunsetLerp);
+        currentColorB = mix(dayColorB, transitionColorB, sunsetLerp);
+    } else {
+        currentColorA = mix(dayColorRainA, nightColorA, sunsetLerp);
+        currentColorB = mix(dayColorRainB, transitionColorB, sunsetLerp);
+    }
+}
+
+void nightFunc(float time, float timeFactor) {
+    float dayNightLerp = clamp(time/timeFactor,0,1);
+    currentColorA = nightColorA;
+    currentColorB = mix(transitionColorB,nightColorB,dayNightLerp);
+}
+
+void dawnFunc(float time, float timeFactor) {
+    float sunsetLerp = clamp(time/timeFactor,0,1);
+    if(rainStrength < 0.2f || isBiomeDry) {
+        currentColorA = mix(nightColorA, dayColorA, sunsetLerp);
+        currentColorB = mix(nightColorB, transitionColorB, sunsetLerp);
+    } else {
+        currentColorA = mix(nightColorA, dayColorRainA, sunsetLerp);
+        currentColorB = mix(nightColorB, transitionColorB, sunsetLerp);
+    }
+}
+
+#include "lib/timeCycle.glsl"
 
 void main() {
     vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
@@ -178,18 +252,6 @@ void main() {
     vec4 noiseB = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0) * vec2(1.0/CLOUD_SCALE_B) - vec2(timeOfDay/6000 * CLOUD_SPEED_B, 0f));
     vec4 noise = mix(vec4(0f), noiseB, noiseA.g);
 
-    //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
-    vec3 dayColorA;
-    vec3 dayColorB;
-
-    vec3 dayColorRainA;
-    vec3 dayColorRainB;
-    //vec3 nightColor = vec3(0.9f,1.0f,1.1f);
-    vec3 nightColorA;
-    vec3 nightColorB;
-    //vec3 transitionColor = vec3(1.1f, 1.0f, 0.8f);
-    vec3 transitionColorA;
-    vec3 transitionColorB;
     if(isBiomeEnd) {
         //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
         dayColorA = vec3(SKY_SE_DAY_A_R,SKY_SE_DAY_A_G,SKY_SE_DAY_A_B);
@@ -218,9 +280,6 @@ void main() {
         transitionColorB = vec3(SKY_SUNSET_B_R,SKY_SUNSET_B_G,SKY_SUNSET_B_B);
     }
 
-    vec3 currentColorA;
-    vec3 currentColorB;
-
     /*if(timePhase > 3) {
         timePhase = 0;
     }*/
@@ -237,7 +296,7 @@ void main() {
     float dayNightLerp = clamp(quadTime/500,0,1);
     float sunsetLerp = clamp((quadTime - 500)/500,0,1);
 
-    if(worldTime > 500 && worldTime <= 11500) {
+    /*if(worldTime > 500 && worldTime <= 11500) {
         //baseOutputColorModifier = vec3(DAY_I);
         if(rainStrength < 0.2f) {
             currentColorA = dayColorA;
@@ -261,8 +320,37 @@ void main() {
         currentColorA = mix(nightColorA, dayColorA, sunsetLerp);
         currentColorB = mix(nightColorB, transitionColorB, sunsetLerp);
         //outputColor = mix(baseOutputColor, baseOutputColor * baseOutputColorModifier, mod(worldTime/6000f,2f));
-    }
+    }*/
 
+    timeFunctionFrag();
+
+    vec4 screenPos = vec4(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z, 1.0);
+    vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
+    viewPos /= viewPos.w;
+    vec3 nViewPos = normalize(viewPos.xyz);
+
+    float VdotU = dot(nViewPos, upVec);
+    float VdotS = dot(nViewPos, sunVec);
+    float dither = Bayer8(gl_FragCoord.xy);
+    
+    vec4 sunViewPos = gbufferProjection * vec4(sunPosition, 1.0);
+    vec4 sunClipPos =  sunViewPos;
+    
+    vec3 sunNDC = sunClipPos.xyz / sunClipPos.w;
+
+    vec2 sunScreenPos = sunNDC.xy * 0.5 + 0.5;
+
+    vec2 sunCoords = (sunPosition.xy + 1.0) * 0.5;
+
+    vec4 moonViewPos = gbufferProjection * vec4(-sunPosition, 1.0);
+    vec4 moonClipPos =  moonViewPos;
+    
+    vec3 moonNDC = moonClipPos.xyz / moonClipPos.w;
+
+    vec2 moonScreenPos = moonNDC.xy * 0.5 + 0.5;
+
+    vec2 fragCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+    
     //vec3 outputColor;
     if(starData.a > 0.5) {
         outputColor = vec4(1.0);
@@ -271,9 +359,28 @@ void main() {
         //float upDot = dot(pos, gbufferModelView[1].xyz);
         //gl_FragData[0] = vec4(upDot);
         outputColor = vec4(mix(pow(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
+        float sunMaxDistance = 0.05;
+        float distToSun = length(fragCoord - sunScreenPos);
+        float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, distToSun);
+        float moonMaxDistance = 0.03;
+        float distToMoon = length(moonScreenPos - fragCoord);
+        float moonGradient = 1.0 - pow(smoothstep(0.0, sunMaxDistance, distToMoon),2.2);
+        if(distToMoon > moonMaxDistance) {
+            moonGradient = 0;
+        }
+        vec3 sunColor = vec3(1.0, 0.9, 0.6);
+        float noise = texture2D(noisetex, transformedDir.rg).g;
+        vec3 moonColor = vec3(1.0, 1.0, 1.1);
+        vec3 finalSunColor = sunColor * max(sunGradient * 2f, 1.0);
+        vec3 finalMoonColor = mix(pow(moonColor * clamp(noise + 3.0, 3.0, 4.0) * 0.25f,vec3(1/1.2)), vec3(0.0), pow(distToMoon/0.04,4.2));
+        if(worldTime%24000 < 12000) {
+            outputColor.rgb = mix(outputColor.rgb, finalSunColor, sunGradient);
+        } else {
+            outputColor.rgb = mix(outputColor.rgb, finalMoonColor, moonGradient);
+        }
         //discard;
     }
-    gl_FragData[1] = vec4(0.0, 1.0, 1.0, 1.0);
+    gl_FragData[1] = vec4(0.0, 1.0, 0.0, 1.0);
 
     /*if(timePhase < 4 && timePhase > 2) {
         outputColor.xyz *= vec3(0.1f);

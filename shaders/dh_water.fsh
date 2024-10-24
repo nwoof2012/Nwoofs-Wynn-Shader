@@ -37,6 +37,15 @@ uniform float viewHeight;
 
 uniform bool isBiomeEnd;
 
+flat in int mat;
+
+float minBlindnessDistance = 2.5;
+float maxBlindDistance = 5;
+
+uniform vec3 viewSpaceFragPosition;
+
+uniform float blindness;
+
 /* DRAWBUFFERS:01235 */
 
 void main() {
@@ -69,9 +78,9 @@ void main() {
     
     vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
     
-    if(isWaterBlock == 1) {
+    if(mat == DH_BLOCK_WATER) {
         albedo.xyz = mix(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),0.5f);
-        albedo.a = 0.5f;
+        albedo.a = 0.0f;
     }
 
     /*if(isBiomeEnd) {
@@ -88,7 +97,7 @@ void main() {
     //float Depth2 = texture2D(depthtex1, texCoord).r;
     vec3 Albedo;
     float isBlockWater = float(Color.z > Color.y && Color.y > Color.x);
-    if(depth.r != depth2 && isBlockWater > 0) {
+    /*if(depth.r != depth2 && isBlockWater > 0) {
         #ifdef WATER_REFRACTION
             vec4 noiseMap = texture2D(noise, texCoord + sin(texCoord.y*32f + ((frameCounter)/90f)*0.05f) * 0.001f);
             vec4 noiseMap2 = texture2D(noise, texCoord - sin(texCoord.y*16f + ((frameCounter)/90f)*0.05f) * 0.001f);
@@ -104,16 +113,21 @@ void main() {
             }
         #endif
         albedo.xyz = Albedo;
-        albedo.a = mix(0.5f, 0.5f, clamp(1 - abs(depth.r - depth2),0f,1));
+        albedo.a = 0.0f;//mix(0.5f, 0.5f, clamp(1 - abs(depth.r - depth2),0f,1));
+    }*/
+    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
+    if(blindness > 0f) {
+        albedo.xyz = mix(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
     }
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = Normal;
     gl_FragData[2] = vec4(LightmapCoords.x + Normal.x, LightmapCoords.x + noiseMap.y, LightmapCoords.y + noiseMap.z, 1.0f);
     gl_FragData[3] = vec4(1.0);
-    if(depth != depth2 && isBlockWater > 0) {
-        gl_FragData[4] = vec4(1.0, 1.0, 1.0, 1.0);
+    if(mat == DH_BLOCK_WATER) {
+        gl_FragData[4] = vec4(1.0, 1.0, 0.0, 1.0);
     } else {
-        gl_FragData[4] = vec4(0.0, 1.0, 1.0, 1.0);
+        gl_FragData[4] = vec4(0.0, 1.0, 0.0, 1.0);
     }
 }

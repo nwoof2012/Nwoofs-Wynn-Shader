@@ -2,6 +2,12 @@
 
 #define DISTANT_HORIZONS
 
+#define PATH_TRACING 0 // [0 1]
+
+#define PATH_TRACING_GI
+
+#define VERTEX_SHADER
+
 uniform mat4 dhProjection;
 uniform mat4 gbufferModelViewInverse;
 
@@ -23,9 +29,18 @@ uniform float frameTime;
 
 in vec4 mc_Entity;
 
+out vec3 lightmap2;
+
+#include "program/pathTracing.glsl"
+
 void main() {
+    Normal = gl_NormalMatrix * gl_Normal;
+
     blockColor = gl_Color;
 
+    #if PATH_TRACING == 1
+            lightmap2 = GenerateLightmap(0f,1f);
+    #endif
     lightmapCoords = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
@@ -58,6 +73,4 @@ void main() {
     playerPos = (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
 
     gl_Position = ftransform();
-
-    Normal = gl_NormalMatrix * gl_Normal;
 }

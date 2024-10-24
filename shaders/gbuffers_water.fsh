@@ -31,6 +31,13 @@ uniform float frameTime;
 uniform float viewWidth;
 uniform float viewHeight;
 
+float minBlindnessDistance = 2.5;
+float maxBlindDistance = 5;
+
+uniform vec3 viewSpaceFragPosition;
+
+uniform float blindness;
+
 //attribute vec4 mc_Entity;
 
 /* DRAWBUFFERS:01235 */
@@ -71,6 +78,11 @@ void main() {
 
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);
     //normalDefine = normalDefine + noiseMap;
+    float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
+    
+    if(blindness > 0f) {
+        albedo.xyz = mix(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+    }
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = Normal;

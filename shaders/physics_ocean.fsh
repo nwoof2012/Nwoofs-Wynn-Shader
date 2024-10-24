@@ -39,6 +39,7 @@ uniform sampler2D shadowtex1;
 uniform mat4 gbufferProjectionInverse;
 
 uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -177,7 +178,7 @@ WavePixelData physics_wavePixel(const in vec2 position, const in float factor, c
 
 void main() {
     physics_waveData = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
-    vec3 physics_normal = normalize(gl_NormalMatrix * physics_waveData.normal);
+    vec3 physics_normal = physics_waveData.normal;
 	
     if (!gl_FrontFacing) {
         physics_waveData.normal = -physics_waveData.normal;
@@ -190,7 +191,9 @@ void main() {
 
     vec4 albedo = texture2D(texture, TexCoords) * Color;
 
-    vec3 normalM = physics_normal;
+    mat3 normalMatrix = transpose(mat3(gbufferModelViewInverse));
+
+    vec3 normalM = normalize(physics_normal);
 
     albedo.a = 0.0f;
 
@@ -198,15 +201,15 @@ void main() {
     //vec4 depth2 = texture2D(depthtex0, TexCoords);
 
     vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
-    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+    vec4 ViewW = vec4(physics_normal, 1.0f);
     vec3 View = ViewW.xyz / ViewW.w;
     vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
 
-    if(isWater < 0.1f) {
+    //if(isWater < 0.1f) {
         albedo.xyz = mix(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f), physics_waveData.foam);
         //albedo.a = mix(0.5f, 1.0f, depth.w);
         albedo.a = mix(0.0f, 1.0f, physics_waveData.foam);
-    }
+    //}
 
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);
     //normalDefine = normalDefine + noiseMap;
@@ -215,7 +218,7 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(normalM,1);
-    gl_FragData[2] = vec4(LightmapCoords.x + noiseMap.x, LightmapCoords.x + noiseMap.y, LightmapCoords.y + noiseMap.z, 1.0f);
+    gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);
     gl_FragData[3] = vec4(1.0);
     gl_FragData[4] = vec4(1.0,1.0,1.0,1.0);
 }

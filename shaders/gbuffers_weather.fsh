@@ -43,6 +43,6 @@ void main() {
     
     float fogBlendValue = clamp((distanceFromCamera - minFogDistance) / (maxFogDistance - minFogDistance),0,1);
 
-    color.a = mix(0f, 1f, fogBlendValue);
-    color.rgb = mix(color.rgb, vec3(0.5f),fogBlendValue);
+    //color.a = mix(0f, 1f, fogBlendValue);
+    //color.rgb = mix(color.rgb, vec3(0.5f),fogBlendValue);
 }
