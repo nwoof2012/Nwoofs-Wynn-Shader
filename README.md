@@ -5,8 +5,10 @@ Are you looking to play Wynncraft with shaders, but don't want to compromise on 
 - Shadowmapping with Adjustable Map Resolution and Maximum Distance
 - Bloom Effect with Adjustable Sample Rate
 - Scene-Aware Colored Lighting
+- Toggleable Path-Traced Lighting Mode
 - Custom Water with Light Refraction
 - Customizable Sky/Fog/Atmosphere Colors
+- Volumetric Clouds
 - Adjustable Minimum/Maximum Light
 - Custom Silent Expanse Color Scheme
 - Support for Distant Horizons and Physics Mod
