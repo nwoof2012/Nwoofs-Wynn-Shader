@@ -334,7 +334,7 @@ void main() {
     float dither = Bayer8(gl_FragCoord.xy);
     
     vec4 sunViewPos = gbufferProjection * vec4(sunPosition, 1.0);
-    vec4 sunClipPos =  sunViewPos;
+    vec4 sunClipPos = sunViewPos;
     
     vec3 sunNDC = sunClipPos.xyz / sunClipPos.w;
 

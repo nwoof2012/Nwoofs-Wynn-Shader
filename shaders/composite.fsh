@@ -338,6 +338,9 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
                 sum += vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix(vec3(1.0), TorchColor,0.4f);
             }
         #else
+            if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
+                sum += vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix(vec3(1.0), TorchColor,0.4f);
+            }
             sum += light * sampleDepth;
         #endif
     }
@@ -364,6 +367,9 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
                 sum += vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix(vec3(1.0), TorchColor,0.4f);
             }
         #else
+            if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
+                sum += vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix(vec3(1.0), TorchColor,0.4f);
+            }
             sum += light * sampleDepth;
         #endif
     }
@@ -613,6 +619,80 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     return pow(mix(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(2.2f)) * clamp(lightBrightness,0.5,1.0);
 }
 
+bool isOutOfTexture(vec2 texcoord) {
+    return (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0);
+}
+
+vec3 getWorldPosition(vec2 texcoord, float depth) {
+    vec3 clipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
+    vec4 viewW = gbufferProjectionInverse * vec4(clipSpace, 1.0);
+    vec3 viewSpace = viewW.xyz / viewW.w;
+    vec4 world = gbufferModelViewInverse * vec4(viewSpace, 1.0);
+
+    return world.xyz;
+}
+
+vec3 getUVFromPosition(vec3 position) {
+    vec4 projection = gbufferProjection * gbufferModelView * vec4(position, 1.0);
+    projection.xyz /= projection.w;
+    vec3 clipSpace = projection.xyz * 0.5 + 0.5;
+
+    return clipSpace.xyz;
+}
+
+vec2 ssrRay(vec3 startPosition, vec3 reflectionDir) {
+    vec3 currPos = vec3(0.0);
+    vec3 currUV = vec3(0.0);
+    float currLength = 10.0;
+    int maxIter = 100;
+    float bias = 0.00001;
+
+    for (int i = 0; i < maxIter; i++) {
+        // Get ray position
+        currPos = startPosition + reflectionDir * currLength;
+        // Get UV coordinates of ray
+        currUV = getUVFromPosition(currPos);
+        // Get depth of ray
+        float currDepth = texture2D(depthtex0, currUV.xy).r;
+
+        if (isOutOfTexture(currUV.xy)) {
+            return vec2(-1);
+        }
+
+        if (abs(currUV.z - currDepth) < bias) {
+            if (currDepth < 1.0)
+                return currUV.xy;
+            else
+                return vec2(-1);
+        }
+
+        // March along ray
+        vec3 newPos = getWorldPosition(currUV.xy, currDepth);
+        currLength = length(newPos - startPosition);
+    }
+
+    return vec2(-2);
+}
+
+vec4 waterReflections(vec3 color, vec2 uv, vec3 normal) {
+    vec4 finalColor = vec4(color, 1.0);
+
+    float depth = texture2D(depthtex0, uv).r;
+    vec3 position = getWorldPosition(uv, depth);
+    vec3 viewDir = normalize(position);
+    vec3 reflectedDir = normalize(reflect(viewDir, normal));
+
+    vec2 reflectionUV = ssrRay(position, reflectedDir);
+    if(reflectionUV.x > 0.0) {
+        vec3 reflectionColor = texture2D(colortex0, reflectionUV).rgb;
+        finalColor = mix(mix(vec4(reflectionColor, 1.0), finalColor, 0.4), finalColor, 1 - uv.y);
+    }
+
+    //finalColor = mix(vec4(finalColor, 1.0), vec4(color, 1.0),uv.x);
+    
+    return finalColor;
+}
+
 #include "lib/timeCycle.glsl"
 
 void main() {
@@ -730,6 +810,10 @@ void main() {
                 Albedo = mix(Albedo, vec3(1.0f), clamp(1 - abs(Depth - Depth2),0f,1));
             }
         #endif
+
+        vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords2, texture2D(colortex1, TexCoords2).rgb);
+        Albedo = Albedo4.xyz;
+        albedoAlpha = Albedo4.a;
     } else {
         albedoAlpha = 0.0;
         Albedo = pow(isInWater(colortex0, vec3(0.0f,0.33f,0.55f), TexCoords2, vec2(noiseMap3.x * 0.025,0), 0.25), vec3(2.2f));
@@ -908,6 +992,10 @@ void main() {
     float maxLight = MAX_LIGHT;
     
     vec3 shadowLerp = mix(GetShadow(Depth), vec3(1.0), length(LightmapColor));
+    if(waterTest > 0) {
+        shadowLerp = vec3(1.0);
+        //lightBrightness = 1.0;
+    }
     if(isBiomeEnd) {
         #if PATH_TRACING == 1
             LightmapColor *= vec3(1.5025);
