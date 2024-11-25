@@ -1,4 +1,6 @@
-#version 460 compatibility
+#version 150 compatibility
+
+#include "lib/optimizationFunctions.glsl"
 
 const int PHYSICS_ITERATIONS_OFFSET = 13;
 const float PHYSICS_DRAG_MULT = 0.048;
@@ -82,7 +84,7 @@ vec2 physics_waveDirection(vec2 position, int iterations, float time) {
         float result = wave * cos(x);
         vec2 force = result * weight * direction;
         
-        dx += force / pow(weight, PHYSICS_W_DETAIL); 
+        dx += force / pow2(weight, PHYSICS_W_DETAIL); 
         position -= force * PHYSICS_DRAG_MULT;
         iter += PHYSICS_ITER_INC;
         waveSum += weight;
@@ -91,13 +93,13 @@ vec2 physics_waveDirection(vec2 position, int iterations, float time) {
         speed *= PHYSICS_SPEED_MULT;
     }
     
-    return vec2(dx / pow(waveSum, 1.0 - PHYSICS_W_DETAIL));
+    return vec2(dx / pow2(waveSum, 1.0 - PHYSICS_W_DETAIL));
 }
 
 vec3 physics_waveNormal(const in vec2 position, const in vec2 direction, const in float factor, const in float time) {
     float oceanHeightFactor = physics_oceanHeight / 13.0;
     float totalFactor = oceanHeightFactor * factor;
-    vec3 waveNormal = normalize(vec3(direction.x * totalFactor, PHYSICS_NORMAL_STRENGTH, direction.y * totalFactor));
+    vec3 waveNormal = normalize2(vec3(direction.x * totalFactor, PHYSICS_NORMAL_STRENGTH, direction.y * totalFactor));
     
     vec2 eyePosition = position + physics_modelOffset.xz;
     vec2 rippleFetch = (eyePosition + vec2(physics_rippleRange)) / (physics_rippleRange * 2.0);
@@ -110,8 +112,8 @@ vec3 physics_waveNormal(const in vec2 position, const in vec2 direction, const i
     
     float normalx = left - right;
     float normalz = top - bottom;
-    vec3 rippleNormal = normalize(vec3(normalx, 1.0, normalz));
-    return normalize(mix(waveNormal, rippleNormal, pow(totalEffect, 0.5)));
+    vec3 rippleNormal = normalize2(vec3(normalx, 1.0, normalz));
+    return normalize2(mix2(waveNormal, rippleNormal, pow2(totalEffect, 0.5)));
 }
 
 WavePixelData physics_wavePixel(const in vec2 position, const in float factor, const in float iterations, const in float time) {
@@ -132,7 +134,7 @@ WavePixelData physics_wavePixel(const in vec2 position, const in float factor, c
         float result = wave * cos(x);
         vec2 force = result * weight * direction;
         
-        dx += force / pow(weight, PHYSICS_W_DETAIL); 
+        dx += force / pow2(weight, PHYSICS_W_DETAIL); 
         wavePos -= force * PHYSICS_DRAG_MULT;
         height += wave * weight;
         iter += PHYSICS_ITER_INC;
@@ -143,14 +145,14 @@ WavePixelData physics_wavePixel(const in vec2 position, const in float factor, c
     }
     
     WavePixelData data;
-    data.direction = -vec2(dx / pow(waveSum, 1.0 - PHYSICS_W_DETAIL));
+    data.direction = -vec2(dx / pow2(waveSum, 1.0 - PHYSICS_W_DETAIL));
     data.worldPos = wavePos / physics_oceanWaveHorizontalScale / PHYSICS_XZ_SCALE;
     data.height = height / waveSum * physics_oceanHeight * factor - physics_oceanHeight * factor * 0.5;
     
     data.normal = physics_waveNormal(position, data.direction, factor, time);
 
-    float waveAmplitude = data.height * pow(max(data.normal.y, 0.0), 4.0);
-    vec2 waterUV = mix(position - physics_waveOffset, data.worldPos, clamp(factor * 2.0, 0.2, 1.0));
+    float waveAmplitude = data.height * pow2(max(data.normal.y, 0.0), 4.0);
+    vec2 waterUV = mix2(position - physics_waveOffset, data.worldPos, clamp(factor * 2.0, 0.2, 1.0));
     
     vec2 s1 = textureLod(physics_foam, vec3(waterUV * 0.26, physics_globalTime / 360.0), 0).rg;
     vec2 s2 = textureLod(physics_foam, vec3(waterUV * 0.02, physics_globalTime / 360.0 + 0.5), 0).rg;
@@ -193,7 +195,7 @@ void main() {
 
     mat3 normalMatrix = transpose(mat3(gbufferModelViewInverse));
 
-    vec3 normalM = normalize(physics_normal);
+    vec3 normalM = normalize2(physics_normal);
 
     albedo.a = 0.0f;
 
@@ -206,9 +208,9 @@ void main() {
     vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
 
     //if(isWater < 0.1f) {
-        albedo.xyz = mix(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f), physics_waveData.foam);
-        //albedo.a = mix(0.5f, 1.0f, depth.w);
-        albedo.a = mix(0.0f, 1.0f, physics_waveData.foam);
+        albedo.xyz = mix2(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f), physics_waveData.foam);
+        //albedo.a = mix2(0.5f, 1.0f, depth.w);
+        albedo.a = mix2(0.0f, 1.0f, physics_waveData.foam);
     //}
 
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);

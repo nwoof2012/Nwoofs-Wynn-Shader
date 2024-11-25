@@ -630,7 +630,7 @@
     #ifndef DREAM_TWEAKED_LIGHTING
         float noonFactor = sqrt(max(sin(timeAngle*6.28318530718),0.0));
     #else
-        float noonFactor = pow(max(sin(timeAngle*6.28318530718),0.0), 0.2);
+        float noonFactor = pow2(max(sin(timeAngle*6.28318530718),0.0), 0.2);
     #endif
     float nightFactor = max(sin(timeAngle*(-6.28318530718)),0.0);
     float invNightFactor = 1.0 - nightFactor;
@@ -661,7 +661,7 @@
     #endif
 
     #if WATERCOLOR_MODE >= 2
-        vec3 underwaterColorM1 = pow(fogColor, vec3(0.33, 0.21, 0.26));
+        vec3 underwaterColorM1 = pow2(fogColor, vec3(0.33, 0.21, 0.26));
     #else
         vec3 underwaterColorM1 = vec3(0.46, 0.62, 1.0);
     #endif
@@ -675,7 +675,7 @@
     #if NETHER_COLOR_MODE == 3
         float netherColorMixer = inNetherWastes + inCrimsonForest + inWarpedForest + inBasaltDeltas + inSoulValley;
         vec3 netherColor = mix(
-            fogColor * 0.6 + 0.2 * normalize(fogColor + 0.0001),
+            fogColor * 0.6 + 0.2 * normalize2(fogColor + 0.0001),
             (
                 inNetherWastes * vec3(0.38, 0.15, 0.05) + inCrimsonForest * vec3(0.33, 0.07, 0.04) +
                 inWarpedForest * vec3(0.18, 0.1, 0.25) + inBasaltDeltas * vec3(0.25, 0.235, 0.23) +
@@ -684,7 +684,7 @@
             netherColorMixer
         );
     #elif NETHER_COLOR_MODE == 2
-        vec3 netherColor = fogColor * 0.6 + 0.2 * normalize(fogColor + 0.0001);
+        vec3 netherColor = fogColor * 0.6 + 0.2 * normalize2(fogColor + 0.0001);
     #elif NETHER_COLOR_MODE == 0
         vec3 netherColor = vec3(0.7, 0.26, 0.08) * 0.6;
     #endif
@@ -697,8 +697,8 @@
         const float snowTexOpacity = 0.5;
     #else
         #define WEATHER_TEX_OPACITY_M 100.0 / WEATHER_TEX_OPACITY
-        const float rainTexOpacity = pow(0.25, WEATHER_TEX_OPACITY_M);
-        const float snowTexOpacity = pow(0.5, WEATHER_TEX_OPACITY_M);
+        const float rainTexOpacity = pow2(0.25, WEATHER_TEX_OPACITY_M);
+        const float snowTexOpacity = pow2(0.5, WEATHER_TEX_OPACITY_M);
     #endif
 
     #ifdef FRAGMENT_SHADER

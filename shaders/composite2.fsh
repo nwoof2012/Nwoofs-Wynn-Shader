@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 150 compatibility
 
 uniform float viewWidth;
 uniform float viewHeight;

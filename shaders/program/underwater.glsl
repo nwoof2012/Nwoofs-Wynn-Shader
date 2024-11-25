@@ -6,6 +6,6 @@ vec3 isInWater(sampler2D mainTex, vec3 color, vec2 coord, vec2 distortionAmount,
     }
 
     vec3 underwaterColor = texture2D(mainTex, coord + distortionAmount).rgb;
-    underwaterColor = mix(underwaterColor, color, colorFactor);
+    underwaterColor = mix2(underwaterColor, color, colorFactor);
     return underwaterColor;
 }

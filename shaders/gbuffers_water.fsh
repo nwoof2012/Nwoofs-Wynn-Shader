@@ -1,4 +1,6 @@
-#version 460 compatibility
+#version 150 compatibility
+
+#include "lib/optimizationFunctions.glsl"
 
 varying vec2 TexCoords;
 varying vec4 Normal;
@@ -62,13 +64,13 @@ void main() {
 
     albedo.a = 0.75f;
     
-    vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
+    vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
     
     vec4 Lightmap;
 
     if(isWater < 0.1f && isWaterBlock == 1) {
-        albedo.xyz = mix(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),pow(finalNoise.x,5));
-        albedo.a = 0.0f;//mix(0.5f,1f,pow(finalNoise.x,5));
+        albedo.xyz = mix2(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),pow2(finalNoise.x,5));
+        albedo.a = 0.0f;//mix2(0.5f,1f,pow2(finalNoise.x,5));
         Lightmap = vec4(LightmapCoords.x + Normal.x, LightmapCoords.x + noiseMap.y, LightmapCoords.y + noiseMap.z, 1.0f);
     } else {
         albedo = texture2D(colortex0, TexCoords);
@@ -81,7 +83,7 @@ void main() {
     float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
     
     if(blindness > 0f) {
-        albedo.xyz = mix(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        albedo.xyz = mix2(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
     }
 
     gl_FragData[0] = albedo;

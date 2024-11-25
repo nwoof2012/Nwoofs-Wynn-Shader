@@ -1,4 +1,5 @@
-#version 460 compatibility
+#version 150 compatibility
+#include "lib/optimizationFunctions.glsl"
 #include "distort.glsl"
 
 #define ENTITY_SHADOWS

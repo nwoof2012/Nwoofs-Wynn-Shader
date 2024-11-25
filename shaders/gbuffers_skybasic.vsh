@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 150 compatibility
 
 #define VERTEX_SHADER
 

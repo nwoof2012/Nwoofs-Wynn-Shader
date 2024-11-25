@@ -1,6 +1,8 @@
-#version 460 compatibility
+#version 150 compatibility
 
 #define TILTED_RAIN
+
+#include "lib/optimizationFunctions.glsl"
 
 uniform sampler2D lightmap;
 uniform sampler2D gtexture;
@@ -43,6 +45,6 @@ void main() {
     
     float fogBlendValue = clamp((distanceFromCamera - minFogDistance) / (maxFogDistance - minFogDistance),0,1);
 
-    //color.a = mix(0f, 1f, fogBlendValue);
-    //color.rgb = mix(color.rgb, vec3(0.5f),fogBlendValue);
+    //color.a = mix2(0f, 1f, fogBlendValue);
+    //color.rgb = mix2(color.rgb, vec3(0.5f),fogBlendValue);
 }

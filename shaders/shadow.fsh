@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 150 compatibility
 
 #define SHADOWS_ENABLED
 #define ENTITY_SHADOWS

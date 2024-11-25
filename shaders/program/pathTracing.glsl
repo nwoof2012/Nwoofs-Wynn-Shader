@@ -63,7 +63,7 @@
                 }
                 // Simulate ray-scene intersection (replace with actual intersection logic)
                 float t = 0.5 * (1.0 + ray.direction.y);
-                vec3 hitColor = mix(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), t);
+                vec3 hitColor = mix2(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), t);
                 
                 // Update color based on intersection
                 vec3 lightmapColor = SkyColor;
@@ -82,7 +82,7 @@
 
                 // Generate new ray direction (replace with actual reflection/refraction logic)
                 ray.origin = ray.origin + t * ray.direction;
-                ray.direction = normalize(reflect(ray.direction, vec3(0.0, 1.0, 0.0)));
+                ray.direction = normalize2(reflect(ray.direction, vec3(0.0, 1.0, 0.0)));
             }
 
             return color;

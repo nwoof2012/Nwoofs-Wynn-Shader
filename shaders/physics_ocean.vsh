@@ -1,5 +1,7 @@
-#version 460 compatibility
+#version 150 compatibility
 #define PI 3.14159265358979323846f
+
+#include "lib/optimizationFunctions.glsl"
 
 const int PHYSICS_ITERATIONS_OFFSET = 13;
 const float PHYSICS_DRAG_MULT = 0.048;
@@ -72,9 +74,9 @@ float noise(vec2 p, float freq ){
 	float b = 1f;//rand((ij+vec2(1.,0.)));
 	float c = 0f;//rand((ij+vec2(0.,1.)));
 	float d = 1f;//rand((ij+vec2(1.,1.)));
-	float x1 = mix(a, b, xy.x);
-	float x2 = mix(c, d, xy.x);
-	return mix(x1, x2, xy.y);
+	float x1 = mix2(a, b, xy.x);
+	float x2 = mix2(c, d, xy.x);
+	return mix2(x1, x2, xy.y);
 }
 
 float pNoise(vec2 p, int res){

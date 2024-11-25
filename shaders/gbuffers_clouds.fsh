@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 150 compatibility
 
 #define OVERWORLD
 
@@ -6,6 +6,7 @@ in vec4 glColor;
 
 in float sunVisibility2;
 
+#include "lib/optimizationFunctions.glsl"
 #include "lib/common.glsl"
 #include "lib/colorMultipliers.glsl"
 #include "lib/spaceConversion.glsl"
@@ -32,8 +33,8 @@ void main() {
 
     float sunFactor = sunVisibility2;
 
-    vec4 translucentMult = vec4(mix(vec3(0.666), color.rgb * (1.0 - pow2(pow2(color.a))), color.a), 1.0);
-    vec3 cloudLight = mix(vec3(0.8, 1.6, 1.5) * sqrt1(nightFactor), mix(dayDownSkyColor, dayMiddleSkyColor, 0.1), sunFactor);
+    vec4 translucentMult = vec4(mix2(vec3(0.666), color.rgb * (1.0 - pow2(pow2(color.a))), color.a), 1.0);
+    vec3 cloudLight = mix2(vec3(0.8, 1.6, 1.5) * sqrt1(nightFactor), mix2(dayDownSkyColor, dayMiddleSkyColor, 0.1), sunFactor);
     color.rgb *= sqrt(cloudLight) * (1.2 + 0.4 * noonFactor * invRainFactor);
     color.rgb *= vec3(1) * 0.01;
     color.rgb *= sqrt(GetAtmColorMult()); // C72380KD - Reduced atmColorMult impact on things

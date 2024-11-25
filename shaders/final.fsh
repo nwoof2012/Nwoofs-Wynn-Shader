@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 150 compatibility
 
 varying vec2 TexCoords;
 uniform sampler2D colortex0;

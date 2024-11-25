@@ -1,4 +1,6 @@
-#version 460 compatibility
+#version 150 compatibility
+
+#include "lib/optimizationFunctions.glsl"
 
 varying vec2 TexCoords;
 varying vec3 Normal;
@@ -34,7 +36,7 @@ void main() {
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        albedo.xyz = mix(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        albedo.xyz = mix2(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
     }
     
     gl_FragData[0] = albedo;

@@ -1,4 +1,6 @@
-#version 460 compatibility
+#version 150 compatibility
+
+#include "lib/optimizationFunctions.glsl"
 
 varying vec2 TexCoords;
 
@@ -34,7 +36,7 @@ void main() {
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        color.xyz = mix(color.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        color.xyz = mix2(color.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
     }
     
     gl_FragData[0] = color;

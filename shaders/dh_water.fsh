@@ -1,7 +1,9 @@
-#version 460 compatibility
+#version 150 compatibility
 
 #define WATER_REFRACTION
 #define WATER_FOAM
+
+#include "lib/optimizationFunctions.glsl"
 
 varying vec2 TexCoords;
 varying vec4 Normal;
@@ -76,17 +78,17 @@ void main() {
 
     albedo.a = 0.5f;
     
-    vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
+    vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
     
     if(mat == DH_BLOCK_WATER) {
-        albedo.xyz = mix(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),0.5f);
+        albedo.xyz = mix2(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),0.5f);
         albedo.a = 0.0f;
     }
 
     /*if(isBiomeEnd) {
-        albedo.xyz = mix(albedo.xyz, vec3(dot(albedo.xyz, vec3(0.333))),0.5);
+        albedo.xyz = mix2(albedo.xyz, vec3(dot(albedo.xyz, vec3(0.333))),0.5);
     } /*else {
-        albedo.xyz = mix(albedo.xyz,lightColor,0.125f);
+        albedo.xyz = mix2(albedo.xyz,lightColor,0.125f);
     }*/
 
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);
@@ -101,24 +103,24 @@ void main() {
         #ifdef WATER_REFRACTION
             vec4 noiseMap = texture2D(noise, texCoord + sin(texCoord.y*32f + ((frameCounter)/90f)*0.05f) * 0.001f);
             vec4 noiseMap2 = texture2D(noise, texCoord - sin(texCoord.y*16f + ((frameCounter)/90f)*0.05f) * 0.001f);
-            vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
+            vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
 
             TexCoords2 += finalNoise.xy * vec2(0.125f);
         #endif
 
-        Albedo = pow(mix(texture2D(colortex0, TexCoords2).rgb,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (depth.r - depth2)) * 0.5,0,1)), vec3(2.2f));
+        Albedo = mix2(mix2(texture2D(colortex0, TexCoords2).rgb,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (depth.r - depth2)) * 0.5,0,1)), vec3(2.2f));
         #ifdef WATER_FOAM
             if(abs(depth.r - depth2) < 0.0005f) {
-                Albedo = mix(Albedo, vec3(1.0f), clamp(1 - abs(depth.r - depth2),0f,1));
+                Albedo = mix2(Albedo, vec3(1.0f), clamp(1 - abs(depth.r - depth2),0f,1));
             }
         #endif
         albedo.xyz = Albedo;
-        albedo.a = 0.0f;//mix(0.5f, 0.5f, clamp(1 - abs(depth.r - depth2),0f,1));
+        albedo.a = 0.0f;//mix2(0.5f, 0.5f, clamp(1 - abs(depth.r - depth2),0f,1));
     }*/
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        albedo.xyz = mix(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        albedo.xyz = mix2(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
     }
 
     if(mat == DH_BLOCK_WATER) {

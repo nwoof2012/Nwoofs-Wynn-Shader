@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 150 compatibility
 #include "lib/commonFunctions.glsl"
 
 #define DISTANT_HORIZONS
@@ -44,6 +44,8 @@
 #define PATH_TRACING 0 // [0 1]
 
 #define PATH_TRACING_GI
+
+#include "lib/optimizationFunctions.glsl"
 
 uniform sampler2D lightmap;
 uniform sampler2D depthtex0;
@@ -104,7 +106,7 @@ float maxBlindDistance = 5;
 float AdjustLightmapTorch(in float torch) {
     const float K = 2.0f;
     const float P = 5.06f;
-    return K * pow(torch, P);
+    return K * pow2(torch, P);
 }
 
 float AdjustLightmapSky(in float sky){
@@ -200,7 +202,7 @@ float Noise3D(vec3 p) {
     vec2 b_off = vec2(23.0, 29.0) * (iz + 1.0) / 128.0;
     float a = texture2D(noises, p.xy + a_off).r;
     float b = texture2D(noises, p.xy + b_off).r;
-    return mix(a, b, fz);
+    return mix2(a, b, fz);
 }
 
 float linearizeDepth(float depth, float near, float far) {
@@ -225,10 +227,10 @@ void main() {
             lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
     #else
         lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
-        lightColor = pow(texture(lightmap,lightmapCoords).rgb,vec3(2.2));
+        lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(2.2));
     #endif
 
-    //lightBrightness = pow(lightBrightness,2.2);
+    //lightBrightness = pow2(lightBrightness,2.2);
     
     vec4 outputColorData = blockColor;
     vec3 outputColor = outputColorData.rgb * max(lightColor,vec3(1.0));
@@ -252,21 +254,24 @@ void main() {
 
     float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
-    float dhBlend = pow(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
+    float dhBlend = pow2(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
     
-    //outputColor = pow(outputColor,vec3(1/2.2));
+    //outputColor = pow2(outputColor,vec3(1/2.2));
     outputColor *= lightBrightness;
-    //outputColor = pow(outputColor,vec3(2.2));
+    //outputColor = pow2(outputColor,vec3(2.2));
 
     if(blindness > 0f) {
-        outputColor.xyz = mix(outputColor.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        outputColor.xyz = mix2(outputColor.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
     }
 
-    float fogBlendValue = pow(smoothstep(0.9,1.0,dhDepth),4.2);
-    transparency = mix(0.0,transparency, pow(1-dhBlend,0.6));
-    outputColor.xyz = mix(outputColor, pow(fogColor,vec3(2.2)), fogBlendValue);
-    outColor0 = vec4(pow(outputColor,vec3(1/2.2)),transparency);
+    float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
+    transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
+    outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(2.2)), fogBlendValue);
+    outColor0 = vec4(pow2(outputColor,vec3(1/2.2)),transparency);
     isWater = vec4(0.0);
+    if(depth != 1) {
+        isWater.y = 1.0;
+    }
     outColor2 = vec4(lightColor, 0.0);
     normal = vec4(Normal, 1.0);
     dataTex0 = vec4(1.0);
