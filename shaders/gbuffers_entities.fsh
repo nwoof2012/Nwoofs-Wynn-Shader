@@ -17,7 +17,7 @@ in vec3 viewSpaceFragPosition;
 float minBlindnessDistance = 2.5;
 float maxBlindDistance = 5;
 
-/* DRAWBUFFERS: 0124 */
+/* RENDERTARGETS:0,1,2,15 */
 
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
@@ -39,5 +39,6 @@ void main() {
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
     gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+    gl_FragData[3] = vec4(1.0);
     //gl_FragData[3] = vec4(a);
 }

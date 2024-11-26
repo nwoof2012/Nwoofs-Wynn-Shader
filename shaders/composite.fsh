@@ -105,6 +105,8 @@ uniform sampler2D colortex11;
 
 uniform sampler2D colortex12;
 
+uniform sampler2D colortex15;
+
 const float sunPathRotation = -40.0f;
 
 const float Ambient = 0.1f;
@@ -328,6 +330,15 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
+        vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        float normalA = fract(texture2D(depthtex0,shiftedUVs).r * 25);
+        float normalB = fract(texture2D(depthtex0,shiftedUVs + UVsOffset).r * 25);
+        float isEntity = texture2D(colortex15,shiftedUVs).r;
+        float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
+        
+        if(abs(normalA - normalB) >= 0.5 && (isEntity > 0.0 ^^ isEntity2 > 0.0)) {
+            continue;
+        }
         /*if(waterTest > 0f) {
             sum += (specularMap + light) * sampleDepth;
             continue;
@@ -357,6 +368,15 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
+        vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        float normalA = fract(texture2D(depthtex0,shiftedUVs).r * 25);
+        float normalB = fract(texture2D(depthtex0,shiftedUVs + UVsOffset).r * 25);
+        float isEntity = texture2D(colortex15,shiftedUVs).r;
+        float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
+
+        if(abs(normalA - normalB) >= 0.5 && (isEntity > 0.0 ^^ isEntity2 > 0.0)) {
+            continue;
+        }
         /*if(waterTest > 0f) {
             sum += (specularMap + light) * sampleDepth;
             continue;
@@ -1003,7 +1023,7 @@ void main() {
 
     float maxLight = MAX_LIGHT;
     
-    vec3 shadowLerp = mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
+    vec3 shadowLerp = mix2(GetShadow(Depth), vec3(1.0), texture2D(colortex2, TexCoords2).g);
     if(waterTest > 0) {
         shadowLerp = vec3(1.0);
         //lightBrightness = 1.0;
