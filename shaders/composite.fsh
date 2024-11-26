@@ -1023,7 +1023,7 @@ void main() {
 
     float maxLight = MAX_LIGHT;
     
-    vec3 shadowLerp = mix2(GetShadow(Depth), vec3(1.0), texture2D(colortex2, TexCoords2).g);
+    vec3 shadowLerp = mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
     if(waterTest > 0) {
         shadowLerp = vec3(1.0);
         //lightBrightness = 1.0;
