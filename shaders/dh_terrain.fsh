@@ -226,7 +226,7 @@ void main() {
             lightColor = traceRay(ray,lightmap2.xy, worldGeoNormal, 1.0);
             lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
     #else
-        lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
+        lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.5,1.0);
         lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(2.2));
     #endif
 
@@ -268,6 +268,9 @@ void main() {
     transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
     outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(2.2)), fogBlendValue);
     outColor0 = vec4(pow2(outputColor,vec3(1/2.2)),transparency);
+    /*#if PATH_TRACING == 0
+        outColor0.xyz = unreal(outColor0.xyz);
+    #endif*/
     isWater = vec4(0.0);
     if(depth != 1) {
         isWater.y = 1.0;
