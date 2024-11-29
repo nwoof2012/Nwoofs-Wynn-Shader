@@ -1082,11 +1082,11 @@ void main() {
     }
     if(isBiomeEnd) {
         #if PATH_TRACING == 1
-            LightmapColor *= vec3(15.5025);
+            LightmapColor *= vec3(3.5025);
             lightBrightness = max(lightBrightness, 0.5);
         #else
             LightmapColor *= vec3(1.5025);
-            lightBrightness = max(lightBrightness, 1.5);
+            lightBrightness = max(lightBrightness, 0.5);
         #endif
         Diffuse.xyz = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor),Albedo * ((NdotL * shadowLerp + Ambient) * currentColor),0.25);
         //Diffuse = mix2(Diffuse, seColor, 0.01);
