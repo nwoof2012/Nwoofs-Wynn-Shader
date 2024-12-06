@@ -1,5 +1,5 @@
 option.ENTITY_SHADOWS=Entity Shadows
-option.ENTITY_SHADOWS.comment=Apply shadowmapping to entities. Can impact CPU and GPU performance significantly in areas with many mobs
+option.ENTITY_SHADOWS.comment=Apply shadowmapping to entities. §4§lCan impact CPU and GPU performance significantly in areas with many mobs
 value.ENTITY_SHADOWS.false=Off
 value.ENTITY_SHADOWS.true=On
 
@@ -7,7 +7,7 @@ option.SHADOWS_ENABLED=Enable Shadows
 option.SHADOWS_ENABLED.comment=Enables shadows. Will significantly improve GPU performance if off, but looks way worse
 
 option.SHADOW_RES=Shadow Resolution
-option.SHADOW_RES.comment=Quality of the shadowmapping. Significantly impacts VRAM usage
+option.SHADOW_RES.comment=Quality of the shadowmapping. §4§lSignificantly impacts VRAM usage
 value.SHADOW_RES.128=128px
 value.SHADOW_RES.256=256px
 value.SHADOW_RES.512=512px
@@ -17,7 +17,7 @@ value.SHADOW_RES.4096=§aDefault
 value.SHADOW_RES.8192=8192px
 
 option.SHADOW_DIST=Shadow Distance
-option.SHADOW_DIST.comment=How far away shadows can be rendered. Significantly impacts GPU performance
+option.SHADOW_DIST.comment=How far away shadows can be rendered. §4§lSignificantly impacts GPU performance
 value.SHADOW_DIST.4=§a§l§o4 Chunks
 value.SHADOW_DIST.5=§a§l§o5 Chunks
 value.SHADOW_DIST.6=§a§l§o6 Chunks
@@ -117,10 +117,10 @@ option.MAX_LIGHT=Maximum Light
 value.MAX_LIGHT.4.1f=Unlimited
 
 option.BLOOM=Bloom
-option.BLOOM.comment=Makes light sources leak into surrounding objects. Low-moderate GPU performance impact
+option.BLOOM.comment=Makes light sources leak into surrounding objects. §2§lLow-moderate GPU performance impact
 
 option.BLOOM_QUALITY=Bloom Quality
-option.BLOOM_QUALITY.comment=Sample count for Bloom effect. Medium GPU performance impact
+option.BLOOM_QUALITY.comment=Sample count for Bloom effect. §e§lMedium GPU performance impact
 suffix.BLOOM_QUALITY=§r Samples
 
 option.BLOOM_INTENSITY=Bloom Intensity
@@ -133,10 +133,32 @@ option.TILTED_RAIN=Tilted Rain
 
 option.SHADER_CLOUDS=Clouds
 
+option.CLOUD_STYLE = Volumetric Clouds
+value.CLOUD_STYLE.0 = §cOff
+value.CLOUD_STYLE.1 = §aOn
+option.CLOUD_STYLE.comment = Enables 3-Dimensional Volumetric Clouds. §6§lMedium-High Performance Impact
+
+option.CLOUD_FOG = Distant Fog
+option.CLOUD_FOG.comment = Distant Fog amount on Volumetric Clouds.
+
+option.CLOUD_SAMPLES = Volumetric Cloud Samples
+option.CLOUD_SAMPLES.comment = The sample rate for Volumetric Cloud height. §e§lMedium Performance Impact
+
+option.CLOUD_DENSITY = Volumetric Cloud Density
+
+option.CLOUD_DENSITY_RAIN = Volumetric Cloud Density (Rainy)
+
+option.CLOUD_SPEED = Volumetric Cloud Speed
+
+option.CLOUD_SHADING_SAMPLES = Volumetric Cloud Light Samples
+option.CLOUD_SHADING_SAMPLES.comment = Sample count for lighting on Volumetric Clouds. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
+
+option.CLOUD_SHADING_DISTANCE = Volumetric Cloud Light Distance
+
 option.PATH_TRACING=Path Tracing
 value.PATH_TRACING.0=§eOff
 value.PATH_TRACING.1=§4§k§l§oa §4§l§oOn §4§k§l§oa
-option.PATH_TRACING.comment=Enables path-traced lighting. Severe GPU/CPU performance impact + VRAM usage increase
+option.PATH_TRACING.comment=Enables path-traced lighting. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
 
 screen.PERFORMANCE=Performance
 
@@ -152,10 +174,6 @@ screen.SKY_NIGHT = Night
 screen.SKY_SUNSET = Sunrise/Sunset
 
 screen.SKY_CLOUDS = Clouds
-
-option.CLOUD_STYLE = Volumetric Clouds
-value.CLOUD_STYLE.0 = §cOff
-value.CLOUD_STYLE.1 = §aOn
 
 screen.FOG = Fog
 screen.FOG_DAY = Day

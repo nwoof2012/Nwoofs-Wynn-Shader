@@ -1,4 +1,6 @@
-#version 150 compatibility
+#version 460 compatibility
+
+//#define SCENE_AWARE_LIGHTING
 
 #include "lib/optimizationFunctions.glsl"
 
@@ -139,8 +141,7 @@ WavePixelData physics_wavePixel(const in vec2 position, const in float factor, c
         height += wave * weight;
         iter += PHYSICS_ITER_INC;
         waveSum += weight;
-        weight *= PHYSICS_WEIGHT;
-        frequency *= PHYSICS_FREQUENCY_MULT;
+        weight *= PHYSICS_WEIGHT;frequency *= PHYSICS_FREQUENCY_MULT;
         speed *= PHYSICS_SPEED_MULT;
     }
     
@@ -220,7 +221,9 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(normalM,1);
-    gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);
+    #ifndef SCENE_AWARE_LIGHTING
+        gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);
+    #endif
     gl_FragData[3] = vec4(1.0);
     gl_FragData[4] = vec4(1.0,1.0,1.0,1.0);
 }

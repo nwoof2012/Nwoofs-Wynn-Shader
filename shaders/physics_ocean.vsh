@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 #define PI 3.14159265358979323846f
 
 #include "lib/optimizationFunctions.glsl"

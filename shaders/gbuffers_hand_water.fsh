@@ -1,4 +1,7 @@
-#version 150 compatibility
+#version 460 compatibility
+
+#define SCENE_AWARE_LIGHTING
+
 
 #include "program/underwater.glsl"
 
@@ -37,6 +40,8 @@ void main() {
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
-    gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+    #ifndef SCENE_AWARE_LIGHTING
+        gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+    #endif
     gl_FragData[3] = vec4(a);
 }

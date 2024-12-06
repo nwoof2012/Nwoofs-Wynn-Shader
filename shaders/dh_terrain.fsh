@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 #include "lib/commonFunctions.glsl"
 
 #define DISTANT_HORIZONS
@@ -44,6 +44,8 @@
 #define PATH_TRACING 0 // [0 1]
 
 #define PATH_TRACING_GI
+
+//#define SCENE_AWARE_LIGHTING
 
 #include "lib/optimizationFunctions.glsl"
 
@@ -275,7 +277,9 @@ void main() {
     if(depth != 1) {
         isWater.y = 1.0;
     }
-    outColor2 = vec4(lightColor, 0.0);
+    #ifndef SCENE_AWARE_LIGHTING
+        outColor2 = vec4(lightColor, 0.0);
+    #endif
     normal = vec4(Normal, 1.0);
     dataTex0 = vec4(1.0);
 }

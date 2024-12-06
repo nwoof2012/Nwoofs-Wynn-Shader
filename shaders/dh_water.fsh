@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 
 #define WATER_REFRACTION
 #define WATER_FOAM

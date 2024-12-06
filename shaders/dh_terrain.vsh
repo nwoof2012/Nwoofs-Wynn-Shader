@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 
 #define DISTANT_HORIZONS
 

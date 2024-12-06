@@ -1,4 +1,6 @@
-#version 150 compatibility
+#version 460 compatibility
+
+//#define SCENE_AWARE_LIGHTING
 
 #include "lib/optimizationFunctions.glsl"
 
@@ -88,7 +90,9 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = Normal;
-    gl_FragData[2] = Lightmap;
+    #ifndef SCENE_AWARE_LIGHTING
+        gl_FragData[2] = Lightmap;
+    #endif
     gl_FragData[3] = vec4(1.0);
     gl_FragData[4] = vec4(isWaterBlock, 1.0, 1.0, 1.0);
 }

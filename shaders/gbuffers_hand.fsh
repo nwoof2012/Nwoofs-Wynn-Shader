@@ -1,4 +1,7 @@
-#version 150 compatibility
+#version 460 compatibility
+
+#define SCENE_AWARE_LIGHTING
+
 
 #include "program/underwater.glsl"
 

@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 
 varying vec2 TexCoords;
 varying vec3 Normal;

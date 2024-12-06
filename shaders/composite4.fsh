@@ -36,6 +36,8 @@
 
 #define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
+#define LIGHTMAP_QUALITY 64 // [32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
+
 #define WATER_REFRACTION
 #define WATER_FOAM
 
@@ -48,8 +50,6 @@
 varying vec2 TexCoords;
 
 uniform vec3 sunPosition;
-
-const int colortex2Format = 4*32;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
@@ -188,12 +188,15 @@ vec2 AdjustLightmap(in vec2 Lightmap){
 
 vec3 translucentMult;
 
-vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
-    float radius = 2f;
+vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo, vec2 UVs) {
+    if(texture2D(colortex2, UVs).a <= 0.0) {
+        return texture2D(colortex2, UVs).rgb;
+    }
+    float radius = 25f;
     vec3 sum = vec3(0.0);
     float blur = radius/viewHeight;
     float hstep = 1f;
-    vec3 lightColor = texture2D(colortex10, TexCoords).rgb;
+    vec3 lightColor = texture2D(colortex2, UVs).rgb;
     sum += lightColor;
 
     /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
@@ -210,14 +213,15 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
 
     //float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
-    for(int i = 0; i < BLOOM_QUALITY/2; i++) {
-        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
-        vec2 shiftedUVs = vec2(TexCoords.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+    for(int i = 0; i < LIGHTMAP_QUALITY/2; i++) {
+        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(LIGHTMAP_QUALITY/2));
+        vec2 shiftedUVs = vec2(UVs.x - (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep, UVs.y - (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep).rg;
+        vec2 specularUVs = vec2(specularCoord.x - (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
-        vec3 light = texture2D(colortex10, TexCoords).rgb;
-        vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        vec3 light = texture2D(colortex2, UVs).rgb;
+        vec2 UVsOffset = vec2((float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep, (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep).rg;
+        light += texture2D(colortex2, vec2(UVs.x - UVsOffset.x, UVs.y + UVsOffset.y)).rgb;
         float normalA = texture2D(depthtex0,shiftedUVs).r;
         float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
         float isEntity = texture2D(colortex15,shiftedUVs).r;
@@ -236,23 +240,24 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
             continue;
         }*/
         if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
-            sum += lightColor2;
+            sum = mix2(sum,lightColor2, 0.5);
         }
         lightColor2 = light * sampleDepth;
         /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
             continue;
         }*/
-        sum += lightColor2;
+        sum = mix2(sum,lightColor2 * texture2D(colortex2, shiftedUVs).a, 0.5);
     }
 
-    for(int i = 0; i < BLOOM_QUALITY/2; i++) {
-        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
-        vec2 shiftedUVs = vec2(TexCoords.x + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+    for(int i = 0; i < LIGHTMAP_QUALITY/2; i++) {
+        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(LIGHTMAP_QUALITY/2));
+        vec2 shiftedUVs = vec2(UVs.x + (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep, UVs.y + (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep).rg;
+        vec2 specularUVs = vec2(specularCoord.x - (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = texture2D(colortex2, shiftedUVs).rgb;
-        vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        vec2 UVsOffset = -vec2((float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep, (float(i)/LIGHTMAP_QUALITY) * radius * 4f * blur * hstep).rg;
+        light += texture2D(colortex2, vec2(UVs.x - UVsOffset.x, UVs.y + UVsOffset.y)).rgb;
         float normalA = texture2D(depthtex0,shiftedUVs).r;
         float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
         float isEntity = texture2D(colortex15,shiftedUVs).r;
@@ -267,20 +272,19 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
             continue;
         }*/
         vec3 lightColor2 = light;
+        
         /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
             continue;
         }*/
         if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
-            sum += lightColor2;
+            sum = mix2(sum,lightColor2, 0.5);
         }
         lightColor2 = light * sampleDepth;
         /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
             continue;
         }*/
-        sum += lightColor2;
+        sum = mix2(sum,lightColor2 * texture2D(colortex2, shiftedUVs).a, 0.5);
     }
-
-    sum /= BLOOM_QUALITY/8;
 
     /*sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 8.0 * blur * hstep, TexCoords.y - 8.0 * blur * hstep)).rg) * 0.0162162162;
     sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 7.0 * blur * hstep, TexCoords.y - 7.0 * blur * hstep)).rg) * 0.0540540541;
@@ -312,7 +316,7 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
 
     //sum *= BLOOM_INTENSITY + 0.5;
 
-    return pow2(sum,vec3(2.2)) * vec3(0.00625);
+    return pow2(sum,vec3(2.2)) * vec3(0.000625);
 }
 
 
@@ -448,7 +452,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     #endif
 
     #ifdef SCENE_AWARE_LIGHTING
-        sum = blurLightmap(waterTest, specularCoord, Normal, Albedo);
+        sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, TexCoords);
     #endif
 
     /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
@@ -487,7 +491,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             continue;
         }*/
         #ifdef SCENE_AWARE_LIGHTING
-            light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
+            light = blurLightmap(waterTest, specularCoord, Normal, Albedo, shiftedUVs);
         #endif
         #if PATH_TRACING == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -502,10 +506,10 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
             sum += rayColor2;
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
-                sum += vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix2(vec3(1.0), TorchColor,0.4f);
+                sum += vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r);
             }
         #else
-            vec3 lightColor2 = vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix2(vec3(1.0), TorchColor,0.4f);
+            vec3 lightColor2 = vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r);
             /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
                 continue;
             }*/
@@ -542,7 +546,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             continue;
         }*/
         #ifdef SCENE_AWARE_LIGHTING
-            light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
+            light = blurLightmap(waterTest, specularCoord, Normal, Albedo, shiftedUVs);
         #endif
         #if PATH_TRACING == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -914,7 +918,7 @@ vec4 waterReflections(vec3 color, vec2 uv, vec3 normal) {
 #include "lib/timeCycle.glsl"
 
 void main() {
-    #ifndef SCENE_AWARE_LIGHTING
+    #ifdef SCENE_AWARE_LIGHTING
         float aspectRatio = float(viewWidth)/float(viewHeight);
         float waterTest = texture2D(colortex5, TexCoords).r;
         float dhTest = texture2D(colortex5, TexCoords).g;
@@ -1223,27 +1227,33 @@ void main() {
             shadowLerp = vec3(1.0);
             //lightBrightness = 1.0;
         }
+        shadowLerp = mix2(shadowLerp, vec3(1.0), clamp(dot(LightmapColor,LightmapColor),0,1));
         if(isBiomeEnd) {
-            #if PATH_TRACING == 1
+            /*#if PATH_TRACING == 1
                 LightmapColor *= vec3(3.5025);
                 lightBrightness = max(lightBrightness, 0.5);
             #else
                 LightmapColor *= vec3(1.5025);
                 lightBrightness = max(lightBrightness, 0.5);
-            #endif
+            #endif*/
+            LightmapColor *= vec3(1.5025);
+            lightBrightness = max(lightBrightness, 0.5);
             Diffuse.xyz = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor),Albedo * ((NdotL * shadowLerp + Ambient) * currentColor),0.25);
             //Diffuse = mix2(Diffuse, seColor, 0.01);
             Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),0.5,1));
             Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
+            Diffuse.xyz = mix2(Diffuse.xyz, Diffuse.xyz * LightmapColor, clamp(dot(LightmapColor,LightmapColor),0,1.0));
         } else {
             /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
                 LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
             }*/
+            LightmapColor *= vec3(1.5025);
             if(maxLight < 4.1f) {
                 LightmapColor = clamp(LightmapColor,vec3(0f), (LightmapColor/dot(LightmapColor,vec3(0.333))) * maxLight);
             }
             Diffuse.xyz = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
             Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
+            Diffuse.xyz = mix2(Diffuse.xyz, Diffuse.xyz * LightmapColor, clamp(dot(LightmapColor,LightmapColor),0,1.0));
         }
 
         //if(waterTest <= 0) {
@@ -1272,12 +1282,5 @@ void main() {
         gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/2.2)), 1.0f);
     #else
         gl_FragData[0] = texture2D(colortex0,TexCoords);
-        gl_FragData[1] = texture2D(colortex1,TexCoords);
-        gl_FragData[2] = texture2D(colortex2,TexCoords);
-        gl_FragData[3] = texture2D(colortex3,TexCoords);
-        gl_FragData[4] = texture2D(colortex4,TexCoords);
-        gl_FragData[5] = texture2D(colortex5,TexCoords);
-        gl_FragData[6] = texture2D(colortex6,TexCoords);
-        gl_FragData[7] = texture2D(colortex7,TexCoords);
     #endif
 }

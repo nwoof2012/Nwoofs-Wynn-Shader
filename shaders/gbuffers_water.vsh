@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 #define PI 3.14159265358979323846f
 
 varying vec2 TexCoords;
@@ -8,6 +8,8 @@ varying vec4 Color;
 varying vec2 LightmapCoords;
 
 varying float isWaterBlock;
+
+out float isTransparent;
 
 uniform int worldTime;
 uniform int frameCounter;
@@ -96,6 +98,12 @@ void main() {
 	if(mc_Entity.x == 8.0 && mc_Entity.x != 10002) {
         isWaterBlock = 1f;
     }
+
+	if(mc_Entity.x == 8.0 || mc_Entity.x == 10002) {
+		isTransparent = 1.0;
+	} else {
+		isTransparent = 0.0;
+	}
 
     Color = gl_Color;
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);

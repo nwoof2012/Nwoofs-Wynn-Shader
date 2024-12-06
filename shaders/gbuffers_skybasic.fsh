@@ -1,4 +1,4 @@
-#version 150 compatibility
+#version 460 compatibility
 
 #define FRAGMENT_SHADER
 
@@ -120,6 +120,8 @@ flat in vec3 upVec, sunVec;
 
 uniform vec3 sunPosition;
 
+uniform float aspectRatio;
+
 #include "lib/dither.glsl"
 
 //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
@@ -180,7 +182,7 @@ vec3 screenToView(vec3 screenPos) {
     return tmp.xyz / tmp.w;
 }
 
-/* DRAWBUFFERS:05 */
+/* DRAWBUFFERS:052 */
 layout(location = 0) out vec4 outputColor;
 
 void noonFunc(float time, float timeFactor) {
@@ -361,11 +363,11 @@ void main() {
         //float upDot = dot(pos, gbufferModelView[1].xyz);
         //gl_FragData[0] = vec4(upDot);
         outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
-        float sunMaxDistance = 0.05;
-        float distToSun = length(fragCoord - sunScreenPos);
+        float sunMaxDistance = 0.06;
+        float distToSun = length((fragCoord - sunScreenPos) * vec2(aspectRatio, 1.0));
         float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, distToSun);
         float moonMaxDistance = 0.03;
-        float distToMoon = length(moonScreenPos - fragCoord);
+        float distToMoon = length((moonScreenPos - fragCoord) * vec2(aspectRatio, 1.0));
         float moonGradient = 1.0 - pow2(smoothstep(0.0, sunMaxDistance, distToMoon),2.2);
         if(distToMoon > moonMaxDistance) {
             moonGradient = 0;
@@ -377,6 +379,7 @@ void main() {
         vec3 finalMoonColor = mix2(pow2(moonColor * clamp(noise + 3.0, 3.0, 4.0) * 0.25f,vec3(1/1.2)), vec3(0.0), pow2(distToMoon/0.04,4.2));
         if(worldTime%24000 < 12000) {
             outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);
+            gl_FragData[3] = vec4(vec3(distToSun * 5.0),1.0);
         } else {
             outputColor.rgb = mix2(outputColor.rgb, finalMoonColor, moonGradient);
         }
