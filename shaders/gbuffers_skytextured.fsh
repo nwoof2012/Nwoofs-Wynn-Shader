@@ -1,5 +1,9 @@
 #version 460 compatibility
 
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
+
 uniform sampler2D gtexture;
 
 in vec2 texcoord;
@@ -31,7 +35,7 @@ void main() {
     vec4 screenPos = vec4(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z, 1.0);
     vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
     viewPos /= viewPos.w;
-    vec3 nViewPos = normalize(viewPos.xyz);
+    vec3 nViewPos = normalize2(viewPos.xyz);
 
     float VdotS = dot(nViewPos, sunVec);
     float VdotU = dot(nViewPos, upVec);

@@ -47,7 +47,9 @@
 
 //#define SCENE_AWARE_LIGHTING
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 uniform sampler2D lightmap;
 uniform sampler2D depthtex0;
@@ -70,8 +72,6 @@ uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferModelViewInverse;
 
-uniform float blindness;
-
 uniform bool isBiomeEnd;
 
 uniform vec3 cameraPosition;
@@ -92,7 +92,6 @@ layout(location = 5) out vec4 dataTex0;
 
 in vec4 blockColor;
 in vec2 lightmapCoords;
-in vec3 viewSpaceFragPosition;
 
 in vec3 playerPos;
 
@@ -101,9 +100,6 @@ in float isWaterBlock;
 in vec3 Normal;
 
 in vec3 lightmap2;
-
-float minBlindnessDistance = 2.5;
-float maxBlindDistance = 5;
 
 float AdjustLightmapTorch(in float torch) {
     const float K = 2.0f;
@@ -228,8 +224,13 @@ void main() {
             lightColor = traceRay(ray,lightmap2.xy, worldGeoNormal, 1.0);
             lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
     #else
-        lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.5,1.0);
+        lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
         lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(2.2));
+    #endif
+
+    #if PATH_TRACING == 0
+        lightColor *= vec3(0.2525);
+        lightBrightness = max(lightBrightness, 0.2);
     #endif
 
     //lightBrightness = pow2(lightBrightness,2.2);
@@ -263,7 +264,7 @@ void main() {
     //outputColor = pow2(outputColor,vec3(2.2));
 
     if(blindness > 0f) {
-        outputColor.xyz = mix2(outputColor.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        outputColor.xyz = blindEffect(outputColor.xyz);
     }
 
     float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);

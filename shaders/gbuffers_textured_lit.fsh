@@ -1,6 +1,8 @@
 #version 460 compatibility
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 varying vec2 TexCoords;
 
@@ -9,15 +11,8 @@ varying vec4 Color;
 uniform sampler2D colortex0;
 uniform sampler2D texture;
 
-uniform float blindness;
-
 varying vec3 Normal;
 varying vec2 LightmapCoords;
-
-in vec3 viewSpaceFragPosition;
-
-float minBlindnessDistance = 2.5;
-float maxBlindDistance = 5;
 
 /* DRAWBUFFERS:01265 */
 void main() {
@@ -36,7 +31,7 @@ void main() {
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        color.xyz = mix2(color.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        color.xyz = blindEffect(color.xyz);
     }
     
     gl_FragData[0] = color;

@@ -36,6 +36,8 @@ uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
+uniform mat4 modelViewMatrix;
+
 uniform int physics_iterationsNormal;
 uniform vec2 physics_waveOffset;
 uniform ivec2 physics_textureOffset;
@@ -53,6 +55,12 @@ uniform sampler3D physics_foam;
 uniform sampler2D physics_lightmap;
 
 uniform sampler2D depthtex0;
+
+uniform vec3 cameraPosition;
+
+in vec3 vaPosition;
+
+out float camDist;
 
 //flat in vec4 mc_Entity;
 
@@ -165,6 +173,10 @@ void main() {
 	#else
 		gl_Position = ftransform();
 	#endif
+
+	vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
+
+	camDist = distance(worldSpaceVertexPosition, cameraPosition);
 
 	//gl_Position.y += sin(((ViewW.x + worldTime/10.0f) + (ViewW.z + worldTime/5.0f) * (180.0f/PI))) * 0.25f;
 

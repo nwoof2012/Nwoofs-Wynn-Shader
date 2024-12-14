@@ -86,7 +86,9 @@
 #define CLOUD_COLOR_RAIN_B_G 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define CLOUD_COLOR_RAIN_B_B 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 varying vec2 TexCoords;
 
@@ -105,8 +107,6 @@ uniform vec3 skyColor;
 
 uniform bool isBiomeEnd;
 uniform bool isBiomeDry;
-
-uniform float blindness;
 
 uniform float rainStrength;
 
@@ -139,9 +139,6 @@ vec3 transitionColorB;
 
 vec3 currentColorA;
 vec3 currentColorB;
-
-float minBlindnessDistance = 2.5;
-float maxBlindDistance = 5;
 
 float fogify(float x, float w) {
     return w / (x * x + w);
@@ -384,6 +381,10 @@ void main() {
             outputColor.rgb = mix2(outputColor.rgb, finalMoonColor, moonGradient);
         }
         //discard;
+    }
+
+    if(blindness > 0.0) {
+        outputColor.rgb = blindEffect(outputColor.rgb);
     }
     gl_FragData[1] = vec4(0.0, 1.0, 0.0, 1.0);
 

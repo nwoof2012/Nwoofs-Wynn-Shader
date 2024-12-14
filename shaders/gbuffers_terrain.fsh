@@ -1,6 +1,8 @@
 #version 460 compatibility
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 //#define SCENE_AWARE_LIGHTING
 
@@ -16,14 +18,7 @@ uniform sampler2D lightmap;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
-uniform float blindness;
-
 //flat in vec4 mc_Entity;
-
-in vec3 viewSpaceFragPosition;
-
-float minBlindnessDistance = 2.5;
-float maxBlindDistance = 5;
 
 in vec4 lightSourceData;
 
@@ -50,7 +45,7 @@ void main() {
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        albedo.xyz = mix2(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        albedo.xyz = blindEffect(albedo.xyz);
     }
 
     gl_FragData[0] = albedo;

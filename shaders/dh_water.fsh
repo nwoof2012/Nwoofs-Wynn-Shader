@@ -3,7 +3,9 @@
 #define WATER_REFRACTION
 #define WATER_FOAM
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 varying vec2 TexCoords;
 varying vec4 Normal;
@@ -40,13 +42,6 @@ uniform float viewHeight;
 uniform bool isBiomeEnd;
 
 flat in int mat;
-
-float minBlindnessDistance = 2.5;
-float maxBlindDistance = 5;
-
-uniform vec3 viewSpaceFragPosition;
-
-uniform float blindness;
 
 /* DRAWBUFFERS:01235 */
 
@@ -120,7 +115,7 @@ void main() {
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        albedo.xyz = mix2(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        albedo.xyz = blindEffect(albedo.xyz);
     }
 
     if(mat == DH_BLOCK_WATER) {

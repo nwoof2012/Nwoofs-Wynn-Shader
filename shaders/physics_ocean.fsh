@@ -2,7 +2,9 @@
 
 //#define SCENE_AWARE_LIGHTING
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 const int PHYSICS_ITERATIONS_OFFSET = 13;
 const float PHYSICS_DRAG_MULT = 0.048;
@@ -68,6 +70,8 @@ in vec3 physics_localPosition;
 in vec3 physics_foamColor;
 in float physics_localWaviness;
 WavePixelData physics_waveData;
+
+in float camDist;
 
 vec2 physics_waveDirection(vec2 position, int iterations, float time) {
     position = (position - physics_waveOffset) * PHYSICS_XZ_SCALE * physics_oceanWaveHorizontalScale;
@@ -217,6 +221,12 @@ void main() {
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);
     //normalDefine = normalDefine + noiseMap;
 
+    if(blindness > 0.0f) {
+        albedo.xyz = blindEffect(albedo.xyz);
+    }
+
+    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
     WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
 
     gl_FragData[0] = albedo;
@@ -225,5 +235,9 @@ void main() {
         gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(1.0);
-    gl_FragData[4] = vec4(1.0,1.0,1.0,1.0);
+    if(blindness > 0.0f) {
+        gl_FragData[4] = vec4(1.0,1.0,1.0 - clamp((camDist - 2.5)/(5.0 - 2.5) * blindness,0,1),1.0);
+    } else {
+        gl_FragData[4] = vec4(1.0,1.0,1.0 - clamp((camDist - 2.5)/(5.0 - 2.5) * blindness,0,1),1.0);
+    }
 }

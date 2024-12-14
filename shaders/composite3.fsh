@@ -10,7 +10,9 @@
 #define CLOUD_SHADING_SAMPLES 2.0 // [2.0 3.0 4.0 5.0]
 #define CLOUD_SHADING_DISTANCE 128.0 // [32.0 64.0 96.0 128.0 160.0 192.0 224.0 256.0]
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 uniform float frameTimeCounter;
 uniform float worldTime;
@@ -36,7 +38,6 @@ uniform float viewHeight;
 
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;
-uniform vec3 viewSpaceFragPosition;
 
 in vec2 texCoord;
 
@@ -338,6 +339,10 @@ void main() {
         /*if(detectSky != 1.0) {
             color = mix(color, ray_color.xyz,0.9);
         }*/
+    }
+
+    if(blindness > 0.0f) {
+        color.rgb = blindEffect(color.rgb);
     }
 
     outcolor = vec4(color, 1.0);

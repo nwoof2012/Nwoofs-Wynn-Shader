@@ -1,7 +1,7 @@
 option.ENTITY_SHADOWS=Entity Shadows
 option.ENTITY_SHADOWS.comment=Apply shadowmapping to entities. §4§lCan impact CPU and GPU performance significantly in areas with many mobs
-value.ENTITY_SHADOWS.false=Off
-value.ENTITY_SHADOWS.true=On
+value.ENTITY_SHADOWS.false=§eOff
+value.ENTITY_SHADOWS.true=§4§k§l§oa §4§l§oOn §4§k§l§oa
 
 option.SHADOWS_ENABLED=Enable Shadows
 option.SHADOWS_ENABLED.comment=Enables shadows. Will significantly improve GPU performance if off, but looks way worse
@@ -160,6 +160,67 @@ value.PATH_TRACING.0=§eOff
 value.PATH_TRACING.1=§4§k§l§oa §4§l§oOn §4§k§l§oa
 option.PATH_TRACING.comment=Enables path-traced lighting. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
 
+option.WAVING_FOLIAGE=Waving Foliage
+value.WAVING_FOLIAGE.false=§cOff
+value.WAVING_FOLIAGE.true=§aOn
+option.WAVING_FOLIAGE.comment=Enables waving foliage
+
+option.FOLIAGE_SPEED=Waving Foliage Speed
+value.FOLIAGE_SPEED.0.1f=0.1x
+value.FOLIAGE_SPEED.0.2f=0.2x
+value.FOLIAGE_SPEED.0.3f=0.3x
+value.FOLIAGE_SPEED.0.4f=0.4x
+value.FOLIAGE_SPEED.0.5f=0.5x
+value.FOLIAGE_SPEED.0.6f=0.6x
+value.FOLIAGE_SPEED.0.7f=0.7x
+value.FOLIAGE_SPEED.0.8f=0.8x
+value.FOLIAGE_SPEED.0.9f=0.9x
+value.FOLIAGE_SPEED.1.0f=§aDefault
+value.FOLIAGE_SPEED.1.1f=1.1x
+value.FOLIAGE_SPEED.1.2f=1.2x
+value.FOLIAGE_SPEED.1.3f=1.3x
+value.FOLIAGE_SPEED.1.4f=1.4x
+value.FOLIAGE_SPEED.1.5f=1.5x
+value.FOLIAGE_SPEED.1.6f=1.6x
+value.FOLIAGE_SPEED.1.7f=1.7x
+value.FOLIAGE_SPEED.1.8f=1.8x
+value.FOLIAGE_SPEED.1.9f=1.9x
+value.FOLIAGE_SPEED.2.0f=2.0x
+option.FOLIAGE_SPEED.comment=Adjusts the speed of waving foliage
+suffix.FOLIAGE_SPEED=x
+
+option.FOLIAGE_INTENSITY=Waving Foliage Intensity
+value.FOLIAGE_INTENSITY.0.1f=0.1x
+value.FOLIAGE_INTENSITY.0.2f=0.2x
+value.FOLIAGE_INTENSITY.0.3f=0.3x
+value.FOLIAGE_INTENSITY.0.4f=0.4x
+value.FOLIAGE_INTENSITY.0.5f=0.5x
+value.FOLIAGE_INTENSITY.0.6f=0.6x
+value.FOLIAGE_INTENSITY.0.7f=0.7x
+value.FOLIAGE_INTENSITY.0.8f=0.8x
+value.FOLIAGE_INTENSITY.0.9f=0.9x
+value.FOLIAGE_INTENSITY.1.0f=§aDefault
+value.FOLIAGE_INTENSITY.1.1f=1.1x
+value.FOLIAGE_INTENSITY.1.2f=1.2x
+value.FOLIAGE_INTENSITY.1.3f=1.3x
+value.FOLIAGE_INTENSITY.1.4f=1.4x
+value.FOLIAGE_INTENSITY.1.5f=1.5x
+value.FOLIAGE_INTENSITY.1.6f=1.6x
+value.FOLIAGE_INTENSITY.1.7f=1.7x
+value.FOLIAGE_INTENSITY.1.8f=1.8x
+value.FOLIAGE_INTENSITY.1.9f=1.9x
+value.FOLIAGE_INTENSITY.2.0f=2.0x
+option.FOLIAGE_INTENSITY.comment=Adjusts the intensity of waving foliage
+suffix.FOLIAGE_INTENSITY=x
+
+option.FOLIAGE_WAVE_DISTANCE=Waving Foliage Distance
+value.FOLIAGE_WAVE_DISTANCE.2=§22 Chunks
+value.FOLIAGE_WAVE_DISTANCE.4=§a4 Chunks
+value.FOLIAGE_WAVE_DISTANCE.8=§e8 Chunks
+value.FOLIAGE_WAVE_DISTANCE.16=§616 Chunks
+value.FOLIAGE_WAVE_DISTANCE.32=§4§k§l§oa §4§l32 Chunks §4§k§l§oa
+option.FOLIAGE_WAVE_DISTANCE.comment=Sets how far away visible foliage will wave. §6§lMedium-High Performance Impact
+
 screen.PERFORMANCE=Performance
 
 screen.SKY = Sky
@@ -185,6 +246,8 @@ screen.LIGHTING=Lighting
 screen.WATER=Water
 
 screen.CAMERA = Camera
+
+screen.WORLD = World
 
 profile.TOASTER=Toaster
 profile.POTATO=Potato

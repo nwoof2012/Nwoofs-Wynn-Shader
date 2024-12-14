@@ -99,8 +99,6 @@ uniform float viewHeight;
 
 uniform vec3 cameraPosition;
 
-uniform float blindness;
-
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
 
@@ -130,14 +128,14 @@ uniform bool isBiomeEnd;
 
 in vec3 vaPosition;
 
-in vec3 viewSpaceFragPosition;
-
 in vec3 vNormal;
 in vec3 vViewDir;
 
 in vec3 at_tangent;
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 #include "distort.glsl"
 #include "lib/commonFunctions.glsl"
 #include "lib/spaceConversion.glsl"
@@ -1036,6 +1034,10 @@ void main() {
                 Albedo = Albedo4.xyz;
                 albedoAlpha = Albedo4.a;
             }
+            if(blindness > 0.0) {
+                float waterBlindness = texture2D(colortex5,TexCoords).z;
+                Albedo = mix2(Albedo, vec3(0.0), waterBlindness);
+            }
         } else {
             albedoAlpha = 0.0;
             Albedo = pow2(isInWater(colortex0, vec3(0.0f,0.33f,0.55f), TexCoords2, vec2(noiseMap3.x * 0.025,0), 0.25), vec3(2.2f));
@@ -1236,6 +1238,10 @@ void main() {
             Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),0.5,1));
             Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
         } else {
+            #if PATH_TRACING == 0
+                LightmapColor *= vec3(0.2525);
+                lightBrightness = max(lightBrightness, 0.5);
+            #endif
             /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
                 LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
             }*/

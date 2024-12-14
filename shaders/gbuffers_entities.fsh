@@ -2,8 +2,9 @@
 
 #define SCENE_AWARE_LIGHTING
 
-
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 varying vec2 TexCoords;
 varying vec3 Normal;
@@ -12,13 +13,6 @@ varying vec4 Color;
 varying vec2 LightmapCoords;
 
 uniform sampler2D texture;
-
-uniform float blindness;
-
-in vec3 viewSpaceFragPosition;
-
-float minBlindnessDistance = 2.5;
-float maxBlindDistance = 5;
 
 /* RENDERTARGETS:0,1,2,15,5 */
 
@@ -36,7 +30,7 @@ void main() {
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
-        albedo.xyz = mix2(albedo.xyz,vec3(0),(distanceFromCamera - minBlindnessDistance)/(maxBlindDistance - minBlindnessDistance) * blindness);
+        albedo.xyz = blindEffect(albedo.xyz);
     }
 
     gl_FragData[0] = albedo;
