@@ -18,6 +18,7 @@ const float PHYSICS_NORMAL_STRENGTH = 1.4;
 
 varying vec2 TexCoords;
 varying vec4 Normal;
+varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
@@ -59,6 +60,8 @@ uniform sampler2D depthtex0;
 uniform vec3 cameraPosition;
 
 in vec3 vaPosition;
+
+in vec4 at_tangent;
 
 out float camDist;
 
@@ -138,14 +141,16 @@ float physics_waveHeight(vec2 position, int iterations, float factor, float time
 void main() {
 	gl_Position = ftransform();
 	TexCoords = gl_MultiTexCoord0.st;
+
 	Normal = vec4(normalize(gl_NormalMatrix * gl_Normal), 1.0f);
+	Tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
+
 	LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 	physics_foamColor = textureLod(physics_lightmap, (mat4(vec4(0.00390625, 0.0, 0.0, 0.0), vec4(0.0, 0.00390625, 0.0, 0.0), vec4(0.0, 0.0, 0.00390625, 0.0), vec4(0.03125, 0.03125, 0.03125, 1.0)) * gl_MultiTexCoord1).xy, 0).rgb;
 	physics_localWaviness = texelFetch(physics_waviness, ivec2(gl_Vertex.xz) - physics_textureOffset, 0).r;
 	vec4 physics_finalPosition = vec4(gl_Vertex.x, gl_Vertex.y + physics_waveHeight(gl_Vertex.xz, PHYSICS_ITERATIONS_OFFSET, physics_localWaviness, physics_gameTime), gl_Vertex.z, gl_Vertex.w);
 	physics_localPosition = physics_finalPosition.xyz;
 
-	mat3 tbnMatrix = mat3(1.0);
 	//if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
 		float depth = texture2D(depthtex0, TexCoords).r;
 		vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;

@@ -29,6 +29,7 @@ struct WavePixelData {
 
 varying vec2 TexCoords;
 varying vec4 Normal;
+varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
@@ -201,6 +202,14 @@ void main() {
     mat3 normalMatrix = transpose(mat3(gbufferModelViewInverse));
 
     vec3 normalM = normalize2(physics_normal);
+
+    vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
+
+    mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
+
+    normalM.xyz = tbnMatrix * normalM.xyz;
+    normalM = (gbufferModelViewInverse * vec4(normalM,1.0)).xyz;
+    normalM.xyz = normalM.xyz * 0.5 + 0.5;
 
     albedo.a = 0.0f;
 

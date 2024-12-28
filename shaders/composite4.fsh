@@ -43,7 +43,7 @@
 
 #define FRAGMENT_SHADER
 
-#define PATH_TRACING 0 // [0 1]
+#define PATH_TRACING_GI 0 // [0 1]
 
 //#define SCENE_AWARE_LIGHTING
 
@@ -436,7 +436,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     vec3 sum = vec3(0.0);
     float blur = radius/viewHeight;
     float hstep = 1f;
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
         vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
         vec3 lightDir = normalize2(sunPosition);
         vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -493,7 +493,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         #ifdef SCENE_AWARE_LIGHTING
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo, shiftedUVs);
         #endif
-        #if PATH_TRACING == 1
+        #if PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
@@ -548,7 +548,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         #ifdef SCENE_AWARE_LIGHTING
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo, shiftedUVs);
         #endif
-        #if PATH_TRACING == 1
+        #if PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
@@ -609,7 +609,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         bloomLerp = clamp01(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)));
     #endif
 
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
         sum = mix2(rayColor,sum,bloomLerp);
     #else
         sum = mix2(lightColor,sum,bloomLerp);
@@ -969,8 +969,8 @@ void main() {
 
         float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
 
-        vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
-        vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
+        //vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
+        //vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
 
         vec2 refractionFactor = vec2(0);
 
@@ -998,13 +998,13 @@ void main() {
 
                 normalWorldSpace = TBN * normalNormalSpace;
 
-                specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f) + refractionFactor);
-                specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f) + refractionFactor);
+                //specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f) + refractionFactor);
+                //specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f) + refractionFactor);
                 
-                float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
-                float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
+                //float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
+                //float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
 
-                float smoothness = 1 - roughness;
+                //float smoothness = 1 - roughness;
                 
                 vec3 reflectionDir = reflect(-shadowLightDirection, normalWorldSpace);
 
@@ -1014,9 +1014,9 @@ void main() {
 
                 vec3 viewDirection = normalize2(cameraPosition - fragWorldSpace);
 
-                float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
+                //float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
                 
-                float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
+                //float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
 
                 float ambientLight = 0.0;
 
@@ -1229,7 +1229,7 @@ void main() {
         }
         shadowLerp = mix2(shadowLerp, vec3(1.0), clamp(dot(LightmapColor,LightmapColor),0,1));
         if(isBiomeEnd) {
-            /*#if PATH_TRACING == 1
+            /*#if PATH_TRACING_GI == 1
                 LightmapColor *= vec3(3.5025);
                 lightBrightness = max(lightBrightness, 0.5);
             #else

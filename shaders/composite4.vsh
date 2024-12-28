@@ -1,6 +1,6 @@
 #version 460 compatibility
 #define VERTEX_SHADER
-#define PATH_TRACING 0 // [0 1]
+#define PATH_TRACING_GI 0 // [0 1]
 
 #define PATH_TRACING_GI
 
@@ -57,7 +57,7 @@ void main() {
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
     LightmapCoords = vaUV2;
     
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
         lightmap = GenerateLightmap(1f,1f);
     #else
         lightmap = lightmapData();

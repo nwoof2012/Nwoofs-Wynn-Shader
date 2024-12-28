@@ -1,4 +1,4 @@
-#if PATH_TRACING == 1
+#if PATH_TRACING_GI == 1
     #ifdef VERTEX_SHADER
         vec3 GenerateLightmap(in float sunlight, in float blocklight) {
             /*if(mc_Entity.x == 10005) {
@@ -86,6 +86,43 @@
             }
 
             return color;
+        }
+    #endif
+#endif
+
+#if RAY_TRACED_SHADOWS == 1
+    #define RT_SHADOW_SAMPLES 64
+    #ifdef FRAGMENT_SHADER
+        bool intersect(vec3 origin, vec3 dir, vec3 solidTex) {
+            vec3 oc = origin - solidTex;
+            float b = dot(oc, dir);
+            float c = dot(oc, oc);
+            float h = b * b - c;
+            if(h > 0.0) {
+                return true;
+            }
+            return false;
+        }
+
+        bool isShadowed(vec3 lightDir, vec3 fragPos, vec2 UVs) {
+            for(int i = 0; i < RT_SHADOW_SAMPLES; i++) {
+                vec2 shiftedUVs = UVs * 2 - 1;
+                shiftedUVs += vec2(1.0/RT_SHADOW_SAMPLES * i);
+                vec3 solidTex = texture2D(colortex10,shiftedUVs).rgb;
+                if(intersect(fragPos, lightDir, solidTex)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        vec3 computeShadows(vec3 lightDir, vec3 ambientLight, vec3 normal, vec3 fragPos) {
+            vec3 color = ambientLight;
+            if(!isShadowed(lightDir, fragPos, fragPos.xy)) {
+                float diff = max(dot(normal, lightDir), 0.0);
+                color += vec3(diff);
+            }
+            return clamp(color, 0.0, 1.0);
         }
     #endif
 #endif

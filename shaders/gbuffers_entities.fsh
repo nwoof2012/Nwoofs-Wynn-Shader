@@ -13,11 +13,18 @@ varying vec4 Color;
 varying vec2 LightmapCoords;
 
 uniform sampler2D texture;
+uniform sampler2D depthtex0;
 
-/* RENDERTARGETS:0,1,2,15,5 */
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjectionInverse;
+
+uniform vec3 cameraPosition;
+
+/* RENDERTARGETS:0,1,2,15,5,10 */
 
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
+    float depth = texture2D(depthtex0, TexCoords).r;
 
     float a;
 
@@ -28,6 +35,8 @@ void main() {
     }
 
     float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
+    vec3 worldPosition = cameraPosition + (gbufferModelViewInverse * vec4(viewSpaceFragPosition, depth)).xyz;
 
     if(blindness > 0f) {
         albedo.xyz = blindEffect(albedo.xyz);
@@ -41,7 +50,12 @@ void main() {
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
-    gl_FragData[3] = vec4(1.0, distanceFromCamera, 0.0, 0.0);
+    gl_FragData[3] = vec4(1.0, distanceFromCamera, 0.0, 1.0);
     gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
+    #ifdef ENTITY_SHADOWS
+        gl_FragData[5] = vec4(worldPosition, 1.0);
+    #else
+        gl_FragData[5] = vec4(0.0);
+    #endif
     //gl_FragData[3] = vec4(a);
 }

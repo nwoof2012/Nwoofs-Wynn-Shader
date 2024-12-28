@@ -2,9 +2,7 @@
 
 #define DISTANT_HORIZONS
 
-#define PATH_TRACING 0 // [0 1]
-
-#define PATH_TRACING_GI
+#define PATH_TRACING_GI 0 // [0 1]
 
 #define VERTEX_SHADER
 
@@ -38,7 +36,7 @@ void main() {
 
     blockColor = gl_Color;
 
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
             lightmap2 = GenerateLightmap(0f,1f);
     #endif
     lightmapCoords = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;

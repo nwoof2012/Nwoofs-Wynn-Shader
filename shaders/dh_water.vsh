@@ -3,6 +3,7 @@
 
 varying vec2 TexCoords;
 varying vec4 Normal;
+varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
@@ -26,6 +27,8 @@ uniform mat4 shadowProjection;
 uniform sampler2D depthtex0;
 
 flat out int mat;
+
+in vec4 at_tangent;
 
 //in vec4 mc_Entity;
 
@@ -71,6 +74,7 @@ void main() {
 	gl_Position = ftransform();
 	TexCoords = gl_MultiTexCoord0.st;
 	Normal = vec4(normalize(gl_NormalMatrix * gl_Normal), 1.0f);
+	Tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
 	LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 
 	mat = dhMaterialId;

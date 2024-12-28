@@ -41,7 +41,7 @@
 
 #define FRAGMENT_SHADER
 
-#define PATH_TRACING 0 // [0 1]
+#define PATH_TRACING_GI 0 // [0 1]
 
 #define PATH_TRACING_GI
 
@@ -213,7 +213,7 @@ void main() {
     vec3 worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
     float lightBrightness;
     vec3 lightColor;
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
             vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
             vec3 lightDir = normalize(cameraPosition - viewSpaceFragPosition);
             vec3 cameraRight = normalize(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -228,7 +228,7 @@ void main() {
         lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(2.2));
     #endif
 
-    #if PATH_TRACING == 0
+    #if PATH_TRACING_GI == 0
         lightColor *= vec3(0.2525);
         lightBrightness = max(lightBrightness, 0.2);
     #endif

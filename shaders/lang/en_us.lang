@@ -155,10 +155,10 @@ option.CLOUD_SHADING_SAMPLES.comment = Sample count for lighting on Volumetric C
 
 option.CLOUD_SHADING_DISTANCE = Volumetric Cloud Light Distance
 
-option.PATH_TRACING=Path Tracing
-value.PATH_TRACING.0=§eOff
-value.PATH_TRACING.1=§4§k§l§oa §4§l§oOn §4§k§l§oa
-option.PATH_TRACING.comment=Enables path-traced lighting. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
+option.PATH_TRACING_GI=Path Tracing
+value.PATH_TRACING_GI.0=§eOff
+value.PATH_TRACING_GI.1=§4§k§l§oa §4§l§oOn §4§k§l§oa
+option.PATH_TRACING_GI.comment=Enables path-traced lighting. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
 
 option.WAVING_FOLIAGE=Waving Foliage
 value.WAVING_FOLIAGE.false=§cOff

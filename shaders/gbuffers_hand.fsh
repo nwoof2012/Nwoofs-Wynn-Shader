@@ -22,6 +22,9 @@ uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
 
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjectionInverse;
+
 /* DRAWBUFFERS:01245 */
 
 void main() {
@@ -38,9 +41,11 @@ void main() {
     } else {
         a = 0;
     }
+
+    vec3 newNormal = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
     
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
+    gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
     gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     gl_FragData[3] = vec4(a);
     gl_FragData[4] = vec4(0.0, 1.0, 1.0, 1.0);

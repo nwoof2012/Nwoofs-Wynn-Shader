@@ -3,6 +3,7 @@
 
 varying vec2 TexCoords;
 varying vec4 Normal;
+varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
@@ -24,6 +25,8 @@ uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
+
+in vec4 at_tangent;
 
 uniform sampler2D depthtex0;
 
@@ -71,6 +74,7 @@ void main() {
 	gl_Position = ftransform();
 	TexCoords = gl_MultiTexCoord0.st;
 	Normal = vec4(normalize(gl_NormalMatrix * gl_Normal), 1.0f);
+	Tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
 	LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 	if((mc_Entity.x == 8.0 || mc_Entity.x == 9.0) && mc_Entity.x != 10002) {
 		float depth = texture2D(depthtex0, TexCoords).r;
@@ -82,7 +86,7 @@ void main() {
 		vec4 waterDistort = vec4(clamp(sin(World.x*32f + ((frameCounter)/90f)),0,1)*0.025f);
 		vec4 waterDistortScreen = gbufferModelViewInverse * vec4(0,waterDistort.y,0,0);
 		waterDistortScreen = gbufferProjection * waterDistortScreen;
-		Normal.xy += waterDistortScreen.xy;
+		//Normal.xy += waterDistortScreen.xy;
 
 		//LightmapCoords += gl_Position.xy;
 

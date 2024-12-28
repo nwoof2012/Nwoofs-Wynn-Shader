@@ -19,6 +19,7 @@ in ivec2 vaUV2;
 
 varying vec2 TexCoords;
 varying vec3 Normal;
+varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
@@ -42,7 +43,13 @@ in vec4 mc_Entity;
 
 in vec4 at_midBlock;
 
+in vec4 at_tangent;
+
 out float isFoliage;
+
+out float isReflective;
+
+out vec3 worldSpaceVertexPosition;
 
 vec3 GetRawWave(in vec3 pos, float wind) {
     float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
@@ -83,7 +90,7 @@ void main() {
 
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
 
-    vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
+    worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
 
     vec3 chunkVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition,1.0)).xyz;
 
@@ -93,6 +100,7 @@ void main() {
 
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
     Normal = gl_NormalMatrix * gl_Normal;
+    Tangent = (gl_NormalMatrix * at_tangent.xyz);
     Color = gl_Color;
 
     float bottomY = at_midBlock.y - 0.5;
@@ -101,6 +109,12 @@ void main() {
         isFoliage = 1.0;
     } else {
         isFoliage = 0.0;
+    }
+
+    if(mc_Entity.x == 10011) {
+        isReflective = 1.0;
+    } else {
+        isReflective = 0.0;
     }
 
     #ifdef WAVING_FOLIAGE

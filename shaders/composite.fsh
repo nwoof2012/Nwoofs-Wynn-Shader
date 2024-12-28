@@ -41,7 +41,9 @@
 
 #define FRAGMENT_SHADER
 
-#define PATH_TRACING 0 // [0 1]
+#define PATH_TRACING_GI 0 // [0 1]
+
+#define RAY_TRACED_SHADOWS 0 // [0 1]
 
 //#define SCENE_AWARE_LIGHTING
 
@@ -131,7 +133,7 @@ in vec3 vaPosition;
 in vec3 vNormal;
 in vec3 vViewDir;
 
-in vec3 at_tangent;
+in vec3 Tangent;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
@@ -363,6 +365,11 @@ float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
     return step(SampleCoords.z - 0.001f, texture2D(ShadowMap, SampleCoords.xy).r);
 }
 
+mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
+    vec3 bitangent = cross(tangent, normal);
+    return mat3(tangent, bitangent, normal);
+}
+
 vec3 TransparentShadow(in vec3 SampleCoords){
     float ShadowVisibility0 = Visibility(shadowtex0, SampleCoords);
     float ShadowVisibility1 = Visibility(shadowtex1, SampleCoords);
@@ -378,17 +385,29 @@ vec3 GetShadow(float depth) {
     vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
     vec4 ShadowSpace = shadowProjection * shadowModelView * World;
     ShadowSpace.xy = DistortPosition(ShadowSpace.xy);
-    vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
-    vec3 ShadowAccum = vec3(0.0f);
-    for(int x = -SHADOW_SAMPLES; x <= SHADOW_SAMPLES; x++){
-        for(int y = -SHADOW_SAMPLES; y <= SHADOW_SAMPLES; y++){
-            vec2 Offset = vec2(x, y) / SHADOW_RES;
-            vec3 CurrentSampleCoordinate = vec3(SampleCoords.xy + Offset, SampleCoords.z);
-            ShadowAccum += TransparentShadow(CurrentSampleCoordinate);
+    vec3 lightDir = normalize2(sunPosition);
+    vec3 normal = texture2D(colortex1, TexCoords).rgb;
+    normal = tbnNormalTangent(normal, Tangent) * normal;
+    vec3 normalClip = normal * 2.0f - 1.0f;
+    vec4 normalViewW = gbufferProjectionInverse * vec4(normalClip, 1.0);
+    vec3 normalView = normalViewW.xyz/normalViewW.w;
+    vec4 normalWorld = gbufferModelViewInverse * vec4(normalView, 1.0f);
+    vec3 fragPos = texture2D(colortex10, TexCoords).rgb;
+    #if RAY_TRACED_SHADOWS == 1
+        return computeShadows(lightDir, vec3(0.0), normal, World.xyz);
+    #else
+        vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
+        vec3 ShadowAccum = vec3(0.0f);
+        for(int x = -SHADOW_SAMPLES; x <= SHADOW_SAMPLES; x++){
+            for(int y = -SHADOW_SAMPLES; y <= SHADOW_SAMPLES; y++){
+                vec2 Offset = vec2(x, y) / SHADOW_RES;
+                vec3 CurrentSampleCoordinate = vec3(SampleCoords.xy + Offset, SampleCoords.z);
+                ShadowAccum += TransparentShadow(CurrentSampleCoordinate);
+            }
         }
-    }
-    ShadowAccum /= TotalSamples;
-    return ShadowAccum;
+        ShadowAccum /= TotalSamples;
+        return ShadowAccum;
+    #endif
 }
 
 vec3 SceneToVoxel(vec3 scenePos) {
@@ -430,7 +449,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     vec3 sum = vec3(0.0);
     float blur = radius/viewHeight;
     float hstep = 1f;
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
         vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
         vec3 lightDir = normalize2(sunPosition);
         vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -487,7 +506,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         #ifdef SCENE_AWARE_LIGHTING
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
-        #if PATH_TRACING == 1
+        #if PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
@@ -542,7 +561,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         #ifdef SCENE_AWARE_LIGHTING
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
-        #if PATH_TRACING == 1
+        #if PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
@@ -603,7 +622,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         bloomLerp = clamp01(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)));
     #endif
 
-    #if PATH_TRACING == 1
+    #if PATH_TRACING_GI == 1
         sum = mix2(rayColor,sum,bloomLerp);
     #else
         sum = mix2(lightColor,sum,bloomLerp);
@@ -746,11 +765,6 @@ float fresnel(vec3 normal, vec3 viewDir, float pow2er) {
     return pow2(1.0 - dot(normalize2(normal), normalize2(viewDir)), pow2er);
 }
 
-mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
-    vec3 bitangent = cross(tangent, normal);
-    return mat3(tangent, bitangent, normal);
-}
-
 void noonFunc(float time, float timeFactor) {
     float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
     baseDiffuseModifier = vec3(DAY_I);
@@ -832,7 +846,7 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
         waterColor = vec3(0.0f, 0.33f, 0.44f);
         return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb/lightBrightness,waterColor,0.85)/clamp(lightBrightness,0.99,1.0),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85))*clamp(lightBrightness,0.2,1.0), vec3(2.2f));
     }
-    return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(2.2f)) * clamp(lightBrightness,0.5,1.0);
+    return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.65f), vec3(2.2f)) * clamp(lightBrightness,0.5,1.0);
 }
 
 bool isOutOfTexture(vec2 texcoord) {
@@ -849,7 +863,7 @@ vec3 getWorldPosition(vec2 texcoord, float depth) {
 }
 
 vec3 getUVFromPosition(vec3 position) {
-    vec4 projection = gbufferProjectionModelView * gbufferModelView * vec4(position, 1.0);
+    vec4 projection = gbufferProjectionModelView * vec4(position, 1.0);
     projection.xyz /= projection.w;
     vec3 clipSpace = projection.xyz * 0.5 + 0.5;
 
@@ -896,12 +910,32 @@ vec4 waterReflections(vec3 color, vec2 uv, vec3 normal) {
     float depth = texture2D(depthtex0, uv).r;
     vec3 position = getWorldPosition(uv, depth);
     vec3 viewDir = normalize2(position);
+    //vec3 newNormal = (gbufferModelView * gbufferProjection * vec4(normal,1.0)).xyz;
     vec3 reflectedDir = normalize2(reflect(viewDir, normal));
 
     vec2 reflectionUV = ssrRay(position, reflectedDir);
     if(reflectionUV.x > 0.0) {
         vec3 reflectionColor = texture2D(colortex0, reflectionUV).rgb;
         finalColor = mix2(mix2(vec4(reflectionColor, 1.0), finalColor, 0.4), finalColor, 1 - uv.y);
+    }
+
+    //finalColor = mix2(vec4(finalColor, 1.0), vec4(color, 1.0),uv.x);
+    
+    return finalColor;
+}
+
+vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
+    vec4 finalColor = vec4(color, 1.0);
+
+    float depth = texture2D(depthtex0, uv).r;
+    vec3 position = getWorldPosition(uv, depth);
+    vec3 viewDir = normalize2(position);
+    vec3 reflectedDir = normalize2(reflect(viewDir, normal));
+
+    vec2 reflectionUV = ssrRay(position, reflectedDir);
+    if(reflectionUV.x > 0.0) {
+        vec3 reflectionColor = texture2D(colortex0, reflectionUV).rgb;
+        finalColor = mix2(mix2(vec4(reflectionColor, 1.0), finalColor, 0.8), finalColor, 1 - uv.y);
     }
 
     //finalColor = mix2(vec4(finalColor, 1.0), vec4(color, 1.0),uv.x);
@@ -950,21 +984,21 @@ void main() {
 
         vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
 
-        vec3 worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
+        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz);
 
-        vec3 worldTangent = mat3(gbufferModelViewInverse) * at_tangent.xyz;
+        vec3 worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
 
         vec3 normalNormalSpace = vec3(Normal.xy, sqrt(1.0 - dot(Normal.xy, Normal.xy))) * 2.0 - 1.0;
         mat3 TBN = tbnNormalTangent(worldGeoNormal,worldTangent);
 
-        vec3 normalWorldSpace = TBN * normalNormalSpace;
+        vec3 normalWorldSpace = normalize2(texture2D(colortex1,TexCoords).xyz);
 
         vec3 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
         float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
 
-        vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
-        vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
+        //vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
+        //vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
 
         vec2 refractionFactor = vec2(0);
 
@@ -984,21 +1018,21 @@ void main() {
                 //Normal = normalize2(max(finalNoise.xyz * 2.0f -1.0f,Normal));
                 
                 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
-                worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
-                worldTangent = mat3(gbufferModelViewInverse) * at_tangent.xyz;
+                //worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
+                worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
 
-                normalNormalSpace = vec3(Normal.xy, sqrt(1.0 - dot(Normal.xy, Normal.xy))) * 2.0 - 1.0;
+                //normalNormalSpace = vec3(Normal.xy, sqrt(1.0 - dot(Normal.xy, Normal.xy))) * 2.0 - 1.0;
                 TBN = tbnNormalTangent(worldGeoNormal,worldTangent);
 
-                normalWorldSpace = TBN * normalNormalSpace;
+                //normalWorldSpace = TBN * normalNormalSpace;
 
-                specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f) + refractionFactor);
-                specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f) + refractionFactor);
+                //specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f) + refractionFactor);
+                //specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f) + refractionFactor);
                 
-                float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
-                float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
+                //float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
+                //float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
 
-                float smoothness = 1 - roughness;
+                //float smoothness = 1 - roughness;
                 
                 vec3 reflectionDir = reflect(-shadowLightDirection, normalWorldSpace);
 
@@ -1008,9 +1042,9 @@ void main() {
 
                 vec3 viewDirection = normalize2(cameraPosition - fragWorldSpace);
 
-                float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
+                //float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
                 
-                float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
+                //float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
 
                 float ambientLight = 0.0;
 
@@ -1030,7 +1064,9 @@ void main() {
             #endif
 
             if(isRain == 1.0) {
-                vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords2, texture2D(colortex1, TexCoords2).rgb);
+                vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+                //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
+                vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal);
                 Albedo = Albedo4.xyz;
                 albedoAlpha = Albedo4.a;
             }
@@ -1042,6 +1078,12 @@ void main() {
             albedoAlpha = 0.0;
             Albedo = pow2(isInWater(colortex0, vec3(0.0f,0.33f,0.55f), TexCoords2, vec2(noiseMap3.x * 0.025,0), 0.25), vec3(2.2f));
             Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
+        }
+
+        float isReflective = texture2D(colortex5, TexCoords).b;
+
+        if(isReflective > 0.0) {
+            Albedo = metallicReflections(Albedo,TexCoords,Normal).xyz;
         }
 
         /*if(Depth != Depth2 && waterTest > 0) {
@@ -1226,7 +1268,7 @@ void main() {
             //lightBrightness = 1.0;
         }
         if(isBiomeEnd) {
-            #if PATH_TRACING == 1
+            #if PATH_TRACING_GI == 1
                 LightmapColor *= vec3(3.5025);
                 lightBrightness = max(lightBrightness, 0.5);
             #else
@@ -1238,7 +1280,7 @@ void main() {
             Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),0.5,1));
             Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
         } else {
-            #if PATH_TRACING == 0
+            #if PATH_TRACING_GI == 0
                 LightmapColor *= vec3(0.2525);
                 lightBrightness = max(lightBrightness, 0.5);
             #endif
@@ -1255,6 +1297,10 @@ void main() {
         //if(waterTest <= 0) {
             Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
         //}
+
+        if(waterTest > 0) {
+            Diffuse.xyz = Albedo;
+        }
 
         //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
 
