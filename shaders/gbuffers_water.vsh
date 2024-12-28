@@ -28,6 +28,8 @@ uniform mat4 shadowProjection;
 
 in vec4 at_tangent;
 
+out float isWater;
+
 uniform sampler2D depthtex0;
 
 in vec4 mc_Entity;
@@ -82,7 +84,7 @@ void main() {
 		vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
 		vec3 View = ViewW.xyz / ViewW.w;
 		vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
-		Normal.w = 0.0f;
+		isWater = 0.0f;
 		vec4 waterDistort = vec4(clamp(sin(World.x*32f + ((frameCounter)/90f)),0,1)*0.025f);
 		vec4 waterDistortScreen = gbufferModelViewInverse * vec4(0,waterDistort.y,0,0);
 		waterDistortScreen = gbufferProjection * waterDistortScreen;

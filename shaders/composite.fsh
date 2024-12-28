@@ -385,7 +385,8 @@ vec3 GetShadow(float depth) {
     vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
     vec4 ShadowSpace = shadowProjection * shadowModelView * World;
     ShadowSpace.xy = DistortPosition(ShadowSpace.xy);
-    vec3 lightDir = normalize2(sunPosition);
+    vec3 worldSpaceSunPos = (gbufferProjection * vec4(sunPosition,1.0)).xyz;
+    vec3 lightDir = normalize2(worldSpaceSunPos);
     vec3 normal = texture2D(colortex1, TexCoords).rgb;
     normal = tbnNormalTangent(normal, Tangent) * normal;
     vec3 normalClip = normal * 2.0f - 1.0f;
@@ -451,7 +452,8 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     float hstep = 1f;
     #if PATH_TRACING_GI == 1
         vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
-        vec3 lightDir = normalize2(sunPosition);
+        vec3 worldSpaceSunPos = (gbufferProjection * vec4(sunPosition,1.0)).xyz;
+        vec3 lightDir = normalize2(worldSpaceSunPos);
         vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
         vec3 cameraUp = cross(cameraRight, lightDir);
         vec3 rayDir = normalize2(lightDir + uv.x * cameraRight + uv.y * cameraUp);
@@ -1236,7 +1238,8 @@ void main() {
             LightmapColor = vec3(minLight);
         }*/
 
-        float NdotL = max(dot(Normal, normalize2(sunPosition)), 0.0f);
+        vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+        float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.0f);
 
         /*if((Lightmap.r + Lightmap.g + Lightmap.b)/3 < 0) {
             Diffuse = Albedo * LightmapColor;

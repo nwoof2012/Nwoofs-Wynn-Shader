@@ -38,6 +38,8 @@ uniform float frameTime;
 uniform float viewWidth;
 uniform float viewHeight;
 
+in float isWater;
+
 //attribute vec4 mc_Entity;
 
 /* DRAWBUFFERS:01235 */
@@ -45,7 +47,7 @@ uniform float viewHeight;
 void main() {
     //vec4 albedo = texture2D(texture, TexCoords) * Color;
 
-    float isWater = Normal.w;
+    //isWater = Normal.w;
 
     vec4 depth = texture2D(depthtex1, TexCoords);
     vec4 depth2 = texture2D(depthtex0, TexCoords);
@@ -78,14 +80,13 @@ void main() {
         albedo.xyz = mix2(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),pow2(finalNoise.x,5));
         albedo.a = 0.0f;//mix2(0.5f,1f,pow2(finalNoise.x,5));
         Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
+        if(albedo.a < 0.75f) {
+            albedo.a = 0.0;
+        }
     } else {
         albedo = texture2D(colortex0, TexCoords);
         //albedo.xyz *= gl_Color.xyz;
         Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0f, 1.0f);
-    }
-
-    if(albedo.a < 0.75f) {
-        albedo.a = 0.0;
     }
 
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);
