@@ -1,6 +1,6 @@
 #version 460 compatibility
 
-//#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 #define WAVING_FOLIAGE
 #define FOLIAGE_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
@@ -40,6 +40,7 @@ out vec3 viewSpaceFragPosition;
 out vec4 lightSourceData;
 
 in vec4 mc_Entity;
+attribute vec4 mc_midTexCoord;
 
 in vec4 at_midBlock;
 
@@ -50,6 +51,10 @@ out float isFoliage;
 out float isReflective;
 
 out vec3 worldSpaceVertexPosition;
+
+out vec2 signMidCoordPos;
+flat out vec2 absMidCoordPos;
+flat out vec2 midCoord;
 
 vec3 GetRawWave(in vec3 pos, float wind) {
     float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
@@ -69,7 +74,7 @@ vec4 GenerateLightmap(LightSource source) {
         case 10005:
             return vec4(1,0,0, source.brightness);
         case 10006:
-            return vec4(0,1,0, source.brightness);;
+            return vec4(0,1,0, source.brightness);
         case 10007:
             return vec4(0,0,1, source.brightness);
         case 10008:
@@ -99,7 +104,7 @@ void main() {
     LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
-    Normal = gl_NormalMatrix * gl_Normal;
+    Normal = normalize(gl_NormalMatrix * gl_Normal);
     Tangent = (gl_NormalMatrix * at_tangent.xyz);
     Color = gl_Color;
 
@@ -116,6 +121,10 @@ void main() {
     } else {
         isReflective = 0.0;
     }
+
+    midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
+    vec2 texMinMidCoord = TexCoords - midCoord;
+    absMidCoordPos  = abs(texMinMidCoord);
 
     #ifdef WAVING_FOLIAGE
         if(isFoliage == 1.0 && distanceFromCamera <= FOLIAGE_WAVE_DISTANCE * 16.0) {

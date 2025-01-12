@@ -1,6 +1,6 @@
 #version 460 compatibility
 
-#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 
 #include "program/underwater.glsl"

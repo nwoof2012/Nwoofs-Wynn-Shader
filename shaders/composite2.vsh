@@ -1,7 +1,7 @@
 #version 460 compatibility
 //#include "lib/includes.glsl"
 
-//#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 struct LightSource {
     int id;

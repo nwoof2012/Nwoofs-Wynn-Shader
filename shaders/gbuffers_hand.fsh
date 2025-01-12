@@ -1,8 +1,8 @@
 #version 460 compatibility
 
-#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
-
+#include "lib/optimizationFunctions.glsl"
 #include "program/underwater.glsl"
 
 varying vec2 TexCoords;
@@ -25,6 +25,30 @@ uniform float frameTime;
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 
+float AdjustLightmapTorch(in float torch) {
+    const float K = 2.0f;
+    const float P = 5.06f;
+    return K * pow2(torch, P);
+}
+
+float AdjustLightmapSky(in float sky){
+    float sky_2 = sky * sky;
+    return sky_2 * sky_2;
+}
+
+vec2 AdjustLightmap(in vec2 Lightmap){
+    vec2 NewLightMap;
+    NewLightMap.x = AdjustLightmapTorch(Lightmap.x);
+    NewLightMap.y = AdjustLightmapSky(Lightmap.y);
+    return NewLightMap;
+}
+
+vec4 vanillaLight(in vec2 Lightmap) {
+    const vec3 TorchColor = vec3(1.0f, 1.0f, 1.0f);
+    vec4 lightColor = vec4(TorchColor * Lightmap.x,1.0);
+    return lightColor;
+}
+
 /* DRAWBUFFERS:01245 */
 
 void main() {
@@ -46,7 +70,13 @@ void main() {
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
-    gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+    #ifdef SCENE_AWARE_LIGHTING
+        vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
+        vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
+        gl_FragData[2] = vec4(lighting.xyz, 1.0);
+    #else
+        gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+    #endif
     gl_FragData[3] = vec4(a);
     gl_FragData[4] = vec4(0.0, 1.0, 0.0, 1.0);
 }

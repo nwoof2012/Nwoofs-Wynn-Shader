@@ -1,6 +1,6 @@
 #version 460 compatibility
 
-//#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
@@ -101,6 +101,8 @@ void main() {
     gl_FragData[1] = vec4(newNormal,1.0);
     #ifndef SCENE_AWARE_LIGHTING
         gl_FragData[2] = Lightmap;
+    #else
+        gl_FragData[2] = vec4(0.0);
     #endif
     gl_FragData[3] = vec4(1.0);
     gl_FragData[4] = vec4(isWaterBlock, 1.0, 1.0, 1.0);

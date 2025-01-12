@@ -21,6 +21,9 @@ out vec3 lightmap;
 
 out vec3 vNormal;
 out vec3 vViewDir;
+out vec3 Tangent;
+
+in vec3 at_tangent;
 
 #include "program/pathTracing.glsl"
 
@@ -51,6 +54,7 @@ vec3 lightmapData() {
 
 void main() {
     vNormal = normalize(gl_NormalMatrix * gl_Normal);
+    Tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
     gl_Position = ftransform();
     vec4 viewPos = gl_ModelViewMatrix * vec4(gl_Position.xyz, 1.0);
     vViewDir = normalize(-viewPos.xyz);

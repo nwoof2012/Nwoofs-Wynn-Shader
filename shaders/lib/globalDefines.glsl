@@ -1,0 +1,1 @@
+#define SCENE_AWARE_LIGHTING

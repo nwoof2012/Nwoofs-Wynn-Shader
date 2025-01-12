@@ -45,7 +45,7 @@
 
 #define PATH_TRACING_GI
 
-//#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"

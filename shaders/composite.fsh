@@ -45,13 +45,14 @@
 
 #define RAY_TRACED_SHADOWS 0 // [0 1]
 
-//#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 varying vec2 TexCoords;
 
 uniform vec3 sunPosition;
 
-const int colortex2Format = 4*32;
+const int colortex2Format = 0x8814;
+const int colortex10Format = 0x8814;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
@@ -947,6 +948,8 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
 
 #include "lib/timeCycle.glsl"
 
+/* RENDERTARGETS:0,1,2,3,4,5,6,10 */
+
 void main() {
     #ifndef SCENE_AWARE_LIGHTING
         float aspectRatio = float(viewWidth)/float(viewHeight);
@@ -1333,6 +1336,7 @@ void main() {
         gl_FragData[4] = texture2D(colortex4,TexCoords);
         gl_FragData[5] = texture2D(colortex5,TexCoords);
         gl_FragData[6] = texture2D(colortex6,TexCoords);
-        gl_FragData[7] = texture2D(colortex7,TexCoords);
+        gl_FragData[7] = texture2D(colortex10,TexCoords);
+        //gl_FragData[8] = texture2D(colortex10,TexCoords);
     #endif
 }

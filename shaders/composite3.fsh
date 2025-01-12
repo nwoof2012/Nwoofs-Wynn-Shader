@@ -19,6 +19,8 @@ uniform float worldTime;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
+uniform sampler2D colortex2;
+uniform sampler2D colortex10;
 uniform sampler2D colortex12;
 uniform sampler2D colortex13;
 uniform sampler2D colortex14;
@@ -188,7 +190,7 @@ float remap(float origFrom, float origTo, float targetFrom, float targetTo, floa
   return mix2(targetFrom, targetTo, rel);
 }
 
-/* DRAWBUFFERS:01 */
+/* RENDERTARGETS:0,1,2,10 */
 layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
 
@@ -339,6 +341,8 @@ void main() {
         /*if(detectSky != 1.0) {
             color = mix(color, ray_color.xyz,0.9);
         }*/
+    } else {
+        gl_FragData[2] = vec4(texture2D(colortex2, texCoord).xyz,1.0);
     }
 
     if(blindness > 0.0f) {
@@ -346,5 +350,6 @@ void main() {
     }
 
     outcolor = vec4(color, 1.0);
+    gl_FragData[3] = vec4(texture2D(colortex10, texCoord).xyz,1.0);
     //outnormal = cloudsNormal;
 }

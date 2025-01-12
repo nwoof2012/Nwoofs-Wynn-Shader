@@ -1,13 +1,18 @@
 #version 460 compatibility
 
-//#define SCENE_AWARE_LIGHTING
+#include "lib/globalDefines.glsl"
 
 uniform float viewWidth;
 uniform float viewHeight;
 
 uniform sampler2D colortex0;
+uniform sampler2D colortex1;
+uniform sampler2D colortex2;
+uniform sampler2D colortex10;
 
 in vec4 lightSourceData;
+
+varying vec2 TexCoords;
 
 float weight[7] = float[7](1.0, 6.0, 15.0, 20.0, 15.0, 6.0, 1.0);
 
@@ -38,7 +43,7 @@ vec3 calcLighting() {
 
 }
 
-/* RENDERTARGETS:4,2 */
+/* RENDERTARGETS:1,2,4 */
 
 void main() {
     vec3 blur = vec3(0.0);
@@ -65,7 +70,7 @@ void main() {
         #endif
     #endif
 
-    gl_FragData[0] = vec4(blur, 0.0);
+    gl_FragData[2] = vec4(blur, 0.0);
 
     #ifdef SCENE_AWARE_LIGHTING
         vec3 lightColor = vec3(0);
@@ -93,6 +98,8 @@ void main() {
         else if(lightSourceData.z > 0.0) {
             lightColor = RodColor;
         }
-        gl_FragData[1] = vec4(lightColor,lightSourceData.w);
+        gl_FragData[1] = vec4(texture2D(colortex2, TexCoords).xyz,1.0);
     #endif
+    gl_FragData[0] = vec4(texture2D(colortex1, TexCoords).xyz,1.0);
+    //gl_FragData[3] = vec4(texture2D(colortex10, TexCoords).xyz,1.0);
 }
