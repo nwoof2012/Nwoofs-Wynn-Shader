@@ -6,6 +6,8 @@
 
 #include "lib/globalDefines.glsl"
 
+#define PATH_TRACING_GI 0 // [0 1]
+
 varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec3 Tangent;
@@ -148,9 +150,17 @@ void main() {
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting;
         if(isBiomeEnd) {
-            lighting = mix2( pow2(vanilla * 0.25f,vec4(0.5f)),vec4(lightColor * lightSourceData.w * 50f,1.0),clamp(length(max(lightColor - vanilla.xyz,vec3(0.0))),0,1));
+            #if PATH_TRACING_GI == 1
+                lighting = mix2( pow2(vanilla * 0.25f,vec4(0.5f)),vec4(lightColor * lightSourceData.w * 50f,1.0),clamp(length(max(lightColor - vanilla.xyz,vec3(0.0))),0,1));
+            #else
+                lighting = mix2( pow2(vanilla * 0.25f,vec4(0.5f)),vec4(lightColor * lightSourceData.w * 50f,1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
+            #endif
         } else {
-            lighting = mix2( pow2(vanilla * 0.25f,vec4(0.5f)),vec4(lightColor * lightSourceData.w,1.0),clamp(length(max(lightColor,vec3(0.0))),0,1));
+            #if PATH_TRACING_GI == 1
+                lighting = mix2( pow2(vanilla * 0.25f,vec4(0.5f)),vec4(lightColor * lightSourceData.w,1.0),clamp(length(max(lightColor,vec3(0.0))),0,1));
+            #else
+                lighting = mix2( pow2(vanilla * 0.25f,vec4(0.5f)),vec4(lightColor * lightSourceData.w * 50f,1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
+            #endif
         }
         /*if(lighting.x == LightmapCoords.x) {
             lighting.x *= 2.0;
