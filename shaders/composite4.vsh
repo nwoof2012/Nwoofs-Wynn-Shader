@@ -15,6 +15,8 @@ out vec3 viewSpaceFragPosition;
 
 uniform sampler2D noise;
 
+uniform vec3 cameraPosition;
+
 #include "lib/timeCycle.glsl"
 
 out vec3 lightmap;
@@ -24,6 +26,7 @@ out vec3 vViewDir;
 out vec3 Tangent;
 
 in vec3 at_tangent;
+in vec3 at_midBlock;
 
 #include "program/pathTracing.glsl"
 
@@ -60,6 +63,10 @@ void main() {
     vViewDir = normalize(-viewPos.xyz);
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
     LightmapCoords = vaUV2;
+
+    #ifdef SCENE_AWARE_LIGHTING
+        #include "program/voxelizing.glsl"
+    #endif
     
     #if PATH_TRACING_GI == 1
         lightmap = GenerateLightmap(1f,1f);

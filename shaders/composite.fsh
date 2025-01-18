@@ -53,6 +53,7 @@ uniform vec3 sunPosition;
 
 const int colortex2Format = 0x8814;
 const int colortex10Format = 0x8814;
+const int colortex15Format = 0x8814;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
@@ -688,6 +689,14 @@ vec4 GetLightVolume(vec3 pos) {
     }
 
     return lightVolume;
+}
+
+float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
+    float ao = 0.0;
+    vec3 samplePos = pos + vec3(AO_WIDTH * 0.1/camDist);
+    vec3 sampleNormal = texture2D(colortex1, samplePos.xy).xyz;
+    ao += max(0.0, dot(sampleNormal, normal));
+    return ao;
 }
 
 vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, float lViewPos1, float dither, float caveFactor) {

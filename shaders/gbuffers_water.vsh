@@ -1,12 +1,16 @@
 #version 460 compatibility
 #define PI 3.14159265358979323846f
 
+#include "lib/globalDefines.glsl"
+
 varying vec2 TexCoords;
 varying vec4 Normal;
 varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
+
+layout (r32ui) uniform uimage3D cimage1;
 
 varying float isWaterBlock;
 
@@ -33,6 +37,28 @@ out float isWater;
 uniform sampler2D depthtex0;
 
 in vec4 mc_Entity;
+
+out vec4 at_midBlock2;
+
+out float isFoliage;
+
+out float isReflective;
+
+out vec3 worldSpaceVertexPosition;
+
+out vec3 normals_face_world;
+
+out vec3 foot_pos;
+
+out vec4 lightSourceData;
+
+out vec3 block_centered_relative_pos;
+
+in vec4 at_midBlock;
+attribute vec4 mc_midTexCoord;
+
+uniform vec3 cameraPosition;
+
 
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -94,6 +120,24 @@ void main() {
 
 		//gl_Position.y /= ViewW.y;
 	}
+
+	#ifdef SCENE_AWARE_LIGHTING
+        vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+        foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+        vec3 world_pos = foot_pos + cameraPosition;
+        #define VOXEL_AREA 128 //[32 64 128]
+        #define VOXEL_RADIUS (VOXEL_AREA/2)
+        block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
+        ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
+
+        if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
+
+            uint integerValue = packUnorm4x8(voxel_data);
+
+            imageAtomicMax(cimage1, voxel_pos, integerValue);
+        }
+    #endif
 
 	//gl_Position.y += sin(((ViewW.x + worldTime/10.0f) + (ViewW.z + worldTime/5.0f) * (180.0f/PI))) * 0.25f;
 

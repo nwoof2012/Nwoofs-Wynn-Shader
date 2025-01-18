@@ -18,6 +18,7 @@ out vec3 playerPos;
 out float isWaterBlock;
 
 out vec3 Normal;
+out vec3 Tangent;
 
 varying float timePhase;
 varying float quadTime;
@@ -27,12 +28,16 @@ uniform float frameTime;
 
 in vec4 mc_Entity;
 
+in vec3 at_tangent;
+
 out vec3 lightmap2;
 
 #include "program/pathTracing.glsl"
 
 void main() {
     Normal = gl_NormalMatrix * gl_Normal;
+
+    Tangent = at_tangent.xyz;
 
     blockColor = gl_Color;
 

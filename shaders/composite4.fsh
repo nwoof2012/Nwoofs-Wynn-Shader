@@ -45,6 +45,8 @@
 
 #define PATH_TRACING_GI 0 // [0 1]
 
+#define AO_WIDTH 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
 #include "lib/globalDefines.glsl"
 
 varying vec2 TexCoords;
@@ -70,6 +72,8 @@ uniform sampler2D shadowcolor0;
 
 uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelViewInverse;
+
+uniform sampler3D cSampler1;
 
 uniform sampler2D noisetex;
 
@@ -464,6 +468,15 @@ vec3 unreal(vec3 x) {
   return x / (x + 0.155) * 1.019;
 }
 
+float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
+    float ao = 0.0;
+    vec3 samplePos = pos + vec3(AO_WIDTH * 0.1/camDist);
+    if(texture2D(colortex15,pos.xy).g - texture2D(colortex15,samplePos.xy).g > 0.01f) return 1.0;
+    vec3 sampleNormal = texture2D(colortex1, samplePos.xy).xyz;
+    ao += max(0.0, dot(sampleNormal, normal));
+    return ao;
+}
+
 vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     float radius = 2f;
     vec3 sum = vec3(0.0);
@@ -485,7 +498,8 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     #endif
 
     #ifdef SCENE_AWARE_LIGHTING
-        sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, uv);
+        //sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, uv);
+        sum = lightColor;
     #endif
 
     /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
@@ -524,7 +538,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             continue;
         }*/
         #ifdef SCENE_AWARE_LIGHTING
-            light = blurLightmap(waterTest, specularCoord, Normal, Albedo, shiftedUVs);
+            light = lightColor;
         #endif
         #if PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -579,7 +593,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             continue;
         }*/
         #ifdef SCENE_AWARE_LIGHTING
-            light = blurLightmap(waterTest, specularCoord, Normal, Albedo, shiftedUVs);
+            light = lightColor;
         #endif
         #if PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -962,6 +976,16 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
     return finalColor;
 }
 
+#if VOXEL_AREA == 32
+    const float voxelDistance = 32.0;
+#endif
+#if VOXEL_AREA == 64
+    const float voxelDistance = 64.0;
+#endif
+#if VOXEL_AREA == 128
+    const float voxelDistance = 128.0;
+#endif
+
 #include "lib/timeCycle.glsl"
 
 void main() {
@@ -1209,6 +1233,7 @@ void main() {
                 /*if(waterTest > 0f) {
                     Diffuse = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/2.2));
                 }*/
+                Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),0.2);
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/2.2)) * currentColor, 1.0f);
             } else {
@@ -1287,6 +1312,9 @@ void main() {
             shadowLerp = vec3(1.0);
             //lightBrightness = 1.0;
         }
+        #ifdef AO
+            shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
+        #endif
         if(isBiomeEnd) {
             /*#if PATH_TRACING_GI == 1
                 LightmapColor *= vec3(3.5025);

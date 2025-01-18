@@ -12,6 +12,8 @@ struct LightSource {
     float brightness;
 };
 
+layout (r32ui) uniform uimage3D cimage1;
+
 in vec3 vaPosition;
 in vec2 vaUV0;
 in vec4 vaColor;
@@ -39,6 +41,8 @@ out vec3 viewSpaceFragPosition;
 
 out vec4 lightSourceData;
 
+out vec3 block_centered_relative_pos;
+
 in vec4 mc_Entity;
 attribute vec4 mc_midTexCoord;
 
@@ -46,15 +50,29 @@ in vec4 at_midBlock;
 
 in vec4 at_tangent;
 
+out vec4 at_midBlock2;
+
 out float isFoliage;
 
 out float isReflective;
 
 out vec3 worldSpaceVertexPosition;
 
+out vec3 normals_face_world;
+
+out vec3 foot_pos;
+
 out vec2 signMidCoordPos;
 flat out vec2 absMidCoordPos;
 flat out vec2 midCoord;
+
+const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
+const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
+const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
+const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
+const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
+const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
+const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
 
 vec3 GetRawWave(in vec3 pos, float wind) {
     float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
@@ -97,6 +115,8 @@ void main() {
 
     worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
 
+    foot_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+
     vec3 chunkVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition,1.0)).xyz;
 
 	float distanceFromCamera = distance(worldSpaceVertexPosition, cameraPosition);
@@ -108,7 +128,11 @@ void main() {
     Tangent = (gl_NormalMatrix * at_tangent.xyz);
     Color = gl_Color;
 
+    normals_face_world = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
+
     float bottomY = at_midBlock.y - 0.5;
+
+    at_midBlock2 = at_midBlock;
 
     if(mc_Entity.x == 10001 || mc_Entity.x == 10003) {
         isFoliage = 1.0;
@@ -137,6 +161,22 @@ void main() {
     #endif
 
     #ifdef SCENE_AWARE_LIGHTING
+        vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+        foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+        vec3 world_pos = foot_pos + cameraPosition;
+        #define VOXEL_AREA 128 //[32 64 128]
+        #define VOXEL_RADIUS (VOXEL_AREA/2)
+        block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
+        ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
+
+        if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
+
+            uint integerValue = packUnorm4x8(voxel_data);
+
+            imageAtomicMax(cimage1, voxel_pos, integerValue);
+        }
+
         LightSource source;
         source.id = int(mc_Entity.x);
         source.brightness = LightmapCoords.x;

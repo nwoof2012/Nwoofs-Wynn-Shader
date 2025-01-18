@@ -49,7 +49,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
-/* DRAWBUFFERS:01245 */
+/* RENDERTARGETS:0,1,2,4,5,15 */
 
 void main() {
     vec4 noiseMap3 = texture2D(noise, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
@@ -79,4 +79,5 @@ void main() {
     #endif
     gl_FragData[3] = vec4(a);
     gl_FragData[4] = vec4(0.0, 1.0, 0.0, 1.0);
+    gl_FragData[5] = vec4(1.0);
 }

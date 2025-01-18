@@ -45,6 +45,8 @@
 
 #define PATH_TRACING_GI
 
+#define AO_WIDTH 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
 #include "lib/globalDefines.glsl"
 
 #include "lib/includes2.glsl"
@@ -83,12 +85,13 @@ uniform float far;
 uniform float dhNearPlane;
 uniform float dhFarPlane;
 
-/* RENDERTARGETS:0,2,6,5,1,12 */
+/* RENDERTARGETS:0,2,6,5,1,12,15 */
 layout(location = 0) out vec4 outColor0;
 layout(location = 1) out vec4 outColor2;
 layout(location = 3) out vec4 isWater;
 layout(location = 4) out vec4 normal;
 layout(location = 5) out vec4 dataTex0;
+layout(location = 6) out vec4 camDist;
 
 in vec4 blockColor;
 in vec2 lightmapCoords;
@@ -98,6 +101,7 @@ in vec3 playerPos;
 in float isWaterBlock;
 
 in vec3 Normal;
+in vec3 Tangent;
 
 in vec3 lightmap2;
 
@@ -230,8 +234,9 @@ void main() {
 
     #if PATH_TRACING_GI == 0
         lightColor *= vec3(0.2525);
-        lightBrightness = max(lightBrightness, 0.2);
     #endif
+
+    lightBrightness = clamp(lightBrightness, 0.2, MAX_LIGHT);
 
     //lightBrightness = pow2(lightBrightness,2.2);
     
@@ -283,4 +288,5 @@ void main() {
     #endif
     normal = vec4(Normal, 1.0);
     dataTex0 = vec4(1.0);
+    camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
 }
