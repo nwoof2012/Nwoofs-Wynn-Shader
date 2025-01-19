@@ -2,6 +2,8 @@
 
 #include "lib/globalDefines.glsl"
 
+#define PATH_TRACING_GI 0 // [0 1]
+
 #define WAVING_FOLIAGE
 #define FOLIAGE_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 #define FOLIAGE_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
@@ -13,6 +15,7 @@ struct LightSource {
 };
 
 layout (r32ui) uniform uimage3D cimage1;
+layout (r32ui) uniform uimage3D cimage2;
 
 in vec3 vaPosition;
 in vec2 vaUV0;
@@ -172,9 +175,20 @@ void main() {
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
 
+            /*if(length(voxel_data.xyz) <= 0.0) {
+                voxel_data = vec4(at_midBlock.w);
+            }*/
+
+            vec4 block_data = vec4(vec3(0.0),1.0);
+            if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
+
             uint integerValue = packUnorm4x8(voxel_data);
+			
+			uint integerValue2 = packUnorm4x8(block_data);
 
             imageAtomicMax(cimage1, voxel_pos, integerValue);
+
+			imageAtomicMax(cimage2, voxel_pos, integerValue2);
         }
 
         LightSource source;

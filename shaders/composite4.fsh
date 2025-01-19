@@ -484,7 +484,10 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     float hstep = 1f;
     vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
     vec3 lightColor = texture2D(colortex2,uv).rgb;
-    #if PATH_TRACING_GI == 1
+    #ifdef SCENE_AWARE_LIGHTING
+        //sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, uv);
+        sum += lightColor;
+    #elif PATH_TRACING_GI == 1
         vec3 lightDir = normalize2(sunPosition);
         vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
         vec3 cameraUp = cross(cameraRight, lightDir);
@@ -495,11 +498,6 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         sum += rayColor;
     #else
         sum += lightColor;
-    #endif
-
-    #ifdef SCENE_AWARE_LIGHTING
-        //sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, uv);
-        sum = lightColor;
     #endif
 
     /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
@@ -539,8 +537,8 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         }*/
         #ifdef SCENE_AWARE_LIGHTING
             light = lightColor;
-        #endif
-        #if PATH_TRACING_GI == 1
+            sum += lightColor * sampleDepth;
+        #elif PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
@@ -594,8 +592,8 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         }*/
         #ifdef SCENE_AWARE_LIGHTING
             light = lightColor;
-        #endif
-        #if PATH_TRACING_GI == 1
+            sum += lightColor * sampleDepth;
+        #elif PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
@@ -665,14 +663,12 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
     sum *= 0.5f;
 
-    #if PATH_TRACING_GI == 1
+    #ifdef SCENE_AWARE_LIGHTING
+        sum = mix2(sum,lightColor,bloomLerp);
+    #elif PATH_TRACING_GI == 1
         sum = mix2(rayColor,sum,bloomLerp);
     #else
         sum = mix2(lightColor,sum,bloomLerp);
-    #endif
-
-    #ifdef SCENE_AWARE_LIGHTING
-        sum = mix2(sum,lightColor,bloomLerp);
     #endif
 
     sum *= BLOOM_INTENSITY + 0.5;

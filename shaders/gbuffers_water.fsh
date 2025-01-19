@@ -12,6 +12,7 @@ varying vec3 Tangent;
 varying vec4 Color;
 
 uniform usampler3D cSampler1;
+uniform usampler3D cSampler2;
 
 varying vec2 LightmapCoords;
 
@@ -197,17 +198,22 @@ void main() {
 
         if(lighting.w <= 0.0) {
             for(int x = -LIGHT_RADIUS; x < LIGHT_RADIUS; x++) {
+                vec4 blockBytes = vec4(1.0);
                 for(int y = -LIGHT_RADIUS; y < LIGHT_RADIUS; y++) {
                     for(int z = -LIGHT_RADIUS; z < LIGHT_RADIUS; z++) {
                         vec3 block_centered_relative_pos2 = foot_pos +at_midBlock2.xyz/64.0 + vec3(x, z, y) + fract(cameraPosition);
                         ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2+VOXEL_RADIUS);
                         if(distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) break;
                         vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
+                        blockBytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
+                        if(blockBytes.x == 0.0) break;
                         if(bytes.xyz != vec3(0.0)) {
                             lighting = mix(vec4(0.0),decodeLightmap(vec4(bytes.xyz, 1.0)),clamp(1 - distance(block_centered_relative_pos, block_centered_relative_pos2)/LIGHT_RADIUS,0,1));
                         }
                     }
+                    if(blockBytes.x == 0.0) break;
                 }
+                if(blockBytes.x == 0.0) break;
             }
         }
 

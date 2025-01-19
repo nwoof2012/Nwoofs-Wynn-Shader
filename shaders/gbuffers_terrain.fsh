@@ -8,6 +8,8 @@
 
 #define PATH_TRACING_GI 0 // [0 1]
 
+#define FRAGMENT_SHADER
+
 varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec3 Tangent;
@@ -22,11 +24,14 @@ uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
 uniform usampler3D cSampler1;
+uniform usampler3D cSampler2;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 
 uniform ivec2 atlasSize;
+
+uniform vec3 sunPosition;
 
 //flat in vec4 mc_Entity;
 
@@ -53,7 +58,11 @@ flat in vec2 midCoord;
 uniform bool isBiomeEnd;
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
-const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
+#if PATH_TRACING_GI == 1
+    const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
+#else
+    const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
+#endif
 const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
 const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
 const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
@@ -61,6 +70,10 @@ const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
 const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
 
 #include "program/generateNormals.glsl"
+
+#if PATH_TRACING_GI == 1
+    #include "program/pathTracing.glsl"
+#endif
 
 #define LIGHT_RADIUS 3
 
@@ -158,6 +171,17 @@ vec4 smooth_light(vec3 p) {
     return mix2(bottom, top, f.z);
 }
 
+bool pointsIntersect(vec3 origin, vec3 dir, vec3 solidTex) {
+            vec3 oc = origin - solidTex;
+            float b = dot(oc, dir);
+            float c = dot(oc, oc);
+            float h = b * b - c;
+            if(h > 0.0) {
+                return true;
+            }
+            return false;
+        }
+
 /* RENDERTARGETS:0,1,2,3,5,10,15*/
 
 void main() {
@@ -217,20 +241,41 @@ void main() {
         vec4 lighting = decodeLightmap(vec4(light_color, 1.0));
 
         if(lighting.w <= 0.0) {
+            vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
+            vec4 bytes2 = unpackUnorm4x8(texture3D(cSampler1,vec3(ivec3(block_centered_relative_pos3+VOXEL_RADIUS))/vec3(VOXEL_AREA)).r);
             for(int x = -LIGHT_RADIUS; x < LIGHT_RADIUS; x++) {
+                //ivec3 voxel_pos2 = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
+                vec4 bytes = vec4(1.0);
+                vec4 blockBytes = vec4(1.0);
                 for(int y = -LIGHT_RADIUS; y < LIGHT_RADIUS; y++) {
                     for(int z = -LIGHT_RADIUS; z < LIGHT_RADIUS; z++) {
                         vec3 block_centered_relative_pos2 = foot_pos +at_midBlock2.xyz/64.0 + vec3(x, z, y) + fract(cameraPosition);
                         ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2+VOXEL_RADIUS);
                         if(distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) break;
-                        vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
+                        bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
+                        blockBytes = unpackUnorm4x8(texture3D(cSampler2,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
                         if(bytes.xyz != vec3(0.0)) {
+                            if(distance(voxel_pos2,vec3(0.0)) > distance(voxel_pos,vec3(0.0)) && blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0)) break;
                             lighting = mix(vec4(0.0),decodeLightmap(vec4(bytes.xyz, 1.0)),clamp(1 - distance(block_centered_relative_pos, block_centered_relative_pos2)/LIGHT_RADIUS,0,1));
                         }
+                        bytes2 = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
                     }
+                    //if(distance(voxel_pos2,vec3(0.0)) > distance(voxel_pos,vec3(0.0)) && blockBytes.x == 1.0) break;
                 }
+                //if(distance(voxel_pos2,vec3(0.0)) > distance(voxel_pos,vec3(0.0)) && blockBytes.x == 1.0) break;
             }
         }
+        vec4 finalLighting = lighting;
+        #if PATH_TRACING_GI == 1
+            vec3 lightDir = normalize2(sunPosition);
+            vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
+            vec3 cameraUp = cross(cameraRight, lightDir);
+            vec3 rayDir = normalize2(lightDir + TexCoords.x * cameraRight + TexCoords.y * cameraUp);
+            Ray ray = Ray(viewSpaceFragPosition, rayDir);
+            vec3 rayColor = traceRay(ray,vec2(length(lighting),1f), Normal,albedo.a)/vec3(2);
+            finalLighting *= vec4(vec3(length(rayColor)),1.0);
+            finalLighting *= 0.0035f;
+        #endif
         /*lightColor = vec3(0);
         if(lightSourceData.x > 0.5) {
             lightColor = TorchColor;
@@ -269,10 +314,10 @@ void main() {
             lighting.x *= 2.0;
         }*/
         //gl_FragData[0] = vec4(lighting.xyz,1.0);
-        if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(lighting) <= 0.0) {
-            lighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
+        if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
+            finalLighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
         }
-        gl_FragData[2] = lighting;
+        gl_FragData[2] = finalLighting;
     #endif
     //gl_FragData[3] = vec4(LightmapCoords, 0.0f, 1.0f);
     gl_FragData[3] = vec4(distanceFromCamera);

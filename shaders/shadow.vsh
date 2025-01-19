@@ -15,7 +15,7 @@ void main() {
     TexCoords = gl_MultiTexCoord0.st;
     Color = gl_Color;
 
-    #ifdef SCENE_AWARE_LIGHTING
+    /*#ifdef SCENE_AWARE_LIGHTING
         #include "program/voxelizing.glsl"
-    #endif
+    #endif*/
 }
