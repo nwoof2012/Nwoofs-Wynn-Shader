@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+precision mediump float;
+
 varying vec2 TexCoords;
 uniform sampler2D colortex0;
 

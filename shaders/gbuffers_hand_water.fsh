@@ -2,8 +2,9 @@
 
 #include "lib/globalDefines.glsl"
 
-
 #include "program/underwater.glsl"
+
+precision mediump float;
 
 varying vec2 TexCoords;
 varying vec3 Normal;
@@ -30,7 +31,7 @@ void main() {
     
     vec4 albedo = texture2D(texture, TexCoords) * Color;
 
-    float a;
+    mediump float a;
 
     if(albedo.a > 0 && heldItemId == 1) {
         a = 1;

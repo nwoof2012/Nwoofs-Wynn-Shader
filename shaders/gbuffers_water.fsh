@@ -6,6 +6,8 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 varying vec2 TexCoords;
 varying vec4 Normal;
 varying vec3 Tangent;
@@ -99,14 +101,14 @@ vec4 decodeLightmap(vec4 lightmap) {
     return lighting;
 }
 
-float AdjustLightmapTorch(in float torch) {
-    const float K = 2.0f;
-    const float P = 5.06f;
+mediump float AdjustLightmapTorch(in float torch) {
+    const mediump float K = 2.0f;
+    const mediump float P = 5.06f;
     return K * pow2(torch, P);
 }
 
-float AdjustLightmapSky(in float sky){
-    float sky_2 = sky * sky;
+mediump float AdjustLightmapSky(in float sky){
+    mediump float sky_2 = sky * sky;
     return sky_2 * sky_2;
 }
 
@@ -174,7 +176,7 @@ void main() {
 
     //vec4 normalDefine = vec4(noiseMap.xyz * 0.5 + 0.5f, 1.0f);
     //normalDefine = normalDefine + noiseMap;
-    float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
+    mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
     
     if(blindness > 0f) {
         albedo.xyz = blindEffect(albedo.xyz);

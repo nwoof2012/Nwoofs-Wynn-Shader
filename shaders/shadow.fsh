@@ -4,6 +4,8 @@
 #define ENTITY_SHADOWS
 #define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
+precision mediump float;
+
 varying vec2 TexCoords;
 varying vec4 Color;
 
@@ -27,7 +29,7 @@ void main() {
     #endif
 
     vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
-    float distanceFromCamera = distance(worldSpaceVertexPosition, cameraPosition);
+    mediump float distanceFromCamera = distance(worldSpaceVertexPosition, cameraPosition);
     
     if(distanceFromCamera > SHADOW_DIST * 16) {
         discard;

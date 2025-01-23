@@ -4,7 +4,7 @@ vec4 old_raydir;
 old_raydir.xyz = (gbufferPreviousModelView*vec4(last_world_pos_dir.xyz,1.0)).xyz;
 
 old_raydir = gbufferPreviousProjection*vec4(old_raydir.xyz,1.0);
-float sz = old_raydir.z;
+mediump float sz = old_raydir.z;
 old_raydir.xyz /= old_raydir.w;
 old_raydir.xyz = old_raydir.xyz*0.5 + 0.5;
 

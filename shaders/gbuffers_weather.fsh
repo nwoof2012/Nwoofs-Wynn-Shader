@@ -4,6 +4,8 @@
 
 #include "lib/optimizationFunctions.glsl"
 
+precision mediump float;
+
 uniform sampler2D lightmap;
 uniform sampler2D gtexture;
 
@@ -38,12 +40,12 @@ void main() {
         isRain = vec4(0f);
     }
 
-    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-    float maxFogDistance = 3000;
-    float minFogDistance = 2000;
+    mediump float maxFogDistance = 3000;
+    mediump float minFogDistance = 2000;
     
-    float fogBlendValue = clamp((distanceFromCamera - minFogDistance) / (maxFogDistance - minFogDistance),0,1);
+    mediump float fogBlendValue = clamp((distanceFromCamera - minFogDistance) / (maxFogDistance - minFogDistance),0,1);
 
     //color.a = mix2(0f, 1f, fogBlendValue);
     //color.rgb = mix2(color.rgb, vec3(0.5f),fogBlendValue);

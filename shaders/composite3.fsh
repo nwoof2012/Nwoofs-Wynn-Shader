@@ -14,6 +14,8 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 uniform float frameTimeCounter;
 uniform float worldTime;
 
@@ -52,11 +54,11 @@ vec3 projectAndDivide(mat4 pm, vec3 p) {
     return hp.xyz/hp.w;
 }
 
-float random(in vec2 p) {
+mediump float random(in vec2 p) {
     return fract(sin(p.x*456.0+p.y*56.0)*100.0);
 }
 
-float random3D(in vec3 p) {
+mediump float random3D(in vec3 p) {
     return fract(sin(p.x*456.0+p.y*56.0+p.z*741.0)*100.0);
 }
 
@@ -69,12 +71,12 @@ vec3 smoothUVs3D(in vec3 v) {
 }
 
 
-float smooth_noise(in vec2 p) {
+mediump float smooth_noise(in vec2 p) {
     vec2 f = smoothUVs(fract(p));
-    float a = random(floor(p));
-    float b = random(vec2(ceil(p.x),floor(p.y)));
-    float c = random(vec2(floor(p.x),ceil(p.y)));
-    float d = random(ceil(p));
+    mediump float a = random(floor(p));
+    mediump float b = random(vec2(ceil(p.x),floor(p.y)));
+    mediump float c = random(vec2(floor(p.x),ceil(p.y)));
+    mediump float d = random(ceil(p));
     return mix2(
         mix2(a,b,f.x),
         mix2(c,d,f.x),
@@ -82,30 +84,30 @@ float smooth_noise(in vec2 p) {
     );
 }
 
-float smooth_noise3D(in vec3 p) {
+mediump float smooth_noise3D(in vec3 p) {
     vec3 f = smoothUVs3D(fract(p));
-    float a = random3D(floor(p));
-    float b = random3D(vec3(ceil(p.x),floor(p.y),floor(p.z)));
-    float c = random3D(vec3(floor(p.x),ceil(p.y),floor(p.y)));
-    float d = random3D(vec3(ceil(p.xy),floor(p.z)));
+    mediump float a = random3D(floor(p));
+    mediump float b = random3D(vec3(ceil(p.x),floor(p.y),floor(p.z)));
+    mediump float c = random3D(vec3(floor(p.x),ceil(p.y),floor(p.y)));
+    mediump float d = random3D(vec3(ceil(p.xy),floor(p.z)));
 
-    float bottom = mix2(mix2(a,b,f.x), mix2(c,d,f.x),f.y);
+    mediump float bottom = mix2(mix2(a,b,f.x), mix2(c,d,f.x),f.y);
 
-    float a2 = random3D(vec3(floor(p.x),floor(p.y),ceil(p.z)));
-    float b2 = random3D(vec3(ceil(p.x),floor(p.y),ceil(p.z)));
-    float c2 = random3D(vec3(floor(p.x),ceil(p.y),ceil(p.y)));
-    float d2 = random3D(vec3(ceil(p.xy),ceil(p.z)));
+    mediump float a2 = random3D(vec3(floor(p.x),floor(p.y),ceil(p.z)));
+    mediump float b2 = random3D(vec3(ceil(p.x),floor(p.y),ceil(p.z)));
+    mediump float c2 = random3D(vec3(floor(p.x),ceil(p.y),ceil(p.y)));
+    mediump float d2 = random3D(vec3(ceil(p.xy),ceil(p.z)));
 
-    float top = mix2(mix2(a,b,f.x), mix2(c,d,f.x),f.y);
+    mediump float top = mix2(mix2(a,b,f.x), mix2(c,d,f.x),f.y);
 
     return mix2(bottom, top, f.z);
 }
 
-float fractal_noise(in vec2 p) {
-    float total = 0.5;
-    float amplitude = 1.0;
-    float frequency = 1.0;
-    float iterations = 4.0;
+mediump float fractal_noise(in vec2 p) {
+    mediump float total = 0.5;
+    mediump float amplitude = 1.0;
+    mediump float frequency = 1.0;
+    mediump float iterations = 4.0;
     for(float i = 0; i < iterations; i++) {
         total += (smooth_noise(p * frequency) - 0.5)*amplitude;
         amplitude *= 0.5;
@@ -114,11 +116,11 @@ float fractal_noise(in vec2 p) {
     return total;
 }
 
-float fractal_noise3D(in vec3 p) {
-    float total = 0.5;
-    float amplitude = 1.0;
-    float frequency = 1.0;
-    float iterations = 4.0;
+mediump float fractal_noise3D(in vec3 p) {
+    mediump float total = 0.5;
+    mediump float amplitude = 1.0;
+    mediump float frequency = 1.0;
+    mediump float iterations = 4.0;
     for(float i = 0; i < iterations; i++) {
         total += (smooth_noise3D(p * frequency) - 0.5)*amplitude;
         amplitude *= 0.5;
@@ -129,9 +131,9 @@ float fractal_noise3D(in vec3 p) {
 
 vec4 cloudStack(in vec2 uv) {
     vec4 finalNoise = vec4(0.0);
-    float cloudLevels = 8.0;
-    float cloudHeight = 550/viewHeight;
-    float attenuation = 0.125;
+    mediump float cloudLevels = 8.0;
+    mediump float cloudHeight = 550/viewHeight;
+    mediump float attenuation = 0.125;
     for(float i = 0; i < cloudLevels; i++) {
         vec4 noiseA = texture2D(colortex13,uv * 0.0625f - vec2(0.0, (cloudHeight * i)/cloudLevels) - frameTimeCounter * 0.00125);
         vec4 noiseB = texture2D(colortex14,uv * 0.015625f - vec2(0.0, (cloudHeight * i)/cloudLevels) + frameTimeCounter * 0.005);
@@ -149,13 +151,13 @@ vec4 cloudStack(in vec2 uv) {
     return finalNoise;
 }
 
-float get_cloud(vec3 p) {
+mediump float get_cloud(vec3 p) {
     return clamp(texture2D(colortex13,p.xz/p.y).r * texture2D(colortex13,p.xz/p.y * 0.1).r * texture2D(colortex13,p.xz/p.y * 0.05).r * (1.0-(0.3*(1.0 - rainStrength)))*4.0,0,1);
 }
 
 vec4 normalFromHeight(sampler2D noiseTex, vec2 uv, float scale, float noiseType) {
-    float moveStep = 1.0/viewHeight;
-    float height = texture2D(noiseTex,uv).r;
+    mediump float moveStep = 1.0/viewHeight;
+    mediump float height = texture2D(noiseTex,uv).r;
     vec2 dxy;
     if(noiseType <= 0.0) {
         dxy = vec2(height) - vec2( cloudStack(uv + vec2(moveStep, 0.0)).r,  cloudStack(uv + vec2(0.0, moveStep)).r);
@@ -166,8 +168,8 @@ vec4 normalFromHeight(sampler2D noiseTex, vec2 uv, float scale, float noiseType)
 }
 
 vec4 normalFromHeight(vec3 uv, float scale, float noiseType) {
-    float moveStep = 1.0/viewHeight;
-    float height = get_cloud(uv).r;
+    mediump float moveStep = 1.0/viewHeight;
+    mediump float height = get_cloud(uv).r;
     vec3 dxy;
     if(noiseType <= 0.0) {
         dxy = vec3(height) - vec3( get_cloud(uv + vec3(moveStep, 0.0, 0.0)).r,  get_cloud(uv + vec3(0.0, moveStep,0.0)).r,get_cloud(uv + vec3(0.0, 0.0, moveStep)).r);
@@ -177,16 +179,16 @@ vec4 normalFromHeight(vec3 uv, float scale, float noiseType) {
     return vec4(normalize(dxy * scale / moveStep),height);
 }
 
-/*float remap(in float value, in float oldMin, in float oldMax, in float newMin, in float newMax) {
+/*mediump float remap(in float value, in float oldMin, in float oldMax, in float newMin, in float newMax) {
     return newMin + (value - oldMin) * (newMax - newMin)/(oldMax - oldMin);
 }*/
 
-float invLerp(float from, float to, float value){
+mediump float invLerp(float from, float to, float value){
   return (value - from) / (to - from);
 }
 
-float remap(float origFrom, float origTo, float targetFrom, float targetTo, float value){
-  float rel = invLerp(origFrom, origTo, value);
+mediump float remap(float origFrom, float origTo, float targetFrom, float targetTo, float value){
+  mediump float rel = invLerp(origFrom, origTo, value);
   return mix2(targetFrom, targetTo, rel);
 }
 
@@ -197,7 +199,7 @@ layout(location = 1) out vec4 outnormal;
 void main() {
     vec3 color = texture2D(colortex0, texCoord).rgb;
     vec3 sky_color = textureLod(colortex0, texCoord,6).rgb;
-    float depth = texture2D(depthtex0, texCoord).r;
+    mediump float depth = texture2D(depthtex0, texCoord).r;
 
     vec3 Normal = normalize(texture2D(colortex1, texCoord).rgb * 2.0f -1.0f);
 
@@ -207,7 +209,7 @@ void main() {
     
     shadowLightDirection = abs(shadowLightDirection);
 
-    float cloud_time = worldTime;
+    mediump float cloud_time = worldTime;
     
     vec4 cloudsNormal;
     if(depth == 1.0) {
@@ -232,10 +234,10 @@ void main() {
         //finalNoise = (finalNoise + 1.0)/2.0;
         /*if(rayDir.y > 0)
         {
-            /*float samples = 256.0;
-            float rayScale = 1.0;
+            /*mediump float samples = 256.0;
+            mediump float rayScale = 1.0;
             vec3 playerPos = vec3(rayDir.xz/rayDir.y, 1.0);
-            for(float s = 0.0; s < samples; s++) {
+            for(mediump float s = 0.0; s < samples; s++) {
                 vec3 rayPos = playerPos + rayDir*rayScale;
                 vec4 cloud = vec4(fractal_noise3D(rayPos) * fractal_noise3D(rayPos));
 
@@ -253,17 +255,17 @@ void main() {
         noiseNormalB = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseB, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
         vec4 finalNoiseNormal = normalFromHeight(colortex13,rayDir.xz/rayDir.y,1.0, 0.0);*/
 
-        //float lightBrightness = clamp(dot(shadowLightDirection, finalNoiseNormal.xyz),0.75,1.0);
+        //mediump float lightBrightness = clamp(dot(shadowLightDirection, finalNoiseNormal.xyz),0.75,1.0);
 
-        float starting_distance = 1.0/rayDir.y;
+        mediump float starting_distance = 1.0/rayDir.y;
 
         //vec3 sky_color = color;
         vec4 clouds = vec4(vec3(1.0),0.0);
-        float scale = 0.25;
-        float cloud_shading_amount = 0.1;
+        mediump float scale = 0.25;
+        mediump float cloud_shading_amount = 0.1;
         vec3 sunDir = normalize2(sunPosition);
         
-        float detectSky = texture2D(colortex12, texCoord).g;
+        mediump float detectSky = texture2D(colortex12, texCoord).g;
 
         if(texCoord.x > 1.0 || texCoord.x < 0.0 || texCoord.y > 1.0 || texCoord.y < 0.0) {
             discard;
@@ -272,7 +274,7 @@ void main() {
         if(rayDir.y > 0 && detectSky != 1.0) {
             vec3 player = vec3(rayDir.xz*starting_distance+0.05 + cloud_time * CLOUD_SPEED * 0.00125, 0.0);
             vec3 player2 = vec3(rayDir.xz*starting_distance * 1.5f - frameTimeCounter * 0.005,0.0);
-            float sky_density = 0.1;
+            mediump float sky_density = 0.1;
             for(float s = 0.0; s < CLOUD_SAMPLES && clouds.a < 0.99; s++) {
                 vec3 ray_pos = player + rayDir*(s - frameTimeCounter + vec3(texCoord,s))*scale;
                 //vec3 ray_pos2 = player2*0.0125 + rayDir*(s - random3D(frameTimeCounter + vec3(texCoord,s)))*scale;
@@ -284,11 +286,11 @@ void main() {
 
                 cloud.a = pow2(cloud.a * abs(s/CLOUD_SAMPLES*2.0 - 0.5), 1/mix2(CLOUD_DENSITY,CLOUD_DENSITY_RAIN,rainStrength));
 
-                float light = 1.0;
+                mediump float light = 1.0;
 
                 for(float s = 0.0; s < CLOUD_SHADING_SAMPLES && clouds.a < 0.99; s++) {
                     vec3 ray_s_pos = ray_pos + sunDir*(s - vec3(normalFromHeight(frameTimeCounter + vec3(texCoord,s), 1.0, 1.0)))*scale;
-                    float cloud_shading = get_cloud(ray_s_pos);
+                    mediump float cloud_shading = get_cloud(ray_s_pos);
                     light *= 1.0 - cloud_shading;
 
                     if(distance(viewSpaceFragPosition.xz,ray_s_pos.xz) > CLOUD_SHADING_DISTANCE) {
@@ -310,7 +312,7 @@ void main() {
 
         //clouds.a /= 2;
 
-        float cloudFog = clamp(rayDir.y,0.0,0.25) * 4.0;
+        mediump float cloudFog = clamp(rayDir.y,0.0,0.25) * 4.0;
         
         //clouds.rgb = vec3(1.0);
         //clouds.rgb -= clamp(clouds.a - 0.5,0.0,0.25);

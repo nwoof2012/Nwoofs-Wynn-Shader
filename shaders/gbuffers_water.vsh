@@ -3,6 +3,8 @@
 
 #include "lib/globalDefines.glsl"
 
+precision mediump float;
+
 varying vec2 TexCoords;
 varying vec4 Normal;
 varying vec3 Tangent;

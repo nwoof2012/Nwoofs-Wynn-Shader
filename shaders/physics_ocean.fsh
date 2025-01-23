@@ -6,25 +6,27 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 const int PHYSICS_ITERATIONS_OFFSET = 13;
-const float PHYSICS_DRAG_MULT = 0.048;
-const float PHYSICS_XZ_SCALE = 0.035;
-const float PHYSICS_TIME_MULTIPLICATOR = 0.45;
-const float PHYSICS_W_DETAIL = 0.75;
-const float PHYSICS_FREQUENCY = 6.0;
-const float PHYSICS_SPEED = 2.0;
-const float PHYSICS_WEIGHT = 0.8;
-const float PHYSICS_FREQUENCY_MULT = 1.18;
-const float PHYSICS_SPEED_MULT = 1.07;
-const float PHYSICS_ITER_INC = 12.0;
-const float PHYSICS_NORMAL_STRENGTH = 1.4;
+const mediump float PHYSICS_DRAG_MULT = 0.048;
+const mediump float PHYSICS_XZ_SCALE = 0.035;
+const mediump float PHYSICS_TIME_MULTIPLICATOR = 0.45;
+const mediump float PHYSICS_W_DETAIL = 0.75;
+const mediump float PHYSICS_FREQUENCY = 6.0;
+const mediump float PHYSICS_SPEED = 2.0;
+const mediump float PHYSICS_WEIGHT = 0.8;
+const mediump float PHYSICS_FREQUENCY_MULT = 1.18;
+const mediump float PHYSICS_SPEED_MULT = 1.07;
+const mediump float PHYSICS_ITER_INC = 12.0;
+const mediump float PHYSICS_NORMAL_STRENGTH = 1.4;
 
 struct WavePixelData {
     vec2 direction;
     vec2 worldPos;
     vec3 normal;
-    float foam;
-    float height;
+    mediump float foam;
+    mediump float height;
 };
 
 varying vec2 TexCoords;
@@ -76,19 +78,19 @@ in float camDist;
 
 vec2 physics_waveDirection(vec2 position, int iterations, float time) {
     position = (position - physics_waveOffset) * PHYSICS_XZ_SCALE * physics_oceanWaveHorizontalScale;
-	float iter = 0.0;
-    float frequency = PHYSICS_FREQUENCY;
-    float speed = PHYSICS_SPEED;
-    float weight = 1.0;
-    float waveSum = 0.0;
-    float modifiedTime = time * PHYSICS_TIME_MULTIPLICATOR;
+	mediump float iter = 0.0;
+    mediump float frequency = PHYSICS_FREQUENCY;
+    mediump float speed = PHYSICS_SPEED;
+    mediump float weight = 1.0;
+    mediump float waveSum = 0.0;
+    mediump float modifiedTime = time * PHYSICS_TIME_MULTIPLICATOR;
     vec2 dx = vec2(0.0);
     
     for (int i = 0; i < iterations; i++) {
         vec2 direction = vec2(sin(iter), cos(iter));
-        float x = dot(direction, position) * frequency + modifiedTime * speed;
-        float wave = exp(sin(x) - 1.0);
-        float result = wave * cos(x);
+        mediump float x = dot(direction, position) * frequency + modifiedTime * speed;
+        mediump float wave = exp(sin(x) - 1.0);
+        mediump float result = wave * cos(x);
         vec2 force = result * weight * direction;
         
         dx += force / pow2(weight, PHYSICS_W_DETAIL); 
@@ -104,41 +106,41 @@ vec2 physics_waveDirection(vec2 position, int iterations, float time) {
 }
 
 vec3 physics_waveNormal(const in vec2 position, const in vec2 direction, const in float factor, const in float time) {
-    float oceanHeightFactor = physics_oceanHeight / 13.0;
-    float totalFactor = oceanHeightFactor * factor;
+    mediump float oceanHeightFactor = physics_oceanHeight / 13.0;
+    mediump float totalFactor = oceanHeightFactor * factor;
     vec3 waveNormal = normalize2(vec3(direction.x * totalFactor, PHYSICS_NORMAL_STRENGTH, direction.y * totalFactor));
     
     vec2 eyePosition = position + physics_modelOffset.xz;
     vec2 rippleFetch = (eyePosition + vec2(physics_rippleRange)) / (physics_rippleRange * 2.0);
     vec2 rippleTexelSize = vec2(2.0 / textureSize(physics_ripples, 0).x, 0.0);
-    float left = texture(physics_ripples, rippleFetch - rippleTexelSize.xy).r;
-    float right = texture(physics_ripples, rippleFetch + rippleTexelSize.xy).r;
-    float top = texture(physics_ripples, rippleFetch - rippleTexelSize.yx).r;
-    float bottom = texture(physics_ripples, rippleFetch + rippleTexelSize.yx).r;
-    float totalEffect = left + right + top + bottom;
+    mediump float left = texture(physics_ripples, rippleFetch - rippleTexelSize.xy).r;
+    mediump float right = texture(physics_ripples, rippleFetch + rippleTexelSize.xy).r;
+    mediump float top = texture(physics_ripples, rippleFetch - rippleTexelSize.yx).r;
+    mediump float bottom = texture(physics_ripples, rippleFetch + rippleTexelSize.yx).r;
+    mediump float totalEffect = left + right + top + bottom;
     
-    float normalx = left - right;
-    float normalz = top - bottom;
+    mediump float normalx = left - right;
+    mediump float normalz = top - bottom;
     vec3 rippleNormal = normalize2(vec3(normalx, 1.0, normalz));
     return normalize2(mix2(waveNormal, rippleNormal, pow2(totalEffect, 0.5)));
 }
 
 WavePixelData physics_wavePixel(const in vec2 position, const in float factor, const in float iterations, const in float time) {
     vec2 wavePos = (position.xy - physics_waveOffset) * PHYSICS_XZ_SCALE * physics_oceanWaveHorizontalScale;
-    float iter = 0.0;
-    float frequency = PHYSICS_FREQUENCY;
-    float speed = PHYSICS_SPEED;
-    float weight = 1.0;
-    float height = 0.0;
-    float waveSum = 0.0;
-    float modifiedTime = time * PHYSICS_TIME_MULTIPLICATOR;
+    mediump float iter = 0.0;
+    mediump float frequency = PHYSICS_FREQUENCY;
+    mediump float speed = PHYSICS_SPEED;
+    mediump float weight = 1.0;
+    mediump float height = 0.0;
+    mediump float waveSum = 0.0;
+    mediump float modifiedTime = time * PHYSICS_TIME_MULTIPLICATOR;
     vec2 dx = vec2(0.0);
     
     for (int i = 0; i < iterations; i++) {
         vec2 direction = vec2(sin(iter), cos(iter));
-        float x = dot(direction, wavePos) * frequency + modifiedTime * speed;
-        float wave = exp(sin(x) - 1.0);
-        float result = wave * cos(x);
+        mediump float x = dot(direction, wavePos) * frequency + modifiedTime * speed;
+        mediump float wave = exp(sin(x) - 1.0);
+        mediump float result = wave * cos(x);
         vec2 force = result * weight * direction;
         
         dx += force / pow2(weight, PHYSICS_W_DETAIL); 
@@ -157,20 +159,20 @@ WavePixelData physics_wavePixel(const in vec2 position, const in float factor, c
     
     data.normal = physics_waveNormal(position, data.direction, factor, time);
 
-    float waveAmplitude = data.height * pow2(max(data.normal.y, 0.0), 4.0);
+    mediump float waveAmplitude = data.height * pow2(max(data.normal.y, 0.0), 4.0);
     vec2 waterUV = mix2(position - physics_waveOffset, data.worldPos, clamp(factor * 2.0, 0.2, 1.0));
     
     vec2 s1 = textureLod(physics_foam, vec3(waterUV * 0.26, physics_globalTime / 360.0), 0).rg;
     vec2 s2 = textureLod(physics_foam, vec3(waterUV * 0.02, physics_globalTime / 360.0 + 0.5), 0).rg;
     vec2 s3 = textureLod(physics_foam, vec3(waterUV * 0.1, physics_globalTime / 360.0 + 1.0), 0).rg;
     
-    float waterSurfaceNoise = s1.r * s2.r * s3.r * 2.8 * physics_foamAmount;
+    mediump float waterSurfaceNoise = s1.r * s2.r * s3.r * 2.8 * physics_foamAmount;
     waveAmplitude = clamp(waveAmplitude * 1.2, 0.0, 1.0);
     waterSurfaceNoise = (1.0 - waveAmplitude) * waterSurfaceNoise + waveAmplitude * physics_foamAmount;
     
-    float worleyNoise = 0.2 + 0.8 * s1.g * (1.0 - s2.g);
-    float waterFoamMinSmooth = 0.45;
-    float waterFoamMaxSmooth = 2.0;
+    mediump float worleyNoise = 0.2 + 0.8 * s1.g * (1.0 - s2.g);
+    mediump float waterFoamMinSmooth = 0.45;
+    mediump float waterFoamMaxSmooth = 2.0;
     waterSurfaceNoise = smoothstep(waterFoamMinSmooth, 1.0, waterSurfaceNoise) * worleyNoise;
     
     data.foam = clamp(waterFoamMaxSmooth * waterSurfaceNoise * physics_foamOpacity, 0.0, 1.0);
@@ -193,7 +195,7 @@ void main() {
     }
     //vec4 albedo = texture2D(texture, TexCoords) * Color;
 
-    float isWater = Normal.w;
+    mediump float isWater = Normal.w;
 
     vec4 noiseMap = texture2D(noise, TexCoords);
 
@@ -234,7 +236,7 @@ void main() {
         albedo.xyz = blindEffect(albedo.xyz);
     }
 
-    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
 

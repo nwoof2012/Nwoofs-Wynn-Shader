@@ -53,6 +53,10 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
+uniform usampler3D cSampler1;
+
 uniform sampler2D lightmap;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -103,16 +107,30 @@ in float isWaterBlock;
 in vec3 Normal;
 in vec3 Tangent;
 
+in vec3 block_centered_relative_pos;
+
 in vec3 lightmap2;
 
-float AdjustLightmapTorch(in float torch) {
-    const float K = 2.0f;
-    const float P = 5.06f;
+in vec4 at_midBlock2;
+
+in float isFoliage;
+
+in float isReflective;
+
+in vec3 worldSpaceVertexPosition;
+
+in vec3 normals_face_world;
+
+in vec3 foot_pos;
+
+mediump float AdjustLightmapTorch(in float torch) {
+    const mediump float K = 2.0f;
+    const mediump float P = 5.06f;
     return K * pow2(torch, P);
 }
 
-float AdjustLightmapSky(in float sky){
-    float sky_2 = sky * sky;
+mediump float AdjustLightmapSky(in float sky){
+    mediump float sky_2 = sky * sky;
     return sky_2 * sky_2;
 }
 
@@ -171,11 +189,11 @@ vec3 GetLightmapColor(in vec2 Lightmap){
 #include "program/pathTracing.glsl"
 
 vec3 aces(vec3 x) {
-  float a = 2.51;
-  float b = 0.03;
-  float c = 2.43;
-  float d = 0.59;
-  float e = 0.14;
+  mediump float a = 2.51;
+  mediump float b = 0.03;
+  mediump float c = 2.43;
+  mediump float d = 0.59;
+  mediump float e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
@@ -196,18 +214,18 @@ vec3 screenToWorld(vec3 screenPos) {
     return tmp.xyz / tmp.w;
 }
 
-float Noise3D(vec3 p) {
+mediump float Noise3D(vec3 p) {
     p.z = fract(p.z) * 128.0;
-    float iz = floor(p.z);
-    float fz = fract(p.z);
+    mediump float iz = floor(p.z);
+    mediump float fz = fract(p.z);
     vec2 a_off = vec2(23.0, 29.0) * (iz) / 128.0;
     vec2 b_off = vec2(23.0, 29.0) * (iz + 1.0) / 128.0;
-    float a = texture2D(noises, p.xy + a_off).r;
-    float b = texture2D(noises, p.xy + b_off).r;
+    mediump float a = texture2D(noises, p.xy + a_off).r;
+    mediump float b = texture2D(noises, p.xy + b_off).r;
     return mix2(a, b, fz);
 }
 
-float linearizeDepth(float depth, float near, float far) {
+mediump float linearizeDepth(float depth, float near, float far) {
     return (near * far) / (depth * (near - far) + far);
 }
 
@@ -215,7 +233,7 @@ void main() {
     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
     vec3 worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
-    float lightBrightness;
+    mediump float lightBrightness;
     vec3 lightColor;
     #if PATH_TRACING_GI == 1
             vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
@@ -242,17 +260,17 @@ void main() {
     
     vec4 outputColorData = blockColor;
     vec3 outputColor = outputColorData.rgb * max(lightColor,vec3(1.0));
-    float transparency = outputColorData.a;
+    mediump float transparency = outputColorData.a;
     if(transparency < .1) {
         discard;
     }
 
     vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 
-    float depth = texture2D(depthtex0, texCoord).r;
-    float dhDepth = gl_FragCoord.z;
-    float depthLinear = linearizeDepth(depth, near, far*4);
-    float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
+    mediump float depth = texture2D(depthtex0, texCoord).r;
+    mediump float dhDepth = gl_FragCoord.z;
+    mediump float depthLinear = linearizeDepth(depth, near, far*4);
+    mediump float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
 
     if(depthLinear < dhDepthLinear && depth != 1) {
         discard;
@@ -260,9 +278,9 @@ void main() {
 
     //vec3 fogColor = vec3(1.0);
 
-    float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
+    mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
-    float dhBlend = pow2(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
+    mediump float dhBlend = pow2(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
     
     //outputColor = pow2(outputColor,vec3(1/2.2));
     outputColor *= lightBrightness;
@@ -272,7 +290,7 @@ void main() {
         outputColor.xyz = blindEffect(outputColor.xyz);
     }
 
-    float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
+    mediump float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
     transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
     outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(2.2)), fogBlendValue);
     outColor0 = vec4(pow2(outputColor,vec3(1/2.2)),transparency);
@@ -284,7 +302,18 @@ void main() {
         isWater.y = 1.0;
     }
     #ifndef SCENE_AWARE_LIGHTING
-        outColor2 = vec4(lightColor, 0.0);
+        outColor2 = vec4(lightColor, 1.0);
+    #else
+        #define VOXEL_AREA 128 //[32 64 128]
+        #define VOXEL_RADIUS (VOXEL_AREA/2)
+        ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
+        vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
+        if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+            vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
+            light_color = bytes.xyz;
+        }
+
+        outColor2 = vec4(light_color, 1.0);
     #endif
     normal = vec4(Normal, 1.0);
     dataTex0 = vec4(1.0);

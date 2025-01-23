@@ -47,6 +47,8 @@
 
 #include "lib/globalDefines.glsl"
 
+precision mediump float;
+
 varying vec2 TexCoords;
 
 uniform vec3 sunPosition;
@@ -113,14 +115,14 @@ uniform sampler2D colortex12;
 
 uniform sampler2D colortex15;
 
-const float sunPathRotation = -40.0f;
+const mediump float sunPathRotation = -40.0f;
 
-const float Ambient = 0.1f;
+const mediump float Ambient = 0.1f;
 
 const int shadowMapResolution = SHADOW_RES;
 
 const ivec3 voxelVolumeSize = ivec3(1,0.5, 1);
-float effectiveACLdistance = min(1, SHADOW_DIST * 2.0);
+mediump float effectiveACLdistance = min(1, SHADOW_DIST * 2.0);
 
 uniform float maxBlindnessDarkness;
 
@@ -170,14 +172,14 @@ uniform vec3 shadowLightPosition;
 
 uniform float screenBrightness;
 
-float AdjustLightmapTorch(in float torch) {
-    const float K = 2.0f;
-    const float P = 5.06f;
+mediump float AdjustLightmapTorch(in float torch) {
+    const mediump float K = 2.0f;
+    const mediump float P = 5.06f;
     return K * pow2(torch, P);
 }
 
-float AdjustLightmapSky(in float sky){
-    float sky_2 = sky * sky;
+mediump float AdjustLightmapSky(in float sky){
+    mediump float sky_2 = sky * sky;
     return sky_2 * sky_2;
 }
 
@@ -191,10 +193,10 @@ vec2 AdjustLightmap(in vec2 Lightmap){
 vec3 translucentMult;
 
 vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
-    float radius = 2f;
+    mediump float radius = 2f;
     vec3 sum = vec3(0.0);
-    float blur = radius/viewHeight;
-    float hstep = 1f;
+    mediump float blur = radius/viewHeight;
+    mediump float hstep = 1f;
     vec3 lightColor = texture2D(colortex10, TexCoords).rgb;
     sum += lightColor;
 
@@ -208,23 +210,23 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 
-    float depthTolerance = 0.0125;
+    mediump float depthTolerance = 0.0125;
 
-    //float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
+    //mediump float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
-        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
+        mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
         vec2 shiftedUVs = vec2(TexCoords.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = texture2D(colortex10, TexCoords).rgb;
         vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        float normalA = texture2D(depthtex0,shiftedUVs).r;
-        float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
-        float isEntity = texture2D(colortex15,shiftedUVs).r;
-        float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
-        float camDistance = texture2D(colortex15, shiftedUVs).g;
+        mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
+        mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
+        mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
+        mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
+        mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
         
         /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
             continue;
@@ -248,18 +250,18 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
     }
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
-        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
+        mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
         vec2 shiftedUVs = vec2(TexCoords.x + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = texture2D(colortex2, shiftedUVs).rgb;
         vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        float normalA = texture2D(depthtex0,shiftedUVs).r;
-        float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
-        float isEntity = texture2D(colortex15,shiftedUVs).r;
-        float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
-        float camDistance = texture2D(colortex15, shiftedUVs).g;
+        mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
+        mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
+        mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
+        mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
+        mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
 
         /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
             continue;
@@ -307,7 +309,7 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
     }*/
     
 
-    float bloomLerp = 1.0f;
+    mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
         bloomLerp = clamp01(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)));
     #endif
@@ -363,7 +365,7 @@ vec3 GetLightmapColor(in vec2 Lightmap){
 
 #include "program/pathTracing.glsl"
 
-float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
+mediump float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
     return step(SampleCoords.z - 0.001f, texture2D(ShadowMap, SampleCoords.xy).r);
 }
 
@@ -373,8 +375,8 @@ mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
 }
 
 vec3 TransparentShadow(in vec3 SampleCoords){
-    float ShadowVisibility0 = Visibility(shadowtex0, SampleCoords);
-    float ShadowVisibility1 = Visibility(shadowtex1, SampleCoords);
+    mediump float ShadowVisibility0 = Visibility(shadowtex0, SampleCoords);
+    mediump float ShadowVisibility1 = Visibility(shadowtex1, SampleCoords);
     vec4 ShadowColor0 = texture2D(shadowcolor0, SampleCoords.xy);
     vec3 TransmittedColor = ShadowColor0.rgb * (1.0f - ShadowColor0.a);
     return mix2(TransmittedColor * ShadowVisibility1, vec3(1.0f), ShadowVisibility0);
@@ -418,11 +420,11 @@ vec3 SceneToVoxel(vec3 scenePos) {
 }
 
 vec3 aces(vec3 x) {
-  float a = 2.51;
-  float b = 0.03;
-  float c = 2.43;
-  float d = 0.59;
-  float e = 0.14;
+  mediump float a = 2.51;
+  mediump float b = 0.03;
+  mediump float c = 2.43;
+  mediump float d = 0.59;
+  mediump float e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
@@ -448,10 +450,10 @@ vec3 unreal(vec3 x) {
 }
 
 vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
-    float radius = 2f;
+    mediump float radius = 2f;
     vec3 sum = vec3(0.0);
-    float blur = radius/viewHeight;
-    float hstep = 1f;
+    mediump float blur = radius/viewHeight;
+    mediump float hstep = 1f;
     #if PATH_TRACING_GI == 1
         vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
         vec3 worldSpaceSunPos = (gbufferProjection * vec4(sunPosition,1.0)).xyz;
@@ -482,23 +484,23 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 
-    float depthTolerance = 0.0125;
+    mediump float depthTolerance = 0.0125;
 
-    //float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
+    //mediump float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
-        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
+        mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
         vec2 shiftedUVs = vec2(TexCoords.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
         vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        float normalA = texture2D(depthtex0,shiftedUVs).r;
-        float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
-        float isEntity = texture2D(colortex15,shiftedUVs).r;
-        float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
-        float camDistance = texture2D(colortex15, shiftedUVs).g;
+        mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
+        mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
+        mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
+        mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
+        mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
         
         /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
             continue;
@@ -542,18 +544,18 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     }
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
-        float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
+        mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
         vec2 shiftedUVs = vec2(TexCoords.x + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 specularMap = (texture2D(colortex10, specularUVs).rgb + texture2D(colortex11, specularUVs).rgb);
         specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
         vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        float normalA = texture2D(depthtex0,shiftedUVs).r;
-        float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
-        float isEntity = texture2D(colortex15,shiftedUVs).r;
-        float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
-        float camDistance = texture2D(colortex15, shiftedUVs).g;
+        mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
+        mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
+        mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
+        mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
+        mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
 
         /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
             continue;
@@ -621,7 +623,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     }*/
     
 
-    float bloomLerp = 1.0f;
+    mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
         bloomLerp = clamp01(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)));
     #endif
@@ -637,7 +639,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     return pow2(sum,vec3(2.2)) * vec3(0.0625);
 }
 
-float far = 1f;
+mediump float far = 1f;
 
 vec4 GetLightVolume(vec3 pos) {
     vec4 lightVolume;
@@ -647,7 +649,7 @@ vec4 GetLightVolume(vec3 pos) {
     #endif
 
     #ifdef ACL_CORNER_LEAK_FIX
-        float minMult = 1.5;
+        mediump float minMult = 1.5;
         ivec3 posTX = ivec3(pos * voxelVolumeSize);
 
         ivec3[6] adjacentOffsets = ivec3[](
@@ -691,8 +693,8 @@ vec4 GetLightVolume(vec3 pos) {
     return lightVolume;
 }
 
-float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
-    float ao = 0.0;
+mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
+    mediump float ao = 0.0;
     vec3 samplePos = pos + vec3(AO_WIDTH * 0.1/camDist);
     vec3 sampleNormal = texture2D(colortex1, samplePos.xy).xyz;
     ao += max(0.0, dot(sampleNormal, normal));
@@ -702,10 +704,10 @@ float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
 vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, float lViewPos1, float dither, float caveFactor) {
     vec3 lightFog = vec3(0.0);
 
-    float stepMult = 8.0;
+    mediump float stepMult = 8.0;
 
-    float maxDist = min(effectiveACLdistance * 0.5, far);
-    float halfMaxDist = maxDist * 0.5;
+    mediump float maxDist = min(effectiveACLdistance * 0.5, far);
+    mediump float halfMaxDist = maxDist * 0.5;
     int sampleCount = int(maxDist / stepMult + 0.001);
     vec3 traceAdd = nPlayerPos * stepMult;
     vec3 tracePos = traceAdd * dither;
@@ -713,7 +715,7 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
     for (int i = 0; i < sampleCount; i++) {
         tracePos += traceAdd;
 
-        float lTracePos = length(tracePos);
+        mediump float lTracePos = length(tracePos);
         if (lTracePos > lViewPos1) break;
 
         vec3 voxelPos = SceneToVoxel(tracePos);
@@ -722,7 +724,7 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
         vec4 lightVolume = GetLightVolume(voxelPos);
         vec3 lightSample = lightVolume.rgb;
 
-        float lTracePosM = length(vec3(tracePos.x, tracePos.y * 2.0, tracePos.z));
+        mediump float lTracePosM = length(vec3(tracePos.x, tracePos.y * 2.0, tracePos.z));
         lightSample *= max0(1.0 - lTracePosM / maxDist);
         lightSample *= pow22(min1(lTracePos * 0.03125));
 
@@ -730,7 +732,7 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
             if (caveFactor > 0.00001) {
                 vec3 smokePos = 0.0025 * (tracePos + cameraPosition);
                 vec3 smokeWind = frameTimeCounter * vec3(0.006, 0.003, 0.0);
-                float smoke = Noise3D(smokePos + smokeWind)
+                mediump float smoke = Noise3D(smokePos + smokeWind)
                             * Noise3D(smokePos * 3.0 - smokeWind)
                             * Noise3D(smokePos * 9.0 + smokeWind);
                 smoke = smoothstep1(smoke);
@@ -754,7 +756,7 @@ vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, f
 
 vec4 rayMarch(vec3 rayOrigin, vec3 rayDir, float density) {
     vec4 color = vec4(0.0);
-    float stepSize = 0.01;
+    mediump float stepSize = 0.01;
     for(float t = 0.0; t < 1.0; t += stepSize) {
         vec3 pos = rayOrigin + t * rayDir;
         vec3 lightDir = normalize2(sunPosition - viewSpaceFragPosition);
@@ -768,38 +770,38 @@ vec4 rayMarch(vec3 rayOrigin, vec3 rayDir, float density) {
     return color;
 }
 
-float fresnel(float sin_critical) {
-	float t = (1.f - sin_critical) / (1.f + sin_critical);
+mediump float fresnel(float sin_critical) {
+	mediump float t = (1.f - sin_critical) / (1.f + sin_critical);
 	return t * t;
 }
 
-float fresnel(vec3 normal, vec3 viewDir, float pow2er) {
+mediump float fresnel(vec3 normal, vec3 viewDir, float pow2er) {
     return pow2(1.0 - dot(normalize2(normal), normalize2(viewDir)), pow2er);
 }
 
 void noonFunc(float time, float timeFactor) {
-    float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+    mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
     baseDiffuseModifier = vec3(DAY_I);
     currentColor = mix2(baseColor,dayColor,dayNightLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
 }
 
 void sunsetFunc(float time, float timeFactor) {
-    float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+    mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
     baseDiffuseModifier = vec3(SUNSET_I);
     currentColor = mix2(dayColor, transitionColor, sunsetLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
 }
 
 void nightFunc(float time, float timeFactor) {
-    float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+    mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
     baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
     currentColor = mix2(baseColor, nightColor, dayNightLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
 }
 
 void dawnFunc(float time, float timeFactor) {
-    float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+    mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
     baseDiffuseModifier = vec3(SUNSET_I);
     currentColor = mix2(dayColor, transitionColor, sunsetLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
@@ -831,20 +833,20 @@ vec3 screenToWorld(vec2 screenPos, float depth) {
 }
 
 vec3 rgbToHsv(vec3 c) {
-    float max = max(c.r, max(c.g, c.b));
-    float min = min(c.r, min(c.g, c.b));
-    float chroma = max - min;
-    float saturation = (max == 0.0) ? 0.0 : chroma / max;
+    mediump float max = max(c.r, max(c.g, c.b));
+    mediump float min = min(c.r, min(c.g, c.b));
+    mediump float chroma = max - min;
+    mediump float saturation = (max == 0.0) ? 0.0 : chroma / max;
     return vec3(saturation);
 }
 
 vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
-    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-    float isRain = texture2D(colortex3, TexCoords).r;
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+    mediump float isRain = texture2D(colortex3, TexCoords).r;
     vec2 refractionFactor = vec2(0);
     vec2 TexCoords2 = coords;
-    float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
-    float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+    mediump float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
+    mediump float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
     #ifdef WATER_REFRACTION
         if(isRain == 1.0) {
             refractionFactor = sin(noise.y) * vec2(0.03125f) / max( distanceFromCamera*2f,1);
@@ -885,9 +887,9 @@ vec3 getUVFromPosition(vec3 position) {
 vec2 ssrRay(vec3 startPosition, vec3 reflectionDir) {
     vec3 currPos = vec3(0.0);
     vec3 currUV = vec3(0.0);
-    float currLength = 10.0;
+    mediump float currLength = 10.0;
     int maxIter = 100;
-    float bias = 0.00001;
+    mediump float bias = 0.00001;
 
     for (int i = 0; i < maxIter; i++) {
         // Get ray position
@@ -895,7 +897,7 @@ vec2 ssrRay(vec3 startPosition, vec3 reflectionDir) {
         // Get UV coordinates of ray
         currUV = getUVFromPosition(currPos);
         // Get depth of ray
-        float currDepth = texture2D(depthtex0, currUV.xy).r;
+        mediump float currDepth = texture2D(depthtex0, currUV.xy).r;
 
         if (isOutOfTexture(currUV.xy)) {
             return vec2(-1);
@@ -919,7 +921,7 @@ vec2 ssrRay(vec3 startPosition, vec3 reflectionDir) {
 vec4 waterReflections(vec3 color, vec2 uv, vec3 normal) {
     vec4 finalColor = vec4(color, 1.0);
 
-    float depth = texture2D(depthtex0, uv).r;
+    mediump float depth = texture2D(depthtex0, uv).r;
     vec3 position = getWorldPosition(uv, depth);
     vec3 viewDir = normalize2(position);
     //vec3 newNormal = (gbufferModelView * gbufferProjection * vec4(normal,1.0)).xyz;
@@ -939,7 +941,7 @@ vec4 waterReflections(vec3 color, vec2 uv, vec3 normal) {
 vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
     vec4 finalColor = vec4(color, 1.0);
 
-    float depth = texture2D(depthtex0, uv).r;
+    mediump float depth = texture2D(depthtex0, uv).r;
     vec3 position = getWorldPosition(uv, depth);
     vec3 viewDir = normalize2(position);
     vec3 reflectedDir = normalize2(reflect(viewDir, normal));
@@ -961,27 +963,27 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
 
 void main() {
     #ifndef SCENE_AWARE_LIGHTING
-        float aspectRatio = float(viewWidth)/float(viewHeight);
-        float waterTest = texture2D(colortex5, TexCoords).r;
-        float dhTest = texture2D(colortex5, TexCoords).g;
+        mediump float aspectRatio = float(viewWidth)/float(viewHeight);
+        mediump float waterTest = texture2D(colortex5, TexCoords).r;
+        mediump float dhTest = texture2D(colortex5, TexCoords).g;
 
         vec2 TexCoords2 = TexCoords;
 
-        float Depth = texture2D(depthtex0, TexCoords).r;
-        float Depth2 = texture2D(depthtex1, TexCoords).r;
+        mediump float Depth = texture2D(depthtex0, TexCoords).r;
+        mediump float Depth2 = texture2D(depthtex1, TexCoords).r;
 
         vec2 fragCoord = gl_FragCoord.xy/vec2(viewWidth, viewHeight);
 
         vec3 worldTexCoords = screenToWorld(TexCoords, clamp(Depth,0.0,1.0));
 
-        float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
-        float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+        mediump float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
+        mediump float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
         
         vec3 Albedo;
 
-        float albedoAlpha;
+        mediump float albedoAlpha;
 
-        float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+        mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
         vec4 noiseMap = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
         vec4 noiseMap2 = texture2D(colortex9, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
@@ -1009,14 +1011,14 @@ void main() {
 
         vec3 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
-        float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
+        mediump float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
 
         //vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
         //vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
 
         vec2 refractionFactor = vec2(0);
 
-        float isRain = texture2D(colortex3, TexCoords).r;
+        mediump float isRain = texture2D(colortex3, TexCoords).r;
 
         if(waterTest > 0) {
             if(underwaterDepth2 - underwaterDepth > 0f || Depth >= 1.0)
@@ -1043,10 +1045,10 @@ void main() {
                 //specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f) + refractionFactor);
                 //specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f) + refractionFactor);
                 
-                //float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
-                //float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
+                //mediump float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
+                //mediump float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
 
-                //float smoothness = 1 - roughness;
+                //mediump float smoothness = 1 - roughness;
                 
                 vec3 reflectionDir = reflect(-shadowLightDirection, normalWorldSpace);
 
@@ -1056,11 +1058,11 @@ void main() {
 
                 vec3 viewDirection = normalize2(cameraPosition - fragWorldSpace);
 
-                //float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
+                //mediump float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
                 
-                //float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
+                //mediump float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
 
-                float ambientLight = 0.0;
+                mediump float ambientLight = 0.0;
 
                 //lightBrightness = ambientLight + diffuseLight + specularLight;
                 //Albedo.xyz = mix2(Albedo.xyz, vec3(1.0), lightBrightness);
@@ -1085,7 +1087,7 @@ void main() {
                 albedoAlpha = Albedo4.a;
             }
             if(blindness > 0.0) {
-                float waterBlindness = texture2D(colortex5,TexCoords).z;
+                mediump float waterBlindness = texture2D(colortex5,TexCoords).z;
                 Albedo = mix2(Albedo, vec3(0.0), waterBlindness);
             }
         } else {
@@ -1094,7 +1096,7 @@ void main() {
             Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
         }
 
-        float isReflective = texture2D(colortex5, TexCoords).b;
+        mediump float isReflective = texture2D(colortex5, TexCoords).b;
 
         if(isReflective > 0.0) {
             Albedo = metallicReflections(Albedo,TexCoords,Normal).xyz;
@@ -1121,8 +1123,8 @@ void main() {
             baseDiffuse = Diffuse;
         }
         
-        float dayNightLerp = clamp(quadTime/11500,0,1);
-        float sunsetLerp = clamp(quadTime/500,0,1);
+        mediump float dayNightLerp = clamp(quadTime/11500,0,1);
+        mediump float sunsetLerp = clamp(quadTime/500,0,1);
         
         vec4 cloudViewPos = gbufferProjection * vec4(TexCoords, 0.0, 1.0);
         vec4 cloudClipPos = cloudViewPos;
@@ -1170,12 +1172,12 @@ void main() {
         //Diffuse *= currentColor;
 
         if(Depth == 1.0f){
-            /*float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+            /*mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-            float maxBlindnessDistance = 30;
-            float minBlindnessDistance = 20;
+            mediump float maxBlindnessDistance = 30;
+            mediump float minBlindnessDistance = 20;
 
-            float blindnessBlendValue = clamp((distanceFromCamera - minBlindnessDistance) / (maxBlindnessDistance - minBlindnessDistance),0,1);*/
+            mediump float blindnessBlendValue = clamp((distanceFromCamera - minBlindnessDistance) / (maxBlindnessDistance - minBlindnessDistance),0,1);*/
         
             currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
 
@@ -1183,8 +1185,8 @@ void main() {
                 currentColor *= NIGHT_I * 0.5f;
             }*/
 
-            float detectSky = texture2D(colortex5, TexCoords).g;
-            float detectEntity = texture2D(colortex12, TexCoords).r;
+            mediump float detectSky = texture2D(colortex5, TexCoords).g;
+            mediump float detectEntity = texture2D(colortex12, TexCoords).r;
             #ifdef BLOOM
                 vec3 lightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
             #else
@@ -1213,8 +1215,8 @@ void main() {
             return;
         }
 
-        float minLight = MIN_LIGHT;
-        float seMinLight = SE_MIN_LIGHT;
+        mediump float minLight = MIN_LIGHT;
+        mediump float seMinLight = SE_MIN_LIGHT;
         
         vec3 LightmapColor;
         //vec3 Lightmap = bloom();
@@ -1251,7 +1253,7 @@ void main() {
         }*/
 
         vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
-        float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.0f);
+        mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.0f);
 
         /*if((Lightmap.r + Lightmap.g + Lightmap.b)/3 < 0) {
             Diffuse = Albedo * LightmapColor;
@@ -1259,7 +1261,7 @@ void main() {
             Diffuse = Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor);
         }*/
 
-        float isParticle = texture2D(colortex6, TexCoords).r;
+        mediump float isParticle = texture2D(colortex6, TexCoords).r;
 
         /*if(isLiquidEmerald > 0.0) {
             Diffuse = Albedo;
@@ -1275,7 +1277,7 @@ void main() {
             Diffuse.xyz = mix2(Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor),LightmapColor,Lightmap.r * vec3(0.0625));
         }*/
 
-        float maxLight = MAX_LIGHT;
+        mediump float maxLight = MAX_LIGHT;
         
         vec3 shadowLerp = GetShadow(Depth);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
         if(waterTest > 0) {
@@ -1319,10 +1321,10 @@ void main() {
 
         //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
 
-        //float maxBlindnessDistance = 30;
-        //float minBlindnessDistance = 20;
+        //mediump float maxBlindnessDistance = 30;
+        //mediump float minBlindnessDistance = 20;
 
-        //float blindnessBlendValue = clamp((distanceFromCamera - minBlindnessDistance) / (maxBlindnessDistance - minBlindnessDistance),0,1);
+        //mediump float blindnessBlendValue = clamp((distanceFromCamera - minBlindnessDistance) / (maxBlindnessDistance - minBlindnessDistance),0,1);
         
         //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
 

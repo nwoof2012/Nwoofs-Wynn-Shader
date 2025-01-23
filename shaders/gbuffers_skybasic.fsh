@@ -90,6 +90,8 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 varying vec2 TexCoords;
 
 uniform float viewWidth;
@@ -140,24 +142,24 @@ vec3 transitionColorB;
 vec3 currentColorA;
 vec3 currentColorB;
 
-float fogify(float x, float w) {
+mediump float fogify(float x, float w) {
     return w / (x * x + w);
 }
 
 vec3 aces(vec3 x) {
-  float a = 2.51;
-  float b = 0.03;
-  float c = 2.43;
-  float d = 0.59;
-  float e = 0.14;
+  mediump float a = 2.51;
+  mediump float b = 0.03;
+  mediump float c = 2.43;
+  mediump float d = 0.59;
+  mediump float e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
 vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB, vec4 noiseColor) {
-    float upDot = dot(pos, gbufferModelView[1].xyz);
-    float lerpAmount = fogify(max(clamp(upDot,0,1),0.0), 0.25);
+    mediump float upDot = dot(pos, gbufferModelView[1].xyz);
+    mediump float lerpAmount = fogify(max(clamp(upDot,0,1),0.0), 0.25);
     vec3 sky = mix2(currentColorB, currentColorA, lerpAmount);
-    float lerpAmount2 = clamp(lerpAmount * 2 - 1, 0, 1);
+    mediump float lerpAmount2 = clamp(lerpAmount * 2 - 1, 0, 1);
     vec3 cloudColorA = vec3(CLOUD_COLOR_A_R, CLOUD_COLOR_A_G, CLOUD_COLOR_A_B);
     vec3 cloudColorB = vec3(CLOUD_COLOR_B_R, CLOUD_COLOR_B_G, CLOUD_COLOR_B_B);
     if(rainStrength > 0.2f && !isBiomeDry) {
@@ -183,7 +185,7 @@ vec3 screenToView(vec3 screenPos) {
 layout(location = 0) out vec4 outputColor;
 
 void noonFunc(float time, float timeFactor) {
-    float dayNightLerp = clamp(time/timeFactor,0,1);
+    mediump float dayNightLerp = clamp(time/timeFactor,0,1);
     if(rainStrength < 0.2f || isBiomeDry) {
         currentColorA = dayColorA;
         currentColorB = mix2(transitionColorB,dayColorB,dayNightLerp);
@@ -194,7 +196,7 @@ void noonFunc(float time, float timeFactor) {
 }
 
 void sunsetFunc(float time, float timeFactor) {
-    float sunsetLerp = clamp(time/timeFactor,0,1);
+    mediump float sunsetLerp = clamp(time/timeFactor,0,1);
     if(rainStrength < 0.2f || isBiomeDry) {
         currentColorA = mix2(dayColorA, nightColorA, sunsetLerp);
         currentColorB = mix2(dayColorB, transitionColorB, sunsetLerp);
@@ -205,13 +207,13 @@ void sunsetFunc(float time, float timeFactor) {
 }
 
 void nightFunc(float time, float timeFactor) {
-    float dayNightLerp = clamp(time/timeFactor,0,1);
+    mediump float dayNightLerp = clamp(time/timeFactor,0,1);
     currentColorA = nightColorA;
     currentColorB = mix2(transitionColorB,nightColorB,dayNightLerp);
 }
 
 void dawnFunc(float time, float timeFactor) {
-    float sunsetLerp = clamp(time/timeFactor,0,1);
+    mediump float sunsetLerp = clamp(time/timeFactor,0,1);
     if(rainStrength < 0.2f || isBiomeDry) {
         currentColorA = mix2(nightColorA, dayColorA, sunsetLerp);
         currentColorB = mix2(nightColorB, transitionColorB, sunsetLerp);
@@ -227,7 +229,7 @@ void main() {
     vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
     vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 
-    float depth = texture2D(depthtex0, texCoord).r;
+    mediump float depth = texture2D(depthtex0, texCoord).r;
 
     vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
@@ -294,8 +296,8 @@ void main() {
         baseColorB = currentColorB;
     }*/
 
-    float dayNightLerp = clamp(quadTime/500,0,1);
-    float sunsetLerp = clamp((quadTime - 500)/500,0,1);
+    mediump float dayNightLerp = clamp(quadTime/500,0,1);
+    mediump float sunsetLerp = clamp((quadTime - 500)/500,0,1);
 
     /*if(worldTime > 500 && worldTime <= 11500) {
         //baseOutputColorModifier = vec3(DAY_I);
@@ -330,9 +332,9 @@ void main() {
     viewPos /= viewPos.w;
     vec3 nViewPos = normalize(viewPos.xyz);
 
-    float VdotU = dot(nViewPos, upVec);
-    float VdotS = dot(nViewPos, sunVec);
-    float dither = Bayer8(gl_FragCoord.xy);
+    mediump float VdotU = dot(nViewPos, upVec);
+    mediump float VdotS = dot(nViewPos, sunVec);
+    mediump float dither = Bayer8(gl_FragCoord.xy);
     
     vec4 sunViewPos = gbufferProjection * vec4(sunPosition, 1.0);
     vec4 sunClipPos = sunViewPos;
@@ -357,20 +359,20 @@ void main() {
         outputColor = vec4(1.0);
     } else {
         pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
-        //float upDot = dot(pos, gbufferModelView[1].xyz);
+        //mediump float upDot = dot(pos, gbufferModelView[1].xyz);
         //gl_FragData[0] = vec4(upDot);
         outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
-        float sunMaxDistance = 0.06;
-        float distToSun = length((fragCoord - sunScreenPos) * vec2(aspectRatio, 1.0));
-        float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, distToSun);
-        float moonMaxDistance = 0.03;
-        float distToMoon = length((moonScreenPos - fragCoord) * vec2(aspectRatio, 1.0));
-        float moonGradient = 1.0 - pow2(smoothstep(0.0, sunMaxDistance, distToMoon),2.2);
+        mediump float sunMaxDistance = 0.06;
+        mediump float distToSun = length((fragCoord - sunScreenPos) * vec2(aspectRatio, 1.0));
+        mediump float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, distToSun);
+        mediump float moonMaxDistance = 0.03;
+        mediump float distToMoon = length((moonScreenPos - fragCoord) * vec2(aspectRatio, 1.0));
+        mediump float moonGradient = 1.0 - pow2(smoothstep(0.0, sunMaxDistance, distToMoon),2.2);
         if(distToMoon > moonMaxDistance) {
             moonGradient = 0;
         }
         vec3 sunColor = vec3(1.0, 0.9, 0.6);
-        float noise = texture2D(noisetex, transformedDir.rg).g;
+        mediump float noise = texture2D(noisetex, transformedDir.rg).g;
         vec3 moonColor = vec3(1.0, 1.0, 1.1);
         vec3 finalSunColor = sunColor * max(sunGradient * 2f, 1.0);
         vec3 finalMoonColor = mix2(pow2(moonColor * clamp(noise + 3.0, 3.0, 4.0) * 0.25f,vec3(1/1.2)), vec3(0.0), pow2(distToMoon/0.04,4.2));

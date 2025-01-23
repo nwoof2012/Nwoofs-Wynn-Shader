@@ -29,7 +29,7 @@ void main() {
 
     glColor = gl_Color;
 
-    float timeOfDay = mod(worldTime,24000);
+    /*float timeOfDay = mod(worldTime,24000);
     quadTime = timeOfDay;
     if(timeOfDay < 250) {
         timePhase = 3;
@@ -48,10 +48,10 @@ void main() {
         quadTime -= 23250;
     }
 
-    sunVisibility2 = timeOfDay/24000;
+    sunVisibility2 = timeOfDay/24000;*/
 
-    upVec = normalize(gbufferModelView[1].xyz);
-    sunVec = GetSunVector();
+    //upVec = normalize(gbufferModelView[1].xyz);
+    //sunVec = GetSunVector();
 
     vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
     position.xz -= vec2(88.0);

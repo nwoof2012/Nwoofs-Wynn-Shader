@@ -6,6 +6,8 @@
 
 #define ENTITY_SHADOWS
 
+precision mediump float;
+
 varying vec2 TexCoords;
 varying vec4 Color;
 

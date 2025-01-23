@@ -16,7 +16,7 @@
     #define RP_MODE 1 //[1 0 3 2]
 
     #define SHADOW_QUALITY 2 //[-1 0 1 2 3 4 5]
-    const float shadowDistance = 192.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
+    const mediump float shadowDistance = 192.0; //[64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0]
     #define ENTITY_SHADOWS_DEFINE -1 //[-1 1]
     #define SSAO_QUALI_DEFINE 2 //[0 2 3]
     #define FXAA_DEFINE 1 //[-1 1]
@@ -389,38 +389,38 @@
     #endif
     // Thanks to SpacEagle17 and isuewo for the sun angle handling
     #ifdef END
-        const float sunPathRotation = 0.0;
+        const mediump float sunPathRotation = 0.0;
     #else
         #if SUN_ANGLE == -1
             #if SHADER_STYLE == 1
-                const float sunPathRotation = 0.0;
+                const mediump float sunPathRotation = 0.0;
                 #define PERPENDICULAR_TWEAKS
             #elif SHADER_STYLE == 4
-                const float sunPathRotation = -40.0;
+                const mediump float sunPathRotation = -40.0;
             #endif
         #elif SUN_ANGLE == 0
-            const float sunPathRotation = 0.0;
+            const mediump float sunPathRotation = 0.0;
             #define PERPENDICULAR_TWEAKS
         #elif SUN_ANGLE == 20
-            const float sunPathRotation = 20.0;
+            const mediump float sunPathRotation = 20.0;
         #elif SUN_ANGLE == 30
-            const float sunPathRotation = 30.0;
+            const mediump float sunPathRotation = 30.0;
         #elif SUN_ANGLE == 40
-            const float sunPathRotation = 40.0;
+            const mediump float sunPathRotation = 40.0;
         #elif SUN_ANGLE == 50
-            const float sunPathRotation = 50.0;
+            const mediump float sunPathRotation = 50.0;
         #elif SUN_ANGLE == 60
-            const float sunPathRotation = 60.0;
+            const mediump float sunPathRotation = 60.0;
         #elif SUN_ANGLE == -20
-            const float sunPathRotation = -20.0;
+            const mediump float sunPathRotation = -20.0;
         #elif SUN_ANGLE == -30
-            const float sunPathRotation = -30.0;
+            const mediump float sunPathRotation = -30.0;
         #elif SUN_ANGLE == -40
-            const float sunPathRotation = -40.0;
+            const mediump float sunPathRotation = -40.0;
         #elif SUN_ANGLE == -50
-            const float sunPathRotation = -50.0;
+            const mediump float sunPathRotation = -50.0;
         #elif SUN_ANGLE == -60
-            const float sunPathRotation = -60.0;
+            const mediump float sunPathRotation = -60.0;
         #endif
     #endif
 
@@ -579,7 +579,7 @@
 #include "/lib/uniforms.glsl"
 
 //Very Common Variables//
-    const float OSIEBCA = 1.0 / 255.0; // One Step In Eight Bit Color Attachment
+    const mediump float OSIEBCA = 1.0 / 255.0; // One Step In Eight Bit Color Attachment
     /* materialMask steps
     0 to 240 - PBR Dependant:
         IntegratedPBR:
@@ -609,45 +609,45 @@
     */
 
     #if SHADOW_QUALITY == -1
-      float timeAngle = worldTime / 24000.0;
+      mediump float timeAngle = worldTime / 24000.0;
     #else
-      float tAmin     = fract(sunAngle - 0.033333333);
-      float tAlin     = tAmin < 0.433333333 ? tAmin * 1.15384615385 : tAmin * 0.882352941176 + 0.117647058824;
-      float hA        = tAlin > 0.5 ? 1.0 : 0.0;
-      float tAfrc     = fract(tAlin * 2.0);
-      float tAfrs     = tAfrc*tAfrc*(3.0-2.0*tAfrc);
-      float tAmix     = hA < 0.5 ? 0.3 : -0.1;
-      float timeAngle = (tAfrc * (1.0-tAmix) + tAfrs * tAmix + hA) * 0.5;
+      mediump float tAmin     = fract(sunAngle - 0.033333333);
+      mediump float tAlin     = tAmin < 0.433333333 ? tAmin * 1.15384615385 : tAmin * 0.882352941176 + 0.117647058824;
+      mediump float hA        = tAlin > 0.5 ? 1.0 : 0.0;
+      mediump float tAfrc     = fract(tAlin * 2.0);
+      mediump float tAfrs     = tAfrc*tAfrc*(3.0-2.0*tAfrc);
+      mediump float tAmix     = hA < 0.5 ? 0.3 : -0.1;
+      mediump float timeAngle = (tAfrc * (1.0-tAmix) + tAfrs * tAmix + hA) * 0.5;
     #endif
 
     #ifndef DISTANT_HORIZONS
-        float renderDistance = far;
+        mediump float renderDistance = far;
     #else
-        float renderDistance = float(dhRenderDistance);
+        mediump float renderDistance = float(dhRenderDistance);
     #endif
 
-    const float shadowMapBias = 1.0 - 25.6 / shadowDistance;
+    const mediump float shadowMapBias = 1.0 - 25.6 / shadowDistance;
     #ifndef DREAM_TWEAKED_LIGHTING
-        float noonFactor = sqrt(max(sin(timeAngle*6.28318530718),0.0));
+        mediump float noonFactor = sqrt(max(sin(timeAngle*6.28318530718),0.0));
     #else
-        float noonFactor = pow2(max(sin(timeAngle*6.28318530718),0.0), 0.2);
+        mediump float noonFactor = pow2(max(sin(timeAngle*6.28318530718),0.0), 0.2);
     #endif
-    float nightFactor = max(sin(timeAngle*(-6.28318530718)),0.0);
-    float invNightFactor = 1.0 - nightFactor;
-    float rainFactor2 = rainFactor * rainFactor;
-    float invRainFactor = 1.0 - rainFactor;
-    float invRainFactorSqrt = 1.0 - rainFactor * rainFactor;
-    float invNoonFactor = 1.0 - noonFactor;
-    float invNoonFactor2 = invNoonFactor * invNoonFactor;
+    mediump float nightFactor = max(sin(timeAngle*(-6.28318530718)),0.0);
+    mediump float invNightFactor = 1.0 - nightFactor;
+    mediump float rainFactor2 = rainFactor * rainFactor;
+    mediump float invRainFactor = 1.0 - rainFactor;
+    mediump float invRainFactorSqrt = 1.0 - rainFactor * rainFactor;
+    mediump float invNoonFactor = 1.0 - noonFactor;
+    mediump float invNoonFactor2 = invNoonFactor * invNoonFactor;
 
-    float vsBrightness = clamp(screenBrightness, 0.0, 1.0);
+    mediump float vsBrightness = clamp(screenBrightness, 0.0, 1.0);
 
     int modifiedWorldDay = int(mod(worldDay, 100) + 5.0);
-    float syncedTime = (worldTime + modifiedWorldDay * 24000) * 0.05;
+    mediump float syncedTime = (worldTime + modifiedWorldDay * 24000) * 0.05;
 
-    const float pi = 3.14159265359;
+    const mediump float pi = 3.14159265359;
 
-    const float oceanAltitude = 61.9;
+    const mediump float oceanAltitude = 61.9;
 
     #include "/lib/blocklightColors.glsl"
 
@@ -673,7 +673,7 @@
     vec3 waterFogColor = underwaterColorM2 * vec3(0.2 + 0.1 * vsBrightness);
 
     #if NETHER_COLOR_MODE == 3
-        float netherColorMixer = inNetherWastes + inCrimsonForest + inWarpedForest + inBasaltDeltas + inSoulValley;
+        mediump float netherColorMixer = inNetherWastes + inCrimsonForest + inWarpedForest + inBasaltDeltas + inSoulValley;
         vec3 netherColor = mix(
             fogColor * 0.6 + 0.2 * normalize2(fogColor + 0.0001),
             (
@@ -693,12 +693,12 @@
     const vec3 endSkyColor = vec3(0.095, 0.07, 0.15) * 1.5;
 
     #if WEATHER_TEX_OPACITY == 100
-        const float rainTexOpacity = 0.25;
-        const float snowTexOpacity = 0.5;
+        const mediump float rainTexOpacity = 0.25;
+        const mediump float snowTexOpacity = 0.5;
     #else
         #define WEATHER_TEX_OPACITY_M 100.0 / WEATHER_TEX_OPACITY
-        const float rainTexOpacity = pow2(0.25, WEATHER_TEX_OPACITY_M);
-        const float snowTexOpacity = pow2(0.5, WEATHER_TEX_OPACITY_M);
+        const mediump float rainTexOpacity = pow2(0.25, WEATHER_TEX_OPACITY_M);
+        const mediump float snowTexOpacity = pow2(0.5, WEATHER_TEX_OPACITY_M);
     #endif
 
     #ifdef FRAGMENT_SHADER

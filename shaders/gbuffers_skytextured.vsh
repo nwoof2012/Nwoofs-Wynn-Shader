@@ -2,6 +2,8 @@
 
 #define VERTEX_SHADER
 
+precision mediump float;
+
 out vec2 texcoord;
 out vec4 glcolor;
 flat out vec3 upVec, sunVec;

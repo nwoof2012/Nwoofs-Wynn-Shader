@@ -1,11 +1,17 @@
 #version 460 compatibility
 
+#include "lib/globalDefines.glsl"
+
 #define WATER_REFRACTION
 #define WATER_FOAM
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
+
+precision mediump float;
+
+uniform usampler3D cSampler1;
 
 varying vec2 TexCoords;
 varying vec4 Normal;
@@ -44,6 +50,22 @@ uniform bool isBiomeEnd;
 
 flat in int mat;
 
+in vec3 block_centered_relative_pos;
+
+in vec3 lightmap2;
+
+in vec4 at_midBlock2;
+
+in float isFoliage;
+
+in float isReflective;
+
+in vec3 worldSpaceVertexPosition;
+
+in vec3 normals_face_world;
+
+in vec3 foot_pos;
+
 /* DRAWBUFFERS:01235 */
 
 mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
@@ -54,14 +76,14 @@ mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
 void main() {
     //vec4 albedo = texture2D(texture, TexCoords) * Color;
 
-    float isWater = Normal.w;
+    mediump float isWater = Normal.w;
 
     vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth,viewHeight);
 
     vec4 depth = texture2D(depthtex1, TexCoords);
-    float depth2 = texture(depthtex0,texCoord).r;
+    mediump float depth2 = texture(depthtex0,texCoord).r;
 
-    float discardDepth = 1f;
+    mediump float discardDepth = 1f;
 
     if(depth2 != discardDepth) {
         discard;
@@ -98,10 +120,10 @@ void main() {
     //normalDefine = normalDefine + noiseMap;
 
     vec2 TexCoords2 = texCoord;
-    //float Depth = texture2D(depthtex0, texCoord).r;
-    //float Depth2 = texture2D(depthtex1, texCoord).r;
+    //mediump float Depth = texture2D(depthtex0, texCoord).r;
+    //mediump float Depth2 = texture2D(depthtex1, texCoord).r;
     vec3 Albedo;
-    float isBlockWater = float(Color.z > Color.y && Color.y > Color.x);
+    mediump float isBlockWater = float(Color.z > Color.y && Color.y > Color.x);
     /*if(depth.r != depth2 && isBlockWater > 0) {
         #ifdef WATER_REFRACTION
             vec4 noiseMap = texture2D(noise, texCoord + sin(texCoord.y*32f + ((frameCounter)/90f)*0.05f) * 0.001f);
@@ -132,7 +154,20 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal, 1.0);
-    gl_FragData[2] = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
+    #ifndef SCENE_AWARE_LIGHTING
+        gl_FragData[2] = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
+    #else
+        #define VOXEL_AREA 128 //[32 64 128]
+        #define VOXEL_RADIUS (VOXEL_AREA/2)
+        ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
+        vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
+        if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+            vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
+            light_color = bytes.xyz;
+        }
+
+        gl_FragData[2] = vec4(light_color, 1.0);
+    #endif
     gl_FragData[3] = vec4(1.0);
     if(mat == DH_BLOCK_WATER) {
         gl_FragData[4] = vec4(1.0, 0.0, 0.0, 1.0);

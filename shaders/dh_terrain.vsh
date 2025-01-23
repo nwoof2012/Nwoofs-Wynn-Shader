@@ -1,10 +1,14 @@
 #version 460 compatibility
 
+#include "lib/globalDefines.glsl"
+
 #define DISTANT_HORIZONS
 
 #define PATH_TRACING_GI 0 // [0 1]
 
 #define VERTEX_SHADER
+
+layout (r32ui) uniform uimage3D cimage1;
 
 uniform mat4 dhProjection;
 uniform mat4 gbufferModelViewInverse;
@@ -30,7 +34,25 @@ in vec4 mc_Entity;
 
 in vec3 at_tangent;
 
+out vec3 block_centered_relative_pos;
+
 out vec3 lightmap2;
+
+out vec4 at_midBlock2;
+
+out float isFoliage;
+
+out float isReflective;
+
+out vec3 worldSpaceVertexPosition;
+
+out vec3 normals_face_world;
+
+out vec3 foot_pos;
+
+in vec3 at_midBlock;
+
+in vec3 cameraPosition;
 
 #include "program/pathTracing.glsl"
 
@@ -76,4 +98,33 @@ void main() {
     playerPos = (gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex).xyz;
 
     gl_Position = ftransform();
+
+    #ifdef SCENE_AWARE_LIGHTING
+        vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+        foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+        vec3 world_pos = foot_pos + cameraPosition;
+        #define VOXEL_AREA 128 //[32 64 128]
+        #define VOXEL_RADIUS (VOXEL_AREA/2)
+        block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
+        ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
+
+        if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0) : mc_Entity.x == 10006? vec4(1.0) : mc_Entity.x == 10007? vec4(1.0) : mc_Entity.x == 10008? vec4(1.0) : mc_Entity.x == 10009? vec4(1.0) : mc_Entity.x == 10010? vec4(1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
+
+            /*if(length(voxel_data.xyz) <= 0.0) {
+                voxel_data = vec4(at_midBlock.w);
+            }*/
+
+            vec4 block_data = vec4(vec3(0.0),1.0);
+            if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
+
+            uint integerValue = packUnorm4x8(voxel_data);
+			
+			//uint integerValue2 = packUnorm4x8(block_data);
+
+            imageAtomicMax(cimage1, voxel_pos, integerValue);
+
+			//imageAtomicMax(cimage2, voxel_pos, integerValue2);
+        }
+    #endif
 }

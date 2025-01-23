@@ -2,6 +2,8 @@
 
 #define OVERWORLD
 
+precision mediump float;
+
 in vec4 glColor;
 
 in float sunVisibility2;
@@ -19,11 +21,11 @@ uniform sampler2D noises;
 /* DRAWBUFFERS:063 */
 
 void main() {
-    vec3 Color = texture2D(noises, TexCoords).rgb;
+    /*vec3 Color = texture2D(noises, TexCoords).rgb;
 
     //Color = vec3(dot(Color, vec3(0.333f)));
 
-    float cloudNoise = texture2D(colortex0, TexCoords * 55f).g;
+    mediump float cloudNoise = texture2D(colortex0, TexCoords * 55f).g;
 
     vec4 color = texture2D(noises, TexCoords) * glColor;
     
@@ -31,7 +33,7 @@ void main() {
 
     vec3 dayMiddleSkyColor = vec3(1.0);
 
-    float sunFactor = sunVisibility2;
+    mediump float sunFactor = sunVisibility2;
 
     vec4 translucentMult = vec4(mix2(vec3(0.666), color.rgb * (1.0 - pow2(pow2(color.a))), color.a), 1.0);
     vec3 cloudLight = mix2(vec3(0.8, 1.6, 1.5) * sqrt1(nightFactor), mix2(dayDownSkyColor, dayMiddleSkyColor, 0.1), sunFactor);
@@ -43,15 +45,15 @@ void main() {
     vec3 viewPos = ScreenToView(screenPos);
     vec3 playerPos = ViewToPlayer(viewPos);
 
-    float xzMaxDistance = max(abs(playerPos.x), abs(playerPos.z));
-    float cloudDistance = 375.0;
+    mediump float xzMaxDistance = max(abs(playerPos.x), abs(playerPos.z));
+    mediump float cloudDistance = 375.0;
     cloudDistance = clamp((cloudDistance - xzMaxDistance) / cloudDistance, 0.0, 1.0);
     color.rgb = vec3(1) - color.rgb;
     //color.a *= clamp01(cloudDistance * 3.0);
-    color.a = 1.0f;
+    color.a = 1.0f;*/
     gl_FragData[0] = vec4(0);
-    gl_FragData[1] = vec4(0.0, 0.0, 0.0, 1.0);
-    gl_FragData[2] = vec4(1.0 - translucentMult.rgb, translucentMult.a);
+    //gl_FragData[1] = vec4(0.0, 0.0, 0.0, 1.0);
+    //gl_FragData[2] = vec4(1.0 - translucentMult.rgb, translucentMult.a);
 
     //gl_FragData[0] = vec4(Color, 1.0f);
 }

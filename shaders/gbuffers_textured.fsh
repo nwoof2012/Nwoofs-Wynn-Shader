@@ -6,6 +6,8 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec4 Color;
@@ -17,14 +19,14 @@ uniform sampler2D texture;
 
 uniform int heldItemId;
 
-float AdjustLightmapTorch(in float torch) {
-    const float K = 2.0f;
-    const float P = 5.06f;
+mediump float AdjustLightmapTorch(in float torch) {
+    const mediump float K = 2.0f;
+    const mediump float P = 5.06f;
     return K * pow2(torch, P);
 }
 
-float AdjustLightmapSky(in float sky){
-    float sky_2 = sky * sky;
+mediump float AdjustLightmapSky(in float sky){
+    mediump float sky_2 = sky * sky;
     return sky_2 * sky_2;
 }
 
@@ -46,7 +48,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
     
-    float a;
+    mediump float a;
 
     /*if(albedo.a > 0 && heldItemId == 1) {
         a = 1;
@@ -54,7 +56,7 @@ void main() {
         a = 0;
     }*/
 
-    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
         albedo.xyz = blindEffect(albedo.xyz);

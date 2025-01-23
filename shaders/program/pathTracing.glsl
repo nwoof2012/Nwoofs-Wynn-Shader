@@ -26,7 +26,7 @@
         }
     #endif
     #ifdef FRAGMENT_SHADER
-        float random(in vec2 uv) {
+        mediump float random(in vec2 uv) {
             return fract(sin(dot(uv.xy, vec2(12.9898, 78.233))) * 43758.5453);
         }
         struct Ray {
@@ -62,7 +62,7 @@
                     break;
                 }
                 // Simulate ray-scene intersection (replace with actual intersection logic)
-                float t = 0.5 * (1.0 + ray.direction.y);
+                mediump float t = 0.5 * (1.0 + ray.direction.y);
                 vec3 hitColor = mix2(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), t);
                 
                 // Update color based on intersection
@@ -95,9 +95,9 @@
     #ifdef FRAGMENT_SHADER
         bool intersect(vec3 origin, vec3 dir, vec3 solidTex) {
             vec3 oc = origin - solidTex;
-            float b = dot(oc, dir);
-            float c = dot(oc, oc);
-            float h = b * b - c;
+            mediump float b = dot(oc, dir);
+            mediump float c = dot(oc, oc);
+            mediump float h = b * b - c;
             if(h > 0.0) {
                 return true;
             }
@@ -119,7 +119,7 @@
         vec3 computeShadows(vec3 lightDir, vec3 ambientLight, vec3 normal, vec3 fragPos) {
             vec3 color = ambientLight;
             if(!isShadowed(lightDir, fragPos, fragPos.xy)) {
-                float diff = max(dot(normal, lightDir), 0.0);
+                mediump float diff = max(dot(normal, lightDir), 0.0);
                 color += vec3(diff);
             }
             return clamp(color, 0.0, 1.0);

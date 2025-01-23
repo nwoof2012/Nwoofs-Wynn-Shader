@@ -9,9 +9,11 @@
 #define FOLIAGE_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 #define FOLIAGE_WAVE_DISTANCE 4 // [2 4 8 16 32]
 
+precision mediump float;
+
 struct LightSource {
     int id;
-    float brightness;
+    mediump float brightness;
 };
 
 layout (r32ui) uniform uimage3D cimage1;
@@ -78,10 +80,10 @@ const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
 const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
 
 vec3 GetRawWave(in vec3 pos, float wind) {
-    float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
-    float d0 = sin(wind * 0.0127);
-    float d1 = sin(wind * 0.0089);
-    float d2 = sin(wind * 0.0114);
+    mediump float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
+    mediump float d0 = sin(wind * 0.0127);
+    mediump float d1 = sin(wind * 0.0089);
+    mediump float d2 = sin(wind * 0.0114);
     vec3 wave;
     wave.x = sin(wind*0.0063 + d0 + d1 - pos.x + pos.z + pos.y) * magnitude;
     wave.z = sin(wind*0.0224 + d1 + d2 + pos.x - pos.z + pos.y) * magnitude;
@@ -122,7 +124,7 @@ void main() {
 
     vec3 chunkVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition,1.0)).xyz;
 
-	float distanceFromCamera = distance(worldSpaceVertexPosition, cameraPosition);
+	mediump float distanceFromCamera = distance(worldSpaceVertexPosition, cameraPosition);
 
     LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 
@@ -133,7 +135,7 @@ void main() {
 
     normals_face_world = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
 
-    float bottomY = at_midBlock.y - 0.5;
+    mediump float bottomY = at_midBlock.y - 0.5;
 
     at_midBlock2 = at_midBlock;
 

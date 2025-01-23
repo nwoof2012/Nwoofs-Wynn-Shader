@@ -6,6 +6,8 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 varying vec2 TexCoords;
 
 varying vec4 Color;
@@ -22,7 +24,7 @@ void main() {
 
     //Color = vec3(dot(Color, vec3(0.333f)));
 
-    float a;
+    mediump float a;
 
     /*if(color.a > 0) {
         a = 1;
@@ -30,7 +32,7 @@ void main() {
         a = 0;
     }*/
 
-    float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
     if(blindness > 0f) {
         color.xyz = blindEffect(color.xyz);

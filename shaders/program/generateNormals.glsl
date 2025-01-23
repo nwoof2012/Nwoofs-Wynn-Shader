@@ -1,10 +1,10 @@
 #include "/lib/miplevel.glsl"
 
-const float normalThreshold = 0.05;
-const float normalClamp = 0.2;
-const float packSizeGN = 128.0;
+const mediump float normalThreshold = 0.05;
+const mediump float normalClamp = 0.2;
+const mediump float packSizeGN = 128.0;
 
-float getHeightFromAlbedo(vec2 uv, sampler2D tex) {
+mediump float getHeightFromAlbedo(vec2 uv, sampler2D tex) {
     vec3 texSample = texture2D(tex, uv).rgb;
     return dot(texSample,texSample);
 }
@@ -12,19 +12,19 @@ float getHeightFromAlbedo(vec2 uv, sampler2D tex) {
 vec4 normalFromDepth(vec2 uv, sampler2D tex, vec2 resolution, float scale) {
     vec2 stepSize = 0.1/resolution;
 
-    float height = getHeightFromAlbedo(uv, tex);
+    mediump float height = getHeightFromAlbedo(uv, tex);
 
     vec2 dxy = height - vec2(getHeightFromAlbedo(uv + vec2(stepSize.x, 0.0),tex),getHeightFromAlbedo(uv + vec2(0.0, stepSize.y),tex));
 
     return vec4(normalize2(vec3(dxy * scale / stepSize, 1.0)),height);
 }
 
-float GetDif(float lOriginalAlbedo, vec2 offsetCoord, sampler2D tex) {
+mediump float GetDif(float lOriginalAlbedo, vec2 offsetCoord, sampler2D tex) {
     #ifndef GBUFFERS_WATER
-        float lNearbyAlbedo = length(texture2D(tex, offsetCoord).rgb);
+        mediump float lNearbyAlbedo = length(texture2D(tex, offsetCoord).rgb);
     #else
         vec4 textureSample = texture2D(tex, offsetCoord);
-        float lNearbyAlbedo = length(textureSample.rgb * textureSample.a * 1.5);
+        mediump float lNearbyAlbedo = length(textureSample.rgb * textureSample.a * 1.5);
     #endif
 
     #ifdef GBUFFERS_ENTITIES
@@ -32,7 +32,7 @@ float GetDif(float lOriginalAlbedo, vec2 offsetCoord, sampler2D tex) {
         lNearbyAlbedo = abs(lNearbyAlbedo - 1.0);
     #endif
 
-    float dif = lOriginalAlbedo - lNearbyAlbedo;
+    mediump float dif = lOriginalAlbedo - lNearbyAlbedo;
 
     #ifdef GBUFFERS_ENTITIES
         dif = -dif;
@@ -49,9 +49,9 @@ float GetDif(float lOriginalAlbedo, vec2 offsetCoord, sampler2D tex) {
 void GenerateNormals(inout vec3 normal, vec3 color, sampler2D tex, mat3 tbnMatrix) {
 
     vec2 midCoordPos2 = TexCoords - absMidCoordPos;
-    float lOriginalAlbedo = length(color.rgb);
+    mediump float lOriginalAlbedo = length(color.rgb);
 
-    float normalMult = max(0.0, 1.0 - mipDelta);
+    mediump float normalMult = max(0.0, 1.0 - mipDelta);
 
     vec2 offsetR = 16.0 / atlasSizeM;
 

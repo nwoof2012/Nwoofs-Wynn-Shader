@@ -4,6 +4,8 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+precision mediump float;
+
 uniform sampler2D gtexture;
 
 in vec2 texcoord;
@@ -20,9 +22,9 @@ in vec3 position;
 
 uniform float rainFactor;
 
-float SdotU = dot(sunVec, upVec);
-float sunVisibility = clamp(SdotU + 0.0625, 0.0, 0.125) / 0.125;
-float sunVisibility2 = sunVisibility * sunVisibility;
+mediump float SdotU = dot(sunVec, upVec);
+mediump float sunVisibility = clamp(SdotU + 0.0625, 0.0, 0.125) / 0.125;
+mediump float sunVisibility2 = sunVisibility * sunVisibility;
 
 #include "lib/commonFunctions.glsl"
 
@@ -37,8 +39,8 @@ void main() {
     viewPos /= viewPos.w;
     vec3 nViewPos = normalize2(viewPos.xyz);
 
-    float VdotS = dot(nViewPos, sunVec);
-    float VdotU = dot(nViewPos, upVec);
+    mediump float VdotS = dot(nViewPos, sunVec);
+    mediump float VdotU = dot(nViewPos, upVec);
 
     if (VdotS > 0.0) { // Sun
         color.rgb *= dot(color.rgb, color.rgb) * 3.2;
