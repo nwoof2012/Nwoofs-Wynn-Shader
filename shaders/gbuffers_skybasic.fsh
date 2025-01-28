@@ -110,6 +110,8 @@ uniform vec3 skyColor;
 uniform bool isBiomeEnd;
 uniform bool isBiomeDry;
 
+uniform sampler2D colortex11;
+
 uniform float rainStrength;
 
 uniform sampler2D noisetex;
@@ -223,6 +225,43 @@ void dawnFunc(float time, float timeFactor) {
     }
 }
 
+vec3 getMoonCoords(float scale) {
+    vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+
+    mediump float depth = texture2D(depthtex0, texCoord * scale).r;
+
+    vec3 ClipSpace = vec3(TexCoords * scale, depth * scale) * 2.0f - 1.0f;
+    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+    vec3 View = ViewW.xyz / ViewW.w;
+    //View += sunPosition;
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+
+    vec2 ndc = texCoord * 2.0 - 1.0;
+
+    vec4 clip = vec4(ndc, -1.0, 1.0);
+
+    vec4 sunViewPos = vec4(sunPosition, 1.0);
+    vec4 sunClipPos = sunViewPos;
+    
+    vec3 sunNDC = sunClipPos.xyz / sunClipPos.w;
+
+    vec2 sunScreenPos = sunNDC.xy * 0.5 + 0.5;
+
+    vec2 sunCoords = (sunPosition.xy + 1.0) * 0.5;
+
+    vec3 sunWorldPos = (gbufferModelViewInverse * sunViewPos).xyz;
+
+    vec4 viewSpace = gbufferProjectionInverse * clip;
+    //viewSpace.xyz += sunPosition;
+
+    vec3 direction = normalize2(viewSpace.xyz / viewSpace.w);
+    //direction += normalize2(sunPosition);
+
+    vec3 transformedDir = (gbufferModelViewInverse * vec4(direction, 0.0)).xyz;
+
+    return transformedDir + normalize2(sunWorldPos) + 0.5f;
+}
+
 #include "lib/timeCycle.glsl"
 
 void main() {
@@ -329,6 +368,7 @@ void main() {
 
     vec4 screenPos = vec4(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z, 1.0);
     vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
+    vec4 worldPos = gbufferModelViewInverse * viewPos;
     viewPos /= viewPos.w;
     vec3 nViewPos = normalize(viewPos.xyz);
 
@@ -338,6 +378,8 @@ void main() {
     
     vec4 sunViewPos = gbufferProjection * vec4(sunPosition, 1.0);
     vec4 sunClipPos = sunViewPos;
+
+    vec3 sunDirection = normalize2(sunPosition);
     
     vec3 sunNDC = sunClipPos.xyz / sunClipPos.w;
 
@@ -359,6 +401,7 @@ void main() {
         outputColor = vec4(1.0);
     } else {
         pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
+        float invertSunMoon = 1.0;
         //mediump float upDot = dot(pos, gbufferModelView[1].xyz);
         //gl_FragData[0] = vec4(upDot);
         outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
@@ -367,8 +410,11 @@ void main() {
         mediump float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, distToSun);
         mediump float moonMaxDistance = 0.03;
         mediump float distToMoon = length((moonScreenPos - fragCoord) * vec2(aspectRatio, 1.0));
-        mediump float moonGradient = 1.0 - pow2(smoothstep(0.0, sunMaxDistance, distToMoon),2.2);
+        mediump float moonGradient = 1.0 - pow2(smoothstep(0.0, moonMaxDistance, distToMoon),2.2);
         if(distToMoon > moonMaxDistance) {
+            moonGradient = 0;
+        }
+        if(distToSun > sunMaxDistance) {
             moonGradient = 0;
         }
         vec3 sunColor = vec3(1.0, 0.9, 0.6);
@@ -376,12 +422,26 @@ void main() {
         vec3 moonColor = vec3(1.0, 1.0, 1.1);
         vec3 finalSunColor = sunColor * max(sunGradient * 2f, 1.0);
         vec3 finalMoonColor = mix2(pow2(moonColor * clamp(noise + 3.0, 3.0, 4.0) * 0.25f,vec3(1/1.2)), vec3(0.0), pow2(distToMoon/0.04,4.2));
+        vec3 outputColorSun = mix2(vec3(0.0), finalSunColor, sunGradient);
+        //vec3 outputColorMoon = mix2(vec3(0.0), finalMoonColor, moonGradient);
+        vec4 outputColorMoon = texture2D(colortex11, getMoonCoords(1).xy).xyzw;
+        outputColorMoon = mix2(vec4(outputColorMoon.xyz, 0.0), outputColorMoon.xyzw, outputColorMoon.w);
+        outputColorMoon.xyz += 0.6;
+        outputColorMoon.xyz *= clamp(pow2(moonGradient,1/2.2) + 0.25,0.25,1);
+        outputColorMoon.xyz = clamp(outputColorMoon.xyz,0,1);
+        if(distToMoon > moonMaxDistance) outputColorMoon.w = 0.0;
+        float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
+        vec4 outputSunMoon = vec4(outputColorSun,sunGradient);
+        if(detectSunMoon > 0.99) {
+            outputSunMoon = outputColorMoon.xyzw;
+        }
         if(worldTime%24000 < 12000) {
-            outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);
+            //outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);
             gl_FragData[3] = vec4(vec3(distToSun * 5.0),1.0);
         } else {
-            outputColor.rgb = mix2(outputColor.rgb, finalMoonColor, moonGradient);
+            //outputColor.rgb = mix2(outputColor.rgb, finalMoonColor, moonGradient);
         }
+        outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
         //discard;
     }
 

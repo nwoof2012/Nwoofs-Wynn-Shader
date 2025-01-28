@@ -63,8 +63,6 @@ const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
     #include "program/pathTracing.glsl"
 #endif
 
-#define LIGHT_RADIUS 2
-
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
     const mediump float P = 5.06f;
@@ -173,7 +171,7 @@ bool pointsIntersect(vec3 origin, vec3 dir, vec3 solidTex) {
 /* RENDERTARGETS:0,1,2,3,5,10,15*/
 
 void main() {
-    //vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
+    vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
     vec4 albedo = texture2D(gtexture, TexCoords) * Color;
     albedo.xyz = pow2(albedo.xyz, vec3(2.2));
 
@@ -223,6 +221,8 @@ void main() {
             // Calculate the total number of iterations (light radius cubed)
             int totalLightRadius = 8 * LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS; // 2 * LIGHT_RADIUS ^ 3
 
+            vec3 sphereCoords = vec3(gl_FragCoord.xy, gl_FragCoord.z) - vec3(LIGHT_RADIUS);
+
             for (int idx = 0; idx < totalLightRadius; idx++) {
                 // Explicitly cast the index to (x, y, z) coordinates
                 int x = (idx / (2 * LIGHT_RADIUS * 2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for x
@@ -232,6 +232,8 @@ void main() {
                 // Compute the block-relative position
                 vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
                 ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
+
+                if (x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
 
                 // Skip if out of light radius
                 if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
@@ -247,8 +249,9 @@ void main() {
                     }
 
                     // Compute lighting contribution
-                    lighting = mix2(vec4(0.0), decodeLightmap(bytes),
+                    lighting = mix2(vec4(lightColor * 0.25f,0.0), decodeLightmap(bytes),
                                 clamp(1.0 - distance(block_centered_relative_pos, block_centered_relative_pos2) / float(LIGHT_RADIUS), 0.0, 1.0));
+                    //lighting.xyz *= lightColor;
                 }
 
                 // Update secondary light data
