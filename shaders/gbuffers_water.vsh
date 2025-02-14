@@ -90,12 +90,14 @@ float pNoise(vec2 p, int res){
 	float amp = 1.;
 	int iCount = 0;
 	for (int i = 0; i<50; i++){
-		n+=amp*noise(p, f);
-		f*=2.;
-		normK+=amp;
-		amp*=persistance;
-		if (iCount == res) break;
-		iCount++;
+		if (iCount != res)
+		{
+			n+=amp*noise(p, f);
+			f*=2.;
+			normK+=amp;
+			amp*=persistance;
+			iCount++;
+		}
 	}
 	float nf = n/normK;
 	return nf*nf*nf*nf;

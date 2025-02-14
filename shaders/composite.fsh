@@ -701,59 +701,6 @@ mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
     return ao;
 }
 
-vec3 GetColoredLightFog(vec3 nPlayerPos, vec3 translucentMult, float lViewPos, float lViewPos1, float dither, float caveFactor) {
-    vec3 lightFog = vec3(0.0);
-
-    mediump float stepMult = 8.0;
-
-    mediump float maxDist = min(effectiveACLdistance * 0.5, far);
-    mediump float halfMaxDist = maxDist * 0.5;
-    int sampleCount = int(maxDist / stepMult + 0.001);
-    vec3 traceAdd = nPlayerPos * stepMult;
-    vec3 tracePos = traceAdd * dither;
-
-    for (int i = 0; i < sampleCount; i++) {
-        tracePos += traceAdd;
-
-        mediump float lTracePos = length(tracePos);
-        if (lTracePos > lViewPos1) break;
-
-        vec3 voxelPos = SceneToVoxel(tracePos);
-        voxelPos = clamp01(voxelPos / vec3(voxelVolumeSize));
-
-        vec4 lightVolume = GetLightVolume(voxelPos);
-        vec3 lightSample = lightVolume.rgb;
-
-        mediump float lTracePosM = length(vec3(tracePos.x, tracePos.y * 2.0, tracePos.z));
-        lightSample *= max0(1.0 - lTracePosM / maxDist);
-        lightSample *= pow22(min1(lTracePos * 0.03125));
-
-        #ifdef CAVE_SMOKE
-            if (caveFactor > 0.00001) {
-                vec3 smokePos = 0.0025 * (tracePos + cameraPosition);
-                vec3 smokeWind = frameTimeCounter * vec3(0.006, 0.003, 0.0);
-                mediump float smoke = Noise3D(smokePos + smokeWind)
-                            * Noise3D(smokePos * 3.0 - smokeWind)
-                            * Noise3D(smokePos * 9.0 + smokeWind);
-                smoke = smoothstep1(smoke);
-                lightSample *= mix2(1.0, smoke * 16.0, caveFactor);
-                lightSample += caveFogColor * pow22(smoke) * 0.05 * caveFactor;
-            }
-        #endif
-
-        if (lTracePos > lViewPos) lightSample *= translucentMult;
-        lightFog += lightSample;
-    }
-
-    #ifdef NETHER
-        lightFog *= netherColor * 5.0;
-    #endif
-
-    lightFog *= 1.0 - maxBlindnessDarkness;
-
-    return pow2(lightFog / sampleCount, vec3(0.25));
-}
-
 vec4 rayMarch(vec3 rayOrigin, vec3 rayDir, float density) {
     vec4 color = vec4(0.0);
     mediump float stepSize = 0.01;
@@ -761,10 +708,11 @@ vec4 rayMarch(vec3 rayOrigin, vec3 rayDir, float density) {
         vec3 pos = rayOrigin + t * rayDir;
         vec3 lightDir = normalize2(sunPosition - viewSpaceFragPosition);
         vec3 light = vec3(max(dot(normalize2(lightDir),normalize2(pos - cameraPosition)), 0.0));
-        color.rgb += density * light * stepSize;
-        color.a += density * stepSize;
+        vec4 newColor = color;
+        newColor.rgb += density * light * stepSize;
+        newColor.a += density * stepSize;
 
-        if(color.a >= 1.0) break;
+        color = mix2(color, newColor, 1 - step(color.a, 1.0));
     }
 
     return color;

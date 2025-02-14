@@ -100,12 +100,15 @@ mediump float pNoise(vec2 p, int res){
 	mediump float amp = 1.;
 	int iCount = 0;
 	for (int i = 0; i<50; i++){
-		n+=amp*noise(p, f);
-		f*=2.;
-		normK+=amp;
-		amp*=persistance;
-		if (iCount == res) break;
-		iCount++;
+		if(iCount != -1) {
+			n+=amp*noise(p, f);
+			f*=2.;
+			normK+=amp;
+			amp*=persistance;
+			if (iCount == res) iCount = -1;
+
+			iCount++;
+		}
 	}
 	mediump float nf = n/normK;
 	return nf*nf*nf*nf;

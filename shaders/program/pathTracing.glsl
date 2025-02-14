@@ -57,32 +57,34 @@
             vec3 SkyColor = vec3(0.05f, 0.15f, 0.3f);
 
             int maxBounces = 5;
+
+            bool blockHitCheck = true;
             for (int bounce = 0; bounce < maxBounces; ++bounce) {
-                if(!checkBlockHit(ray, Normal, albedoAlpha)) {
-                    break;
+                if(blockHitCheck) {
+                    blockHitCheck = checkBlockHit(ray, Normal, albedoAlpha);
+                    // Simulate ray-scene intersection (replace with actual intersection logic)
+                    mediump float t = 0.5 * (1.0 + ray.direction.y);
+                    vec3 hitColor = mix2(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), t);
+                    
+                    // Update color based on intersection
+                    vec3 lightmapColor = SkyColor;
+
+                    /*if(lightmap.x > 0f) {
+                        lightmapColor = TorchColor;
+                    }*/
+                    color += attenuation * lightmapColor * hitColor;
+
+                    // Update attenuation (e.g., based on material properties)
+                    if(lightmap.x > 0f) {
+                        attenuation *= 0.8f;
+                    } else {
+                        attenuation *= 0.1;
+                    }
+
+                    // Generate new ray direction (replace with actual reflection/refraction logic)
+                    ray.origin = ray.origin + t * ray.direction;
+                    ray.direction = normalize2(reflect(ray.direction, vec3(0.0, 1.0, 0.0)));
                 }
-                // Simulate ray-scene intersection (replace with actual intersection logic)
-                mediump float t = 0.5 * (1.0 + ray.direction.y);
-                vec3 hitColor = mix2(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), t);
-                
-                // Update color based on intersection
-                vec3 lightmapColor = SkyColor;
-
-                /*if(lightmap.x > 0f) {
-                    lightmapColor = TorchColor;
-                }*/
-                color += attenuation * lightmapColor * hitColor;
-
-                // Update attenuation (e.g., based on material properties)
-                if(lightmap.x > 0f) {
-                    attenuation *= 0.8f;
-                } else {
-                    attenuation *= 0.1;
-                }
-
-                // Generate new ray direction (replace with actual reflection/refraction logic)
-                ray.origin = ray.origin + t * ray.direction;
-                ray.direction = normalize2(reflect(ray.direction, vec3(0.0, 1.0, 0.0)));
             }
 
             return color;

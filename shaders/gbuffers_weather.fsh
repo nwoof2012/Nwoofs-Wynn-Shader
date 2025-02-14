@@ -28,25 +28,23 @@ void main() {
     #endif
     color *= texture(lightmap, lmcoord);
     
-	if (color.a < 0.1) {
-		discard;
+	if (color.a >= 0.1) {
+		if(color.b > color.g && color.b > color.a) {
+            isWater = vec4(1f, 1f, 1f, 1f);
+            isRain = vec4(1f);
+        } else {
+            isWater = vec4(0f, 1f, 1f, 1f);
+            isRain = vec4(0f);
+        }
+
+        mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
+        mediump float maxFogDistance = 3000;
+        mediump float minFogDistance = 2000;
+        
+        mediump float fogBlendValue = clamp((distanceFromCamera - minFogDistance) / (maxFogDistance - minFogDistance),0,1);
+
+        //color.a = mix2(0f, 1f, fogBlendValue);
+        //color.rgb = mix2(color.rgb, vec3(0.5f),fogBlendValue);
 	}
-
-    if(color.b > color.g && color.b > color.a) {
-        isWater = vec4(1f, 1f, 1f, 1f);
-        isRain = vec4(1f);
-    } else {
-        isWater = vec4(0f, 1f, 1f, 1f);
-        isRain = vec4(0f);
-    }
-
-    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-
-    mediump float maxFogDistance = 3000;
-    mediump float minFogDistance = 2000;
-    
-    mediump float fogBlendValue = clamp((distanceFromCamera - minFogDistance) / (maxFogDistance - minFogDistance),0,1);
-
-    //color.a = mix2(0f, 1f, fogBlendValue);
-    //color.rgb = mix2(color.rgb, vec3(0.5f),fogBlendValue);
 }

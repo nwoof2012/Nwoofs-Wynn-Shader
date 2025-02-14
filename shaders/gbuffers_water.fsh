@@ -199,23 +199,52 @@ void main() {
         vec4 lighting = decodeLightmap(vec4(light_color, 1.0));
 
         if(lighting.w <= 0.0) {
-            for(int x = -LIGHT_RADIUS; x < LIGHT_RADIUS; x++) {
-                vec4 blockBytes = vec4(1.0);
-                for(int y = -LIGHT_RADIUS; y < LIGHT_RADIUS; y++) {
-                    for(int z = -LIGHT_RADIUS; z < LIGHT_RADIUS; z++) {
-                        vec3 block_centered_relative_pos2 = foot_pos +at_midBlock2.xyz/64.0 + vec3(x, z, y) + fract(cameraPosition);
-                        ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2+VOXEL_RADIUS);
-                        if(distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) break;
-                        vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
-                        blockBytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos2)/vec3(VOXEL_AREA)).r);
-                        if(blockBytes.x == 0.0) break;
-                        if(bytes.xyz != vec3(0.0)) {
-                            lighting = mix(vec4(0.0),decodeLightmap(vec4(bytes.xyz, 1.0)),clamp(1 - distance(block_centered_relative_pos, block_centered_relative_pos2)/LIGHT_RADIUS,0,1));
-                        }
+            vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
+            vec4 bytes2 = unpackUnorm4x8(texture3D(cSampler1,vec3(ivec3(block_centered_relative_pos3+VOXEL_RADIUS))/vec3(VOXEL_AREA)).r);
+            // Calculate the total number of iterations (light radius cubed)
+            int totalLightRadius = 8 * LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS; // 2 * LIGHT_RADIUS ^ 3
+
+            vec3 sphereCoords = vec3(gl_FragCoord.xy, gl_FragCoord.z) - vec3(LIGHT_RADIUS);
+            
+            mediump float voxel_open = 1.0;
+
+            for (int idx = 0; idx < totalLightRadius; idx++) {
+                // Explicitly cast the index to (x, y, z) coordinates
+                int x = (idx / (2 * LIGHT_RADIUS * 2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for x
+                int y = ((idx / (2 * LIGHT_RADIUS)) % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for y
+                int z = (idx % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for z
+
+                // Compute the block-relative position
+                vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
+                ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
+
+                if (x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
+
+                // Skip if out of light radius
+                if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
+
+                // Sample textures for light and block data
+                vec4 bytes = unpackUnorm4x8(texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
+                vec4 blockBytes = unpackUnorm4x8(texture3D(cSampler2, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
+
+                // Check light-block interactions
+                if (bytes.xyz != vec3(0.0)) {
+                    mediump float distA = distance(voxel_pos2, vec3(0.0));
+                    mediump float distB = distance(voxel_pos, vec3(0.0));
+                    if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0)) {
+                        voxel_open *= step(distA, distB);
                     }
-                    if(blockBytes.x == 0.0) break;
+
+                    // Compute lighting contribution
+                    lighting = mix2(vec4(0.0), decodeLightmap(bytes),
+                                clamp(1.0 - distance(block_centered_relative_pos, block_centered_relative_pos2) / float(LIGHT_RADIUS), 0.0, 1.0));
+                    
+                    lighting = mix2(vec4(0.0), lighting, voxel_open);
+                    //lighting.xyz *= lightColor;
                 }
-                if(blockBytes.x == 0.0) break;
+
+                // Update secondary light data
+                bytes2 = unpackUnorm4x8(texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
             }
         }
 

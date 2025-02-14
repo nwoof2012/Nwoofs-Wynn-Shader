@@ -261,61 +261,57 @@ void main() {
     vec4 outputColorData = blockColor;
     vec3 outputColor = outputColorData.rgb * max(lightColor,vec3(1.0));
     mediump float transparency = outputColorData.a;
-    if(transparency < .1) {
-        discard;
-    }
+    if(transparency >= .1) {
+        vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 
-    vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+        mediump float depth = texture2D(depthtex0, texCoord).r;
+        mediump float dhDepth = gl_FragCoord.z;
+        mediump float depthLinear = linearizeDepth(depth, near, far*4);
+        mediump float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
 
-    mediump float depth = texture2D(depthtex0, texCoord).r;
-    mediump float dhDepth = gl_FragCoord.z;
-    mediump float depthLinear = linearizeDepth(depth, near, far*4);
-    mediump float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
+        if(depthLinear >= dhDepthLinear && depth == 1) {
+            //vec3 fogColor = vec3(1.0);
 
-    if(depthLinear < dhDepthLinear && depth != 1) {
-        discard;
-    }
+            mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
-    //vec3 fogColor = vec3(1.0);
+            mediump float dhBlend = pow2(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
+            
+            //outputColor = pow2(outputColor,vec3(1/2.2));
+            outputColor *= lightBrightness;
+            //outputColor = pow2(outputColor,vec3(2.2));
 
-    mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
+            if(blindness > 0f) {
+                outputColor.xyz = blindEffect(outputColor.xyz);
+            }
 
-    mediump float dhBlend = pow2(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
-    
-    //outputColor = pow2(outputColor,vec3(1/2.2));
-    outputColor *= lightBrightness;
-    //outputColor = pow2(outputColor,vec3(2.2));
+            mediump float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
+            transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
+            outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(2.2)), fogBlendValue);
+            outColor0 = vec4(pow2(outputColor,vec3(1/2.2)),transparency);
+            /*#if PATH_TRACING == 0
+                outColor0.xyz = unreal(outColor0.xyz);
+            #endif*/
+            isWater = vec4(0.0);
+            if(depth != 1) {
+                isWater.y = 1.0;
+            }
+            #ifndef SCENE_AWARE_LIGHTING
+                outColor2 = vec4(lightColor, 1.0);
+            #else
+                #define VOXEL_AREA 128 //[32 64 128]
+                #define VOXEL_RADIUS (VOXEL_AREA/2)
+                ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
+                vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
+                if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+                    vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
+                    light_color = bytes.xyz;
+                }
 
-    if(blindness > 0f) {
-        outputColor.xyz = blindEffect(outputColor.xyz);
-    }
-
-    mediump float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
-    transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
-    outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(2.2)), fogBlendValue);
-    outColor0 = vec4(pow2(outputColor,vec3(1/2.2)),transparency);
-    /*#if PATH_TRACING == 0
-        outColor0.xyz = unreal(outColor0.xyz);
-    #endif*/
-    isWater = vec4(0.0);
-    if(depth != 1) {
-        isWater.y = 1.0;
-    }
-    #ifndef SCENE_AWARE_LIGHTING
-        outColor2 = vec4(lightColor, 1.0);
-    #else
-        #define VOXEL_AREA 128 //[32 64 128]
-        #define VOXEL_RADIUS (VOXEL_AREA/2)
-        ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
-        vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
-        if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-            vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
-            light_color = bytes.xyz;
+                outColor2 = vec4(light_color, 1.0);
+            #endif
+            normal = vec4(Normal, 1.0);
+            dataTex0 = vec4(1.0);
+            camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);   
+        }   
         }
-
-        outColor2 = vec4(light_color, 1.0);
-    #endif
-    normal = vec4(Normal, 1.0);
-    dataTex0 = vec4(1.0);
-    camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
 }
