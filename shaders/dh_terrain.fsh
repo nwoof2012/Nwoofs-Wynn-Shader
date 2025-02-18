@@ -47,6 +47,8 @@
 
 #define AO_WIDTH 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
+#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
+
 #include "lib/globalDefines.glsl"
 
 #include "lib/includes2.glsl"
@@ -247,7 +249,7 @@ void main() {
             lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
     #else
         lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
-        lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(2.2));
+        lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(GAMMA));
     #endif
 
     #if PATH_TRACING_GI == 0
@@ -286,8 +288,8 @@ void main() {
 
             mediump float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
             transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
-            outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(2.2)), fogBlendValue);
-            outColor0 = vec4(pow2(outputColor,vec3(1/2.2)),transparency);
+            outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(GAMMA)), fogBlendValue);
+            outColor0 = vec4(pow2(outputColor,vec3(1/GAMMA)),transparency);
             /*#if PATH_TRACING == 0
                 outColor0.xyz = unreal(outColor0.xyz);
             #endif*/

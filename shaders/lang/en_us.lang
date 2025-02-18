@@ -110,8 +110,12 @@ option.FOG_SUNSET_DIST_MAX=Maximum Fog Distance
 option.MIN_LIGHT=Minimum Light
 value.MIN_LIGHT.0.0f=Dark
 
-option.SE_MIN_LIGHT=SE Minimum Light
+option.SE_MIN_LIGHT=Minimum Light
 value.SE_MIN_LIGHT.0.0f=Dark
+
+option.MIN_SE_SATURATION=Minimum Saturation
+value.MIN_SE_SATURATION.0.5=§aDefault
+option.MIN_SE_SATURATION.comment=Clamps Silent Expanse desaturation in low light levels
 
 option.MAX_LIGHT=Maximum Light
 value.MAX_LIGHT.4.1f=Unlimited
@@ -259,6 +263,10 @@ value.LIGHTMAP_QUALITY.124=124 Samples
 value.LIGHTMAP_QUALITY.128=128 Samples
 option.LIGHTMAP_QUALITY.comment=Sample count for Scene Aware Lighting. §4§lSevere GPU Performance Impact on higher settings
 
+option.GAMMA=Gamma
+value.GAMMA.2.2=§asRGB
+option.GAMMA.comment=Adjust scene gamma correction bias
+
 screen.PERFORMANCE=Performance
 
 screen.SKY = Sky
@@ -286,6 +294,12 @@ screen.WATER=Water
 screen.CAMERA = Camera
 
 screen.WORLD = World
+
+screen.SPECIAL_LIGHTING = Additional Options
+
+screen.SHADOW_SETTINGS = Shadows
+
+screen.SILENT_EXPANSE = Silent Expanse
 
 profile.TOASTER=Toaster
 profile.POTATO=Potato

@@ -10,6 +10,8 @@
 
 #define FRAGMENT_SHADER
 
+#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
+
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -173,7 +175,7 @@ bool pointsIntersect(vec3 origin, vec3 dir, vec3 solidTex) {
 void main() {
     vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
     vec4 albedo = texture2D(gtexture, TexCoords) * Color;
-    albedo.xyz = pow2(albedo.xyz, vec3(2.2));
+    albedo.xyz = pow2(albedo.xyz, vec3(GAMMA));
 
     mediump float depth = texture2D(depthtex0, TexCoords).r;
     
@@ -188,7 +190,7 @@ void main() {
         //GenerateNormals(newNormal, albedo.xyz, gtexture, tbnMatrix);
 
         //vec3 newNormal3 = (newNormal + newNormal2) / 2.0;
-        albedo.xyz = pow2(albedo.xyz, vec3(1/2.2));
+        albedo.xyz = pow2(albedo.xyz, vec3(1/GAMMA));
         mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
         if(blindness > 0.0) {
@@ -245,7 +247,7 @@ void main() {
                     if (bytes.xyz != vec3(0.0)) {
                         mediump float distA = distance(voxel_pos2, vec3(0.0));
                         mediump float distB = distance(voxel_pos, vec3(0.0));
-                        if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0)) {
+                        if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0) && voxel_open > 0.0) {
                             voxel_open *= step(distA, distB);
                         }
 

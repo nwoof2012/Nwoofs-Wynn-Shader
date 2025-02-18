@@ -86,6 +86,8 @@
 #define CLOUD_COLOR_RAIN_B_G 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define CLOUD_COLOR_RAIN_B_B 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 
+#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
+
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
@@ -169,7 +171,7 @@ vec3 calcSkyColor(vec3 pos, vec3 currentColorA, vec3 currentColorB, vec4 noiseCo
         cloudColorB = mix2(cloudColorB,vec3(CLOUD_COLOR_RAIN_B_R, CLOUD_COLOR_RAIN_B_G, CLOUD_COLOR_RAIN_B_B),(rainStrength - 0.2)/0.8);
     }
     vec3 clouds = pow2(mix2(cloudColorA, cloudColorB, noiseColor.y),vec3(-1.5));
-    vec3 cloudSky = mix2(sky,mix2(sky, clouds, noiseColor.y), pow2(1-lerpAmount2, 1/2.2));
+    vec3 cloudSky = mix2(sky,mix2(sky, clouds, noiseColor.y), pow2(1-lerpAmount2, 1/GAMMA));
     #ifdef SHADER_CLOUDS
         return cloudSky;
     #else
@@ -404,13 +406,13 @@ void main() {
         float invertSunMoon = 1.0;
         //mediump float upDot = dot(pos, gbufferModelView[1].xyz);
         //gl_FragData[0] = vec4(upDot);
-        outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/2.2)),vec3(0),blindness),1.0);
+        outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/GAMMA)),vec3(0),blindness),1.0);
         mediump float sunMaxDistance = 0.06;
         mediump float distToSun = length((fragCoord - sunScreenPos) * vec2(aspectRatio, 1.0));
         mediump float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, distToSun);
         mediump float moonMaxDistance = 0.03;
         mediump float distToMoon = length((moonScreenPos - fragCoord) * vec2(aspectRatio, 1.0));
-        mediump float moonGradient = 1.0 - pow2(smoothstep(0.0, moonMaxDistance, distToMoon),2.2);
+        mediump float moonGradient = 1.0 - pow2(smoothstep(0.0, moonMaxDistance, distToMoon),GAMMA);
         if(distToMoon > moonMaxDistance) {
             moonGradient = 0;
         }
@@ -427,7 +429,7 @@ void main() {
         vec4 outputColorMoon = texture2D(colortex11, getMoonCoords(1).xy).xyzw;
         outputColorMoon = mix2(vec4(outputColorMoon.xyz, 0.0), outputColorMoon.xyzw, outputColorMoon.w);
         outputColorMoon.xyz += 0.6;
-        outputColorMoon.xyz *= clamp(pow2(moonGradient,1/2.2) + 0.25,0.25,1);
+        outputColorMoon.xyz *= clamp(pow2(moonGradient,1/GAMMA) + 0.25,0.25,1);
         outputColorMoon.xyz = clamp(outputColorMoon.xyz,0,1);
         if(distToMoon > moonMaxDistance) outputColorMoon.w = 0.0;
         float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
