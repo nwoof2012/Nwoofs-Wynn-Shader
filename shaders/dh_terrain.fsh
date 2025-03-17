@@ -234,86 +234,40 @@ mediump float linearizeDepth(float depth, float near, float far) {
 void main() {
     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
-    vec3 worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
-    mediump float lightBrightness;
-    vec3 lightColor;
-    #if PATH_TRACING_GI == 1
-            vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
-            vec3 lightDir = normalize(cameraPosition - viewSpaceFragPosition);
-            vec3 cameraRight = normalize(cross(lightDir, vec3(0.0, 1.0, 0.0)));
-            vec3 cameraUp = cross(cameraRight, lightDir);
-            vec3 rayDir = normalize(lightDir + uv.x * cameraRight + uv.y * cameraUp);
-            Ray ray = Ray(cameraPosition, rayDir);
+    vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
 
-            lightColor = traceRay(ray,lightmap2.xy, worldGeoNormal, 1.0);
-            lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
-    #else
-        lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
-        lightColor = pow2(texture(lightmap,lightmapCoords).rgb,vec3(GAMMA));
-    #endif
+    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
 
-    #if PATH_TRACING_GI == 0
-        lightColor *= vec3(0.2525);
-    #endif
-
-    lightBrightness = clamp(lightBrightness, 0.2, MAX_LIGHT);
-
-    //lightBrightness = pow2(lightBrightness,2.2);
-    
     vec4 outputColorData = blockColor;
-    vec3 outputColor = outputColorData.rgb * max(lightColor,vec3(1.0));
-    mediump float transparency = outputColorData.a;
-    if(transparency >= .1) {
-        vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+    vec3 outputColor = pow2(outputColorData.rgb,vec3(GAMMA));
+    
+    mediump float alpha = outputColorData.a;
 
-        mediump float depth = texture2D(depthtex0, texCoord).r;
-        mediump float dhDepth = gl_FragCoord.z;
-        mediump float depthLinear = linearizeDepth(depth, near, far*4);
-        mediump float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
+    vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 
-        if(depthLinear >= dhDepthLinear && depth == 1) {
-            //vec3 fogColor = vec3(1.0);
+    mediump float depth = texture2D(depthtex0, texCoord).r;
+    mediump float dhDepth = gl_FragCoord.z;
+    mediump float depthLinear = linearizeDepth(depth, near, far*4);
+    mediump float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
 
-            mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
+    if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
+        mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
 
-            mediump float dhBlend = pow2(smoothstep(far-0.5*far,far,distanceFromCamera),0.6);
-            
-            //outputColor = pow2(outputColor,vec3(1/2.2));
-            outputColor *= lightBrightness;
-            //outputColor = pow2(outputColor,vec3(2.2));
+        outputColor *= lightBrightness;
 
-            if(blindness > 0f) {
-                outputColor.xyz = blindEffect(outputColor.xyz);
-            }
+        isWater = vec4(0.0);
 
-            mediump float fogBlendValue = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
-            transparency = mix2(0.0,transparency, pow2(1-dhBlend,0.6));
-            outputColor.xyz = mix2(outputColor, pow2(fogColor,vec3(GAMMA)), fogBlendValue);
-            outColor0 = vec4(pow2(outputColor,vec3(1/GAMMA)),transparency);
-            /*#if PATH_TRACING == 0
-                outColor0.xyz = unreal(outColor0.xyz);
-            #endif*/
-            isWater = vec4(0.0);
-            if(depth != 1) {
-                isWater.y = 1.0;
-            }
-            #ifndef SCENE_AWARE_LIGHTING
-                outColor2 = vec4(lightColor, 1.0);
-            #else
-                #define VOXEL_AREA 128 //[32 64 128]
-                #define VOXEL_RADIUS (VOXEL_AREA/2)
-                ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
-                vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
-                if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-                    vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
-                    light_color = bytes.xyz;
-                }
-
-                outColor2 = vec4(light_color, 1.0);
-            #endif
-            normal = vec4(Normal, 1.0);
-            dataTex0 = vec4(1.0);
-            camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);   
-        }   
+        if(blindness > 0f) {
+            outputColor.xyz = blindEffect(outputColor.xyz);
         }
+
+        mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
+        outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
+
+        outColor0 = vec4(pow2(outputColor.xyz,vec3(1/GAMMA)), alpha);
+
+        normal = vec4(Normal, 1.0);
+        dataTex0 = vec4(1.0);
+        camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
+    }
 }

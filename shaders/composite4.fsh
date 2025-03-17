@@ -151,6 +151,7 @@ in vec3 Tangent;
 #include "lib/spaceConversion.glsl"
 #include "program/underwater.glsl"
 #include "program/gaussianBlur.glsl"
+#include "lib/colorFunctions.glsl"
 //#include "lib/includes.glsl"
 
 //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
@@ -1170,23 +1171,60 @@ void main() {
             #else
                 vec3 lightmapColor = texture2D(colortex2, TexCoords.xy).rgb;
             #endif
-            Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
+            //Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
             if(detectSky < 1.0) {
                 if(isBiomeEnd) {
+                    vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
+                    vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
+
+                    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
+
                     Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
+                    vec3 Diffuse2 = texture2D(colortex0, TexCoords.xy).rgb;
+                    //Diffuse = mix2(Diffuse, Diffuse/vec3(lightBrightness),0.75);
+                    //Diffuse /= lightBrightness;
+                    //Diffuse = mix2(Diffuse, Diffuse * vec3(lightBrightness),0.5);
+                    //Diffuse.xyz += lightmapColor;
+                    //Diffuse2.xyz *= vec3(3.5025);
+                    vec3 Diffuse3 = mix2(Diffuse, Diffuse2, 0.5);
+                    Diffuse = mix2(Diffuse, Diffuse3, length(Diffuse));
                     Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
-                    Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(Diffuse.rgb,vec3(0.333f))),0.5,1));
+                    Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.5),clamp(CalcSaturation(Diffuse.xyz),0,1 - MIN_SE_SATURATION));//1.0625-clamp(vec3(dot(lightmapColor.rgb,vec3(0.333f))),0.5,1));
                     Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
                 } else {
                     /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
                         LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
                     }*/
+                    vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
+                    vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
+
+                    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
+
+                    Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
+
+                    //Diffuse *= lightBrightness;
+
+                    //vec3 LightmapColor = vec3(1.0);
+
+                    Diffuse.xyz += lightmapColor;
+
+                    if(waterTest > 0) {
+                        Diffuse.xyz = mix2(Diffuse.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
+                        vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+                        vec4 Albedo4 = waterReflections(Diffuse.xyz,TexCoords,refNormal);
+                        Diffuse.xyz = Albedo4.xyz;
+                        albedoAlpha = Albedo4.a;
+                        Diffuse.xyz *= lightBrightness/2f;
+                    }
                     Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
                 }
                 /*if(waterTest > 0f) {
                     Diffuse = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/2.2));
                 }*/
-                Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),0.2);
+
+                if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)) * currentColor, 1.0f);
             } else {

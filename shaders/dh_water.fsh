@@ -5,6 +5,12 @@
 #define WATER_REFRACTION
 #define WATER_FOAM
 
+#define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
+#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
+#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
+
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
@@ -45,6 +51,8 @@ uniform float frameTime;
 
 uniform float viewWidth;
 uniform float viewHeight;
+
+uniform vec3 shadowLightPosition;
 
 uniform bool isBiomeEnd;
 
@@ -90,18 +98,25 @@ void main() {
         vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
         vec3 View = ViewW.xyz / ViewW.w;
         vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+
+        vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
+        vec3 worldNormal = (gbufferModelViewInverse * Normal).xyz;
+
+        mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
         
         vec4 noiseMap = texture2D(noise, TexCoords + (sin(TexCoords.xy*32f + ((frameCounter)/90f)*0.0125f)/2 + 1)*2f);
         vec4 noiseMap2 = texture2D(noise, TexCoords - (sin(TexCoords.xy*16f + ((frameCounter)/90f)*0.0125f)/2 + 1)*2f);
 
         vec4 albedo = texture2D(texture, TexCoords) * Color;
+        vec3 Albedo = pow2(albedo.xyz, vec3(GAMMA));
 
         albedo.a = 0.5f;
         
         vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
         
         if(mat == DH_BLOCK_WATER) {
-            albedo.xyz = vec3(0.0f, 0.33f, 0.44f);
+            Albedo = vec3(0.0f, 0.33f, 0.44f);
             albedo.a = 0.0f;
         }
 
@@ -119,7 +134,6 @@ void main() {
         vec2 TexCoords2 = texCoord;
         //mediump float Depth = texture2D(depthtex0, texCoord).r;
         //mediump float Depth2 = texture2D(depthtex1, texCoord).r;
-        vec3 Albedo;
         mediump float isBlockWater = float(Color.z > Color.y && Color.y > Color.x);
         /*if(depth.r != depth2 && isBlockWater > 0) {
             #ifdef WATER_REFRACTION
@@ -142,14 +156,14 @@ void main() {
         float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
         if(blindness > 0f) {
-            albedo.xyz = blindEffect(albedo.xyz);
+            Albedo = blindEffect(Albedo);
         }
 
         if(mat == DH_BLOCK_WATER) {
             albedo.a = 0.0;
         }
 
-        gl_FragData[0] = albedo;
+        gl_FragData[0] = vec4(pow2(Albedo,vec3(1/GAMMA)), albedo.a);
         gl_FragData[1] = vec4(newNormal, 1.0);
         #ifndef SCENE_AWARE_LIGHTING
             gl_FragData[2] = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
