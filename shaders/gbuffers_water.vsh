@@ -3,6 +3,13 @@
 
 #include "lib/globalDefines.glsl"
 
+#define WATER_WAVES
+#define WAVE_SPEED_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_SPEED_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_DENSITY_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_DENSITY_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_AMPLITUDE 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -22,6 +29,7 @@ out float isTransparent;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
+uniform float frameTimeCounter;
 
 uniform vec3 chunkOffset;
 
@@ -158,6 +166,15 @@ void main() {
 	
 	if(mc_Entity.x == 8.0 && mc_Entity.x != 10002) {
         isWaterBlock = 1f;
+		//Distort water
+		#ifdef WATER_WAVES
+			vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
+			vec2 waveCycle = vec2(sin((worldPos.x * WAVE_DENSITY_X * 8) + (frameTimeCounter * WAVE_SPEED_X)), -sin((worldPos.y * WAVE_DENSITY_Y * 8) + (frameTimeCounter * WAVE_SPEED_Y)));
+			float waveHeight = WAVE_AMPLITUDE * length(waveCycle);
+			Normal *= waveHeight;
+
+			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
+		#endif
     }
 
 	if(mc_Entity.x == 8.0 || mc_Entity.x == 10002) {

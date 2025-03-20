@@ -1053,18 +1053,20 @@ void main() {
                 TexCoords2 = TexCoords;
             }
             #ifdef WATER_FOAM
-                if(abs(Depth - Depth2) < 0.0005f && isRain == 0.0) {
-                    Albedo = mix2(Albedo, vec3(1.0f), clamp(1 - abs(Depth - Depth2),0f,1));
-                }
+                float camDist = texture2D(colortex15, TexCoords).y * 2.5f;
+                vec4 foamPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_FragCoord;
+                //foamPos.xy *= abs(vec2(sin(foamPos.x * 0.25), sin(foamPos.y * 0.25)));
+                float foamWave = mix2(sin(foamPos.x * 5f), sin(foamPos.y * 5f),1 - abs(Normal.x - Normal.y));
+                vec3 foamWater = mix2(Albedo, mix2(Albedo, vec3(1.0f), clamp(1 - abs(Depth - Depth2 + foamWave * 0.000025f)/0.0001f,0f,1)), step(abs(Depth - Depth2) * 5, 0.0005f/camDist));
+                Albedo = mix2(Albedo, foamWater, 1 - step(isRain, 0.9));
             #endif
 
-            if(isRain == 1.0) {
-                vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
-                //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
-                vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal);
-                Albedo = Albedo4.xyz;
-                albedoAlpha = Albedo4.a;
-            }
+            vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+            //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
+            vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal);
+            Albedo = mix2(Albedo, Albedo4.xyz, step(isRain, 0.9));
+            albedoAlpha = mix2(albedoAlpha, Albedo4.a, step(isRain, 0.9));
+
             if(blindness > 0.0) {
                 mediump float waterBlindness = texture2D(colortex5,TexCoords).z;
                 Albedo = mix2(Albedo, vec3(0.0), waterBlindness);

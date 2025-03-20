@@ -253,6 +253,6 @@ void main() {
         }
         gl_FragData[2] = lighting;
     #endif
-    gl_FragData[3] = vec4(1.0);
+    gl_FragData[3] = vec4(0.0);
     gl_FragData[4] = vec4(isWaterBlock, 1.0, 1.0, 1.0);
 }

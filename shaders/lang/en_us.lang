@@ -131,9 +131,31 @@ option.BLOOM_INTENSITY=Bloom Intensity
 option.BLOOM_INTENSITY.comment=Brightness of Bloom effect
 
 option.WATER_REFRACTION=Water Refraction
-option.WATER_FOAM=Water Foam (§cExperimental§r)
+option.WATER_REFRACTION.comment = Distorts light as it passes through water
+
+option.WATER_FOAM=Water WATER_FOAM
+option.WATER_FOAM.comment = Enables foam at the edges of water
+
+option.WATER_WAVES=Water Waves
+option.WATER_WAVES.comment=Enables 3-dimensional waves for water
+
+option.WAVE_SPEED_X=Wave Speed (X)
+option.WAVE_SPEED_X.comment=Adjusts the speed of waves in the water on the X axis
+
+option.WAVE_SPEED_Y=Wave Speed (Y)
+option.WAVE_SPEED_Y.comment=Adjusts the speed of waves in the water on the Y axis
+
+option.WAVE_DENSITY_X=Wave Density Length
+option.WAVE_SPEED_X.comment=Adjusts the length of waves in the water
+
+option.WAVE_DENSITY_Y=Wave Density Width
+option.WAVE_SPEED_X.comment=Adjusts the width of waves in the water
+
+option.WAVE_AMPLITUDE=Wave Height
+option.WAVE_AMPLITUDE.comment=Adjusts the height of waves in the water
 
 option.TILTED_RAIN=Tilted Rain
+option.TILTED_RAIN.comment=Adjusts the angle of rain to be more slanted for added realism
 
 option.SHADER_CLOUDS=Clouds
 

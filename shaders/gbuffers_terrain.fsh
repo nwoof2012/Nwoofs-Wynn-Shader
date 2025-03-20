@@ -282,6 +282,6 @@ void main() {
         gl_FragData[3] = vec4(distanceFromCamera);
         gl_FragData[4] = vec4(0.0, 1.0, isReflective, 1.0);
         gl_FragData[5] = vec4(worldSpaceVertexPosition, 1.0);
-        gl_FragData[6] = vec4(distanceFromCamera, vec2(0.0), 1.0);
+        gl_FragData[6] = vec4(distanceFromCamera, distanceFromCamera/20f, 0.0, 1.0);
     }
 }
