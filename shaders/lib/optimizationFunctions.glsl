@@ -50,3 +50,10 @@ vec4 mix2(vec4 a, vec4 b, float c) {
 vec4 mix2(vec4 a, vec4 b, vec4 c) {
     return (b - a) * c + a;
 }
+
+mediump float blockDist(vec3 a, vec3 b) {
+    a = abs(a);
+    b = abs(b);
+    b -= vec3(0.5);
+    return sqrt(dot(a - b, a - b));
+}

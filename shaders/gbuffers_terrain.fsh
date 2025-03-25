@@ -30,6 +30,7 @@ uniform usampler3D cSampler2;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferModelView;
 
 uniform ivec2 atlasSize;
 uniform vec3 sunPosition;
@@ -212,19 +213,19 @@ void main() {
                 light_color = bytes.xyz;
             }
             
-            vec4 lighting = decodeLightmap(vec4(light_color, 1.0));
+            vec4 lighting = vec4(0.0); //decodeLightmap(vec4(light_color, 1.0));
 
             if(lighting.w <= 0.0) {
                 vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
                 vec4 bytes2 = unpackUnorm4x8(texture3D(cSampler1,vec3(ivec3(block_centered_relative_pos3+VOXEL_RADIUS))/vec3(VOXEL_AREA)).r);
                 // Calculate the total number of iterations (light radius cubed)
-                int totalLightRadius = 8 * LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS; // 2 * LIGHT_RADIUS ^ 3
+                int totalLightRadius = int(pow2(2 * LIGHT_RADIUS,3)); // 2 * LIGHT_RADIUS ^ 3
 
                 vec3 sphereCoords = vec3(gl_FragCoord.xy, gl_FragCoord.z) - vec3(LIGHT_RADIUS);
                 
                 mediump float voxel_open = 1.0;
 
-                for (int idx = 0; idx < totalLightRadius; idx++) {
+                for (int idx = 0; idx < totalLightRadius + 1; idx++) {
                     // Explicitly cast the index to (x, y, z) coordinates
                     int x = (idx / (2 * LIGHT_RADIUS * 2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for x
                     int y = ((idx / (2 * LIGHT_RADIUS)) % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for y
@@ -234,7 +235,7 @@ void main() {
                     vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
                     ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
 
-                    if (x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
+                    //if (x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
 
                     // Skip if out of light radius
                     if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
@@ -245,17 +246,20 @@ void main() {
 
                     // Check light-block interactions
                     if (bytes.xyz != vec3(0.0)) {
-                        mediump float distA = distance(voxel_pos2, vec3(0.0));
-                        mediump float distB = distance(voxel_pos, vec3(0.0));
-                        if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0) && voxel_open > 0.0) {
-                            voxel_open *= step(distA, distB);
-                        }
+                        //mediump float distA = distance(voxel_pos2, cameraPosition);
+                        //mediump float distB = distance(voxel_pos, cameraPosition);
+                        /*if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0) && voxel_open > 0.0) {
+                            voxel_open *= step(distB, distA);
+                        }*/
+
+                        vec3 foot_pos3 = vec3(0.0); //foot_pos;
+                        vec3 block_centered_relative_pos3 = block_centered_relative_pos2 - foot_pos;
 
                         // Compute lighting contribution
-                        lighting = mix2(vec4(lightColor * 0.25f,0.0), decodeLightmap(bytes),
-                                    clamp(1.0 - distance(block_centered_relative_pos, block_centered_relative_pos2) / float(LIGHT_RADIUS), 0.0, 1.0));
+                        lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
+                                    clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos3) / float(LIGHT_RADIUS), 0.0, 1.0) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f);
                         
-                        lighting = mix2(vec4(0.0), lighting, voxel_open);
+                        //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
                         //lighting.xyz *= lightColor;
                     }
 

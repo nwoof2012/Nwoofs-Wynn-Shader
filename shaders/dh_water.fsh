@@ -165,7 +165,7 @@ void main() {
 
         gl_FragData[0] = vec4(pow2(Albedo,vec3(1/GAMMA)), albedo.a);
         gl_FragData[1] = vec4(newNormal, 1.0);
-        #ifndef SCENE_AWARE_LIGHTING
+        /*#ifndef SCENE_AWARE_LIGHTING
             gl_FragData[2] = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
         #else
             #define VOXEL_AREA 128 //[32 64 128]
@@ -178,7 +178,7 @@ void main() {
             }
 
             gl_FragData[2] = vec4(light_color, 1.0);
-        #endif
+        #endif*/
         gl_FragData[3] = vec4(1.0);
         if(mat == DH_BLOCK_WATER) {
             gl_FragData[4] = vec4(1.0, 0.0, 0.0, 1.0);

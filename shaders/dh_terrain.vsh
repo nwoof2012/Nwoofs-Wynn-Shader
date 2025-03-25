@@ -8,7 +8,7 @@
 
 #define VERTEX_SHADER
 
-layout (r32ui) uniform uimage3D cimage1;
+layout (r32ui) uniform uimage3D cimage3;
 
 uniform mat4 dhProjection;
 uniform mat4 gbufferModelViewInverse;
@@ -99,7 +99,7 @@ void main() {
 
     gl_Position = ftransform();
 
-    #ifdef SCENE_AWARE_LIGHTING
+    /*#ifdef SCENE_AWARE_LIGHTING
         vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
         foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
         vec3 world_pos = foot_pos + cameraPosition;
@@ -109,11 +109,11 @@ void main() {
         ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
 
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0) : mc_Entity.x == 10006? vec4(1.0) : mc_Entity.x == 10007? vec4(1.0) : mc_Entity.x == 10008? vec4(1.0) : mc_Entity.x == 10009? vec4(1.0) : mc_Entity.x == 10010? vec4(1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
+            vec4 voxel_data = dhMaterialId == DH_BLOCK_ILLUMINATED? vec4(1.0) : vec4(vec3(0.0),1.0);
 
             /*if(length(voxel_data.xyz) <= 0.0) {
                 voxel_data = vec4(at_midBlock.w);
-            }*/
+            }
 
             vec4 block_data = vec4(vec3(0.0),1.0);
             if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
@@ -122,9 +122,9 @@ void main() {
 			
 			//uint integerValue2 = packUnorm4x8(block_data);
 
-            imageAtomicMax(cimage1, voxel_pos, integerValue);
+            imageAtomicMax(cimage3, voxel_pos, integerValue);
 
 			//imageAtomicMax(cimage2, voxel_pos, integerValue2);
         }
-    #endif
+    #endif*/
 }

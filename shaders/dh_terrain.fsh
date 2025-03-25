@@ -57,7 +57,7 @@
 
 precision mediump float;
 
-uniform usampler3D cSampler1;
+uniform usampler3D cSampler3;
 
 uniform sampler2D lightmap;
 uniform sampler2D depthtex0;
@@ -269,5 +269,20 @@ void main() {
         normal = vec4(Normal, 1.0);
         dataTex0 = vec4(1.0);
         camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
+
+        /*#ifndef SCENE_AWARE_LIGHTING
+            outColor2 = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
+        #else
+            #define VOXEL_AREA 128 //[32 64 128]
+            #define VOXEL_RADIUS (VOXEL_AREA/2)
+            ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
+            vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
+            if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+                vec4 bytes = unpackUnorm4x8(texture3D(cSampler3,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
+                light_color = bytes.xyz;
+            }
+
+            outColor2 = mix2(vec4(0.0), vec4(light_color, 1.0), step(0.999, depth));
+        #endif*/
     }
 }

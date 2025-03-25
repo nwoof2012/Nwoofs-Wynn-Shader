@@ -129,7 +129,7 @@ void main() {
     Color = gl_Color;
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
 
-	#ifdef SCENE_AWARE_LIGHTING
+	/*#ifdef SCENE_AWARE_LIGHTING
         vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
         foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
         vec3 world_pos = foot_pos + cameraPosition;
@@ -143,7 +143,7 @@ void main() {
 
             /*if(length(voxel_data.xyz) <= 0.0) {
                 voxel_data = vec4(at_midBlock.w);
-            }*/
+            }
 
             vec4 block_data = vec4(vec3(0.0),1.0);
             if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
@@ -156,5 +156,5 @@ void main() {
 
 			//imageAtomicMax(cimage2, voxel_pos, integerValue2);
         }
-    #endif
+    #endif*/
 }
