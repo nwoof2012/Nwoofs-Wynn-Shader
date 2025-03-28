@@ -257,7 +257,7 @@ void main() {
 
                         // Compute lighting contribution
                         lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
-                                    clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos3) / float(LIGHT_RADIUS), 0.0, 1.0) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f);
+                                    clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos3) / float(LIGHT_RADIUS), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
                         
                         //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
                         //lighting.xyz *= lightColor;
@@ -278,9 +278,11 @@ void main() {
                 finalLighting *= vec4(vec3(length(rayColor)),1.0);
                 finalLighting *= 0.0035f;
             #endif
-            if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
+            /*if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
                 finalLighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
-            }
+            }*/
+            vec4 finalLighting2 = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
+            finalLighting = mix2(finalLighting, finalLighting2, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,1,finalLighting))));
             gl_FragData[2] = finalLighting;
         #endif
         gl_FragData[3] = vec4(distanceFromCamera);
