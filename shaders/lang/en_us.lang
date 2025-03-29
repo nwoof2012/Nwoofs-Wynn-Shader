@@ -133,7 +133,7 @@ option.BLOOM_INTENSITY.comment=Brightness of Bloom effect
 option.WATER_REFRACTION=Water Refraction
 option.WATER_REFRACTION.comment = Distorts light as it passes through water
 
-option.WATER_FOAM=Water WATER_FOAM
+option.WATER_FOAM=Water Foam
 option.WATER_FOAM.comment = Enables foam at the edges of water
 
 option.WATER_WAVES=Water Waves
