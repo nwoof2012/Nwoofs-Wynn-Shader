@@ -1265,13 +1265,11 @@ void main() {
         //#endif
         vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb + lightBrightness;
 
-        /*if(isBiomeEnd) {
-            if(dot(LightmapColor, vec3(0.333f)) < seMinLight) {
-                LightmapColor = vec3(seMinLight);
-            }
-        } else if(dot(LightmapColor, vec3(0.333f)) < minLight) {
-            LightmapColor = vec3(minLight);
-        }*/
+        if(isBiomeEnd) {
+            LightmapColor = mix2(LightmapColor, normalize2(LightmapColor) * vec3(seMinLight), step(seMinLight * seMinLight, dot(LightmapColor, LightmapColor)));
+        } else {
+            LightmapColor = mix2(LightmapColor, normalize2(LightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(LightmapColor, LightmapColor)));
+        }
 
         vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
         mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.0f);
