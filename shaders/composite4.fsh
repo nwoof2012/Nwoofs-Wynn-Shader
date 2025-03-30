@@ -1266,7 +1266,7 @@ void main() {
         vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb + lightBrightness;
 
         if(isBiomeEnd) {
-            LightmapColor = mix2(LightmapColor, normalize2(LightmapColor) * vec3(seMinLight), step(seMinLight * seMinLight, dot(LightmapColor, LightmapColor)));
+            LightmapColor = mix2(LightmapColor, max(vec3(0.5), normalize2(LightmapColor)) * vec3(seMinLight), 1 - step(seMinLight * seMinLight, dot(LightmapColor, LightmapColor)));
         } else {
             LightmapColor = mix2(LightmapColor, normalize2(LightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(LightmapColor, LightmapColor)));
         }
