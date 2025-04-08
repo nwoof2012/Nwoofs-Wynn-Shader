@@ -9,6 +9,7 @@
 #define WAVE_DENSITY_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
 #define WAVE_DENSITY_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
 #define WAVE_AMPLITUDE 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define WATER_CHUNK_RESOLUTION 128 // [32 64 128]
 
 precision mediump float;
 
@@ -21,6 +22,7 @@ varying vec2 LightmapCoords;
 
 layout (r32ui) uniform uimage3D cimage1;
 layout (r32ui) uniform uimage3D cimage2;
+layout (r32ui) uniform uimage2D cimage4;
 
 varying float isWaterBlock;
 
@@ -69,7 +71,6 @@ in vec4 at_midBlock;
 attribute vec4 mc_midTexCoord;
 
 uniform vec3 cameraPosition;
-
 
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -134,10 +135,11 @@ void main() {
 		//gl_Position.y /= ViewW.y;
 	}
 
+	vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+	vec3 world_pos = foot_pos + cameraPosition;
+
 	#ifdef SCENE_AWARE_LIGHTING
-        vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
-        foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
-        vec3 world_pos = foot_pos + cameraPosition;
         #define VOXEL_AREA 128 //[32 64 128]
         #define VOXEL_RADIUS (VOXEL_AREA/2)
         block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
@@ -168,10 +170,15 @@ void main() {
         isWaterBlock = 1f;
 		//Distort water
 		#ifdef WATER_WAVES
-			vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
-			vec2 waveCycle = vec2(sin((worldPos.x * WAVE_DENSITY_X * 8) + (frameTimeCounter * WAVE_SPEED_X)), -sin((worldPos.y * WAVE_DENSITY_Y * 8) + (frameTimeCounter * WAVE_SPEED_Y)));
+			//vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
+			//worldPos.xyz += foot_pos;
+			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
 			float waveHeight = WAVE_AMPLITUDE * length(waveCycle);
-			Normal *= waveHeight;
+			//Normal *= waveHeight;
+
+			uint integerValue4 = uint(waveHeight * 32767);
+
+			imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
 
 			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
 		#endif

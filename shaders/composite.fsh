@@ -99,6 +99,7 @@ uniform mat4 projectionMatrix;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
+uniform float frameTimeCounter;
 
 uniform int entityId;
 uniform int blockId;
@@ -760,15 +761,34 @@ void dawnFunc(float time, float timeFactor) {
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
 }
 
-vec4 triplanarTexture(sampler2D texture, vec3 pos) {
-    vec3 blendWeights = abs(normalize2(vNormal));
-    blendWeights /= (blendWeights.x + blendWeights.y + blendWeights.z);
+vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
+    normal = abs(normal);
+    normal = normal / (normal.x + normal.y + normal.z + 0.0001);
 
-    vec4 xProjection = texture2D(texture, pos.yz);
-    vec4 yProjection = texture2D(texture, pos.xz);
-    vec4 zProjection = texture2D(texture, pos.xy);
+    vec2 uvXZ = worldPos.xz * scale;
+    vec2 uvXY = worldPos.xy * scale;
+    vec2 uvZY = worldPos.zy * scale;
 
-    return xProjection*blendWeights.x + yProjection*blendWeights.y + zProjection*blendWeights.z;
+    vec4 texXZ = texture2D(tex,uvXZ) * normal.y;
+    vec4 texXY = texture2D(tex,uvXY) * normal.z;
+    vec4 texZY = texture2D(tex,uvZY) * normal.x;
+
+    return texXZ + texXY + texZY;
+}
+
+vec2 triplanarCoords(vec3 worldPos, vec3 normal, float scale) {
+    normal = abs(normal);
+    normal = normal / (normal.x + normal.y + normal.z + 0.0001);
+
+    vec2 uvXZ = worldPos.xz * scale;
+    vec2 uvXY = worldPos.xy * scale;
+    vec2 uvZY = worldPos.zy * scale;
+
+    vec2 texXZ = uvXZ * normal.y;
+    vec2 texXY = uvXY * normal.z;
+    vec2 texZY = uvZY * normal.x;
+
+    return texXZ + texXY + texZY;
 }
 
 vec3 screenToWorld(vec2 screenPos, float depth) {
@@ -910,6 +930,23 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
     return finalColor;
 }
 
+float foamFactor(vec3 worldPos, vec3 worldPos2) {
+    vec2 depthA2d = triplanarCoords(abs(worldPos - worldPos2), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
+    float depth = max(depthA2d.x, depthA2d.y);
+    vec2 depthB2d = triplanarCoords(worldPos, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy; //textureLod(depthtex0, TexCoords, 0).r;
+    float depth2 = max(depthB2d.x, depthB2d.y);
+    float foamScale = sqrt(dot(cameraPosition - worldPos, cameraPosition - worldPos));
+    float distanceFactor = 1.0/(1.0 + depth * 32.0);
+    depth *= distanceFactor;
+    float foamThreshold = clamp(1.25 * distanceFactor, 0.0, 1.0);
+    float shoreDistance = clamp(depth * 5.0, 0.0, 1.0);
+    float noise = triplanarTexture(worldPos * 0.1 + vec3(0.1 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex8, 1.0).r;
+
+    if(depth > 0.25 * distanceFactor) return 0;
+
+    return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500 + noise * 0.15);
+}
+
 #include "lib/timeCycle.glsl"
 
 /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
@@ -928,6 +965,7 @@ void main() {
         vec2 fragCoord = gl_FragCoord.xy/vec2(viewWidth, viewHeight);
 
         vec3 worldTexCoords = screenToWorld(TexCoords, clamp(Depth,0.0,1.0));
+        vec3 worldTexCoords2 = screenToWorld(TexCoords, clamp(Depth2,0.0,1.0));
 
         mediump float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
         mediump float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
@@ -1027,9 +1065,15 @@ void main() {
                 TexCoords2 = TexCoords;
             }
             #ifdef WATER_FOAM
-                if(abs(Depth - Depth2) < 0.0005f && isRain == 0.0) {
-                    Albedo = mix2(Albedo, vec3(1.0f), clamp(1 - abs(Depth - Depth2),0f,1));
-                }
+                vec3 foamColor = vec3(1.0);
+                #ifdef BLOOM
+                    vec3 lightColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+                    foamColor *= clamp(dot(sunPosition, normalWorldSpace * 2.0 - 1.0), MIN_LIGHT, MAX_LIGHT);
+                    foamColor = mix(foamColor, lightColor, clamp(length(lightColor), 0.0, 0.5));
+                #endif
+                vec3 foamWater = mix2(Albedo.xyz, foamColor, foamFactor(worldTexCoords, worldTexCoords2));
+                
+                Albedo = mix2(Albedo, foamWater, 1 - step(isRain, 0.9));
             #endif
 
             if(isRain == 1.0) {
@@ -1202,6 +1246,9 @@ void main() {
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)) * currentColor, 1.0f);
             } else {
+                #ifdef BLOOM
+                    Albedo.xyz = mix2(Albedo.xyz, max(normalize2(lightmapColor),lightmapColor/10), clamp(length(lightmapColor), 0.0, 1.0));
+                #endif
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(currentColor * Albedo, 1.0f);
             }

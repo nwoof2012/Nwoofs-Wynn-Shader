@@ -6,6 +6,10 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 
+#define WATER_WAVES
+#define WATER_WAVES_DISTANCE 12 // [4 6 8 10 12 14 16]
+#define WATER_CHUNK_RESOLUTION 128 // [32 64 128]
+
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -15,6 +19,7 @@ varying vec4 Color;
 
 uniform usampler3D cSampler1;
 uniform usampler3D cSampler2;
+uniform usampler2D cSampler4;
 
 varying vec2 LightmapCoords;
 
@@ -125,6 +130,15 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
+vec4 normalFromHeight(sampler2D heightTex, vec2 uv, float scale, bool divide) {
+    mediump float moveStep = 1.0/viewHeight;
+    mediump float height = texture2D(heightTex,uv).r;
+    if(divide) height /= 32767;
+    vec2 dxy;
+    dxy = vec2(height) - vec2(texture2D(heightTex,uv + vec2(moveStep, 0.0)).r,  texture2D(heightTex,uv + vec2(0.0, moveStep)).r);
+    return vec4(normalize2(vec3(dxy * scale / moveStep, 1.0)),height);
+}
+
 //attribute vec4 mc_Entity;
 
 /* DRAWBUFFERS:01235 */
@@ -168,6 +182,11 @@ void main() {
         if(albedo.a < 0.75f) {
             albedo.a = 0.0;
         }
+
+        #ifdef WATER_WAVES
+            newNormal = tbnMatrix * normalFromHeight(cSampler4, TexCoords/WATER_CHUNK_RESOLUTION, 1.0, true).xyz * 0.5 + 0.5;
+            newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+        #endif
     } else {
         albedo = texture2D(colortex0, TexCoords);
         //albedo.xyz *= gl_Color.xyz;

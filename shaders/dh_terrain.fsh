@@ -270,6 +270,7 @@ void main() {
         dataTex0 = vec4(1.0);
         camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
 
+        outColor2 = vec4(vec3(0.0), 1.0f);
         /*#ifndef SCENE_AWARE_LIGHTING
             outColor2 = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
         #else

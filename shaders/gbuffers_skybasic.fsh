@@ -419,7 +419,7 @@ void main() {
         if(distToSun > sunMaxDistance) {
             moonGradient = 0;
         }
-        vec3 sunColor = vec3(1.0, 0.9, 0.6);
+        vec3 sunColor = vec3(1.0, 0.9, 0.8);
         mediump float noise = texture2D(noisetex, transformedDir.rg).g;
         vec3 moonColor = vec3(1.0, 1.0, 1.1);
         vec3 finalSunColor = sunColor * max(sunGradient * 2f, 1.0);
@@ -436,6 +436,8 @@ void main() {
         vec4 outputSunMoon = vec4(outputColorSun,sunGradient);
         if(detectSunMoon > 0.99) {
             outputSunMoon = outputColorMoon.xyzw;
+        } else {
+            gl_FragData[2] = vec4(outputColorSun,sunGradient);
         }
         if(worldTime%24000 < 12000) {
             //outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);

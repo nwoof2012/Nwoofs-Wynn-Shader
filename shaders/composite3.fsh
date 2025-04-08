@@ -227,6 +227,8 @@ void main() {
         noiseB.rgb = mix2(pow2(noiseA.rgb, vec3(CLOUD_DENSITY)),pow2(noiseB.rgb, vec3(CLOUD_DENSITY_RAIN)),rainStrength);
         vec4 finalNoise = cloudStack(rayDir.xz/rayDir.y);*/
 
+        vec4 clouds = vec4(vec3(1.0),0.0);
+
         if(rayDir.y < 1.0) {
             //finalNoise = (finalNoise + 1.0)/2.0;
             /*if(rayDir.y > 0)
@@ -257,7 +259,6 @@ void main() {
             mediump float starting_distance = 1.0/rayDir.y;
 
             //vec3 sky_color = color;
-            vec4 clouds = vec4(vec3(1.0),0.0);
             mediump float scale = 0.25;
             mediump float cloud_shading_amount = 0.1;
             vec3 sunDir = normalize2(sunPosition);
@@ -339,6 +340,7 @@ void main() {
                 }*/
             }
         }
+        gl_FragData[2] = vec4(mix2(vec3(0.0), texture2D(colortex2, texCoord).xyz, 1 - clouds.a),1.0);
     } else {
         gl_FragData[2] = vec4(texture2D(colortex2, texCoord).xyz,1.0);
     }
