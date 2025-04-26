@@ -18,6 +18,8 @@ struct LightSource {
 
 layout (r32ui) uniform uimage3D cimage1;
 layout (r32ui) uniform uimage3D cimage2;
+layout (r32ui) uniform uimage3D cimage5;
+layout (r32ui) uniform uimage3D cimage6;
 
 in vec3 vaPosition;
 in vec2 vaUV0;
@@ -155,25 +157,30 @@ void main() {
     vec2 texMinMidCoord = TexCoords - midCoord;
     absMidCoordPos  = abs(texMinMidCoord);
 
+    vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+    foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+    vec3 world_pos = foot_pos + cameraPosition;
+    #define VOXEL_AREA 128 //[32 64 128]
+    #define VOXEL_RADIUS (VOXEL_AREA/2)
+    block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
+    ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
+
     #ifdef WAVING_FOLIAGE
-        if(isFoliage == 1.0 && distanceFromCamera <= FOLIAGE_WAVE_DISTANCE * 16.0) {
+        vec4 foliage_data = isFoliage == 1.0? vec4(1.0) : vec4(vec3(0.0),1.0);
+        
+        uint foliageIntValue = packUnorm4x8(foliage_data);
+
+        imageAtomicMax(cimage5, voxel_pos, foliageIntValue);
+        if(isFoliage == 1.0 && distanceFromCamera <= FOLIAGE_WAVE_DISTANCE * 16f) {
             vec3 waving = vec3(FOLIAGE_INTENSITY * sin(frameTimeCounter * FOLIAGE_SPEED));
             //vec3 waving = GetRawWave(worldSpaceVertexPosition, FOLIAGE_INTENSITY);
             //waving = mix(vec3(0.0), waving, abs(sin(frameTimeCounter * FOLIAGE_SPEED)));
-            gl_Position += gbufferProjection * gbufferModelView * (vec4(waving.x,0.0,waving.x,0.0)*(clamp(pow(1.0 - bottomY,1.5),0,1)) * 0.125);
+            gl_Position += gbufferProjection * gbufferModelView * (vec4(waving.x,0.0,waving.x,0.0)*(clamp(pow(1 - bottomY,1.5),0,1)) * 0.125);
             //LightmapCoords2 += waving;
         }
     #endif
 
     #ifdef SCENE_AWARE_LIGHTING
-        vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
-        foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
-        vec3 world_pos = foot_pos + cameraPosition;
-        #define VOXEL_AREA 128 //[32 64 128]
-        #define VOXEL_RADIUS (VOXEL_AREA/2)
-        block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
-        ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
-
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
 

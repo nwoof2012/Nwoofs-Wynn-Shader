@@ -10,7 +10,14 @@
 
 #define FRAGMENT_SHADER
 
+#define WAVING_FOLIAGE
+#define FOLIAGE_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+#define FOLIAGE_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+#define FOLIAGE_WAVE_DISTANCE 4 // [2 4 8 16 32]
+
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
+
+#define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
 precision mediump float;
 
@@ -27,9 +34,11 @@ uniform sampler2D depthtex1;
 
 uniform usampler3D cSampler1;
 uniform usampler3D cSampler2;
+uniform usampler3D cSampler5;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferProjection;
 uniform mat4 gbufferModelView;
 
 uniform ivec2 atlasSize;
@@ -52,13 +61,22 @@ flat in vec2 midCoord;
 
 uniform bool isBiomeEnd;
 
+uniform float frameTimeCounter;
+
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
+const float TorchBrightness = 1.0;
 const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
+const float GlowstoneBrightness = 1.0;
 const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
+const float LampBrightness = 1.0;
 const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
+const float LanternBrightness = 1.0;
 const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
+const float RedstoneBrightness = 1.0;
 const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
+const float RodBrightness = 1.0;
 const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
+const float PortalBrightness = 1.0;
 
 //#include "program/generateNormals.glsl"
 
@@ -108,25 +126,32 @@ vec4 decodeLightmap(vec4 lightmap) {
     if(lightmap.xyz == vec3(1.0, 0.0, 0.0))
     {
         lighting.xyz = TorchColor;
+        lighting.w = TorchBrightness;
     }
     else if(lightmap.xyz == vec3(0.0, 1.0, 0.0))
     {
         lighting.xyz = GlowstoneColor;
+        lighting.w = GlowstoneBrightness;
     } else if(lightmap.xyz == vec3(0.0, 0.0, 1.0))
     {
         lighting.xyz = LampColor;
+        lighting.w = LampBrightness;
     } else if(lightmap.xyz == vec3(1.0, 1.0, 0.0))
     {
         lighting.xyz = LanternColor;
+        lighting.w = LanternBrightness;
     } else if(lightmap.xyz == vec3(0.0, 1.0, 1.0))
     {
         lighting.xyz = RedstoneColor;
+        lighting.w = RedstoneBrightness;
     } else if(lightmap.xyz == vec3(1.0, 0.0, 1.0))
     {
         lighting.xyz = RodColor;
+        lighting.w = RodBrightness;
     } else if(lightmap.xyz == vec3(1.0, 1.0, 1.0))
     {
         lighting.xyz = PortalColor;
+        lighting.w = PortalBrightness;
     } else {
         lighting.w = 0;
     }
@@ -281,7 +306,7 @@ void main() {
             /*if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
                 finalLighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
             }*/
-            vec4 finalLighting2 = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
+            vec4 finalLighting2 = max(vanillaLight(AdjustLightmap(LightmapCoords)), vec4(MIN_LIGHT * 0.1));
             finalLighting = mix2(finalLighting, finalLighting2, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,1,finalLighting))));
             gl_FragData[2] = finalLighting;
         #endif

@@ -24,6 +24,18 @@
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
 #define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
+
+#define NATURAL_LIGHT_DAY_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_B 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_I 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
+
+#define NATURAL_LIGHT_NIGHT_R 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
+
+
 #define BLOOM
 
 #define BLOOM_QUALITY 48 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
@@ -500,13 +512,14 @@ mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
     return ao;
 }
 
-vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
+vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     mediump float radius = 2f;
     vec3 sum = vec3(0.0);
     mediump float blur = radius/viewHeight;
     mediump float hstep = 1f;
     vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
     vec3 lightColor = texture2D(colortex2,uv).rgb;
+    float illumination = texture2D(colortex2,uv).a;
     #ifdef SCENE_AWARE_LIGHTING
         //sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, uv);
         sum += lightColor;
@@ -553,6 +566,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         //specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
         lightColor3 = texture2D(colortex2,shiftedUVs).rgb;
+        illumination += texture2D(colortex2,shiftedUVs).a;
         vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         /*mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
         mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
@@ -613,6 +627,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         //specularMap = pow2(specularMap, vec3(100.0));
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
         lightColor3 = texture2D(colortex2,shiftedUVs).rgb;
+        illumination += texture2D(colortex2,shiftedUVs).a;
         vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         /*mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
         mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
@@ -714,7 +729,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
     sum *= BLOOM_INTENSITY + 0.5;
 
-    return pow2(sum,vec3(GAMMA));
+    return vec4(pow2(sum,vec3(GAMMA)), illumination);
 }
 
 mediump float far = 1f;
@@ -1148,7 +1163,7 @@ void main() {
             #ifdef WATER_FOAM
                 vec3 foamColor = vec3(1.0);
                 #ifdef BLOOM
-                    vec3 lightColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+                    vec3 lightColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha)).xyz;
                     foamColor *= clamp(dot(sunPosition, normalWorldSpace * 2.0 - 1.0), MIN_LIGHT, MAX_LIGHT);
                     foamColor = mix(foamColor, lightColor, clamp(length(lightColor), 0.0, 0.5));
                 #endif
@@ -1219,6 +1234,15 @@ void main() {
 
         Diffuse = mix2(Diffuse, cloudColor.xyz, cloudColor.a);
 
+        vec3 lightColorDay = vec3(NATURAL_LIGHT_DAY_R, NATURAL_LIGHT_DAY_G, NATURAL_LIGHT_DAY_B) * NATURAL_LIGHT_DAY_I;
+        vec3 lightColorNight = vec3(NATURAL_LIGHT_NIGHT_R, NATURAL_LIGHT_NIGHT_G, NATURAL_LIGHT_NIGHT_B) * NATURAL_LIGHT_NIGHT_I;
+        
+        float timeNorm = mod(worldTime,24000.0) / 24000.0;
+
+        float weightDay = 0.5 + 0.5 * cos((timeNorm - 0.25) * 2.0 * PI);
+        float weightNight = 0.5 + 0.5 * cos((timeNorm - 0.75) * 2.0 * PI);
+        vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
+
         if(isBiomeEnd) {
             if(dhTest <= 0) {
                 currentColor = vec3(0.3f);
@@ -1265,7 +1289,7 @@ void main() {
             mediump float detectSky = texture2D(colortex5, TexCoords).g;
             mediump float detectEntity = texture2D(colortex12, TexCoords).r;
             #ifdef BLOOM
-                vec3 lightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+                vec3 lightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha)).xyz;
             #else
                 vec3 lightmapColor = texture2D(colortex2, TexCoords.xy).rgb;
             #endif
@@ -1339,6 +1363,7 @@ void main() {
         mediump float seMinLight = SE_MIN_LIGHT;
         
         vec3 LightmapColor;
+        float lightBrightness2 = 0;
         //vec3 Lightmap = bloom();
 
         /*#ifdef PATH_TRACING
@@ -1354,12 +1379,15 @@ void main() {
             LightmapColor += GetLightmapColor(vec2(length(lightmap),0f));
         #else*/
             #ifdef BLOOM
-                LightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+                vec4 bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+                LightmapColor = bloomAmount.xyz;
+                lightBrightness2 = bloomAmount.a;
                 /*if(dot(LightmapColor,vec3(0.333f)) < BLOOM_THRESHOLD) {
                     LightmapColor = GetLightmapColor(texture2D(colortex2, TexCoords).rg);
                 }*/
             #else
                 blurLightmap(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha), TexCoords);
+                lightBrightness2 = texture2D(colortex2,TexCoords).a;
             #endif
         //#endif
         vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb + lightBrightness;
@@ -1499,8 +1527,11 @@ void main() {
             }*/
             //LightmapColor *= vec3(0.2525);
             if(maxLight < 4.1f) {
-                LightmapColor = clamp(LightmapColor,vec3(0f), (LightmapColor/dot(LightmapColor,vec3(0.333))) * maxLight);
+                float lightMagnitude = length(LightmapColor);
+                lightMagnitude = clamp(lightMagnitude, MIN_LIGHT, maxLight);
+                LightmapColor = clamp(LightmapColor, vec3(0.0),normalize2(LightmapColor) * lightMagnitude);
             }
+            LightmapColor = max(currentLightColor,LightmapColor * lightBrightness2 * 8)/128;
             vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
             Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
             Diffuse3 = mix2(unreal(Diffuse3),aces(Diffuse3),0.75);
