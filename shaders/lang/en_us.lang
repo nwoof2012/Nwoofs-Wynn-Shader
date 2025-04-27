@@ -113,6 +113,9 @@ value.MIN_LIGHT.0.0f=Dark
 option.SE_MIN_LIGHT=Minimum Light
 value.SE_MIN_LIGHT.0.0f=Dark
 
+option.SE_MAX_LIGHT=Maximum Light
+value.SE_MAX_LIGHT.4.1f=Unlimited
+
 option.MIN_SE_SATURATION=Minimum Saturation
 value.MIN_SE_SATURATION.0.5=§aDefault
 option.MIN_SE_SATURATION.comment=Clamps Silent Expanse desaturation in low light levels
@@ -284,6 +287,15 @@ value.LIGHTMAP_QUALITY.120=120 Samples
 value.LIGHTMAP_QUALITY.124=124 Samples
 value.LIGHTMAP_QUALITY.128=128 Samples
 option.LIGHTMAP_QUALITY.comment=Sample count for Scene Aware Lighting. §4§lSevere GPU Performance Impact on higher settings
+
+option.AO=Ambient Occlusion
+option.AO.comment=Enables Ambient Occlusion. &e&lMild GPU Performance Impact
+
+option.AO_THRESHOLD=AO Threshold
+option.AO_THRESHOLD.comment=Adjusts sensitivity of Ambient Occlusion
+
+option.AO_STRENGTH=AO Strength
+option.AO_STRENGTH.comment=Adjusts the emphasis of Ambient Occlusion
 
 option.GAMMA=Gamma
 value.GAMMA.2.2=§asRGB

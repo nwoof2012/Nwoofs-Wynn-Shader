@@ -1345,7 +1345,7 @@ void main() {
                 LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
             }*/
             if(maxLight < 4.1f) {
-                LightmapColor = clamp(LightmapColor,vec3(0f), (LightmapColor/dot(LightmapColor,vec3(0.333))) * maxLight);
+                LightmapColor = clamp(LightmapColor,vec3(0f), normalize2(LightmapColor) * maxLight);
             }
             Diffuse.xyz = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
             Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);

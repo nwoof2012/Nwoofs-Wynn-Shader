@@ -19,6 +19,12 @@
 
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
+#define SE_MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
+#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
+#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -278,11 +284,14 @@ void main() {
                         }*/
 
                         vec3 foot_pos3 = vec3(0.0); //foot_pos;
-                        vec3 block_centered_relative_pos3 = block_centered_relative_pos2 - foot_pos;
+                        vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
+
+                        block_centered_relative_pos4 = mat3(gbufferModelView) * block_centered_relative_pos4;
+                        //foot_pos3 = mat3(gbufferProjection) * mat3(gbufferModelView) * foot_pos3;
 
                         // Compute lighting contribution
                         lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
-                                    clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos3) / float(LIGHT_RADIUS), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
+                                    clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
                         
                         //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
                         //lighting.xyz *= lightColor;
@@ -306,7 +315,8 @@ void main() {
             /*if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
                 finalLighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
             }*/
-            vec4 finalLighting2 = max(vanillaLight(AdjustLightmap(LightmapCoords)), vec4(MIN_LIGHT * 0.1));
+            vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
+            if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1));
             finalLighting = mix2(finalLighting, finalLighting2, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,1,finalLighting))));
             gl_FragData[2] = finalLighting;
         #endif

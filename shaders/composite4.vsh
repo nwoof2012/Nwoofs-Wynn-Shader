@@ -17,6 +17,8 @@ uniform sampler2D noise;
 
 uniform vec3 cameraPosition;
 
+uniform mat4 gbufferModelViewInverse;
+
 #include "lib/timeCycle.glsl"
 
 out vec3 lightmap;
@@ -24,6 +26,8 @@ out vec3 lightmap;
 out vec3 vNormal;
 out vec3 vViewDir;
 out vec3 Tangent;
+
+out vec3 foot_pos;
 
 in vec3 at_tangent;
 in vec3 at_midBlock;
@@ -63,6 +67,9 @@ void main() {
     vViewDir = normalize(-viewPos.xyz);
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
     LightmapCoords = vaUV2;
+
+    vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+    foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
 
     #ifdef SCENE_AWARE_LIGHTING
         #include "program/voxelizing.glsl"

@@ -5,6 +5,14 @@
 #include "lib/optimizationFunctions.glsl"
 #include "program/underwater.glsl"
 
+#define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
+#define SE_MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
+#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
+#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -26,6 +34,8 @@ uniform float frameTime;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
+
+uniform bool isBiomeEnd;
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -54,10 +64,6 @@ vec4 vanillaLight(in vec2 Lightmap) {
 /* RENDERTARGETS:0,1,2,4,5,15 */
 
 void main() {
-    vec4 noiseMap3 = texture2D(noise, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
-    
-    //vec4 albedo = vec4(isInWater(texture, Color.xyz, TexCoords, noiseMap3.xy, 0.125), texture2D(texture, TexCoords + noiseMap3.xy).a);
-
     vec4 albedo = texture2D(texture, TexCoords) * Color;
     
     mediump float a;
@@ -75,6 +81,7 @@ void main() {
     #ifdef SCENE_AWARE_LIGHTING
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0.5,1));
+        if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
         gl_FragData[2] = vec4(lighting.xyz, 1.0);
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);

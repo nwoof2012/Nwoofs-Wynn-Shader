@@ -48,6 +48,8 @@
 
 #define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
+#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
 #define LIGHTMAP_QUALITY 16 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
 
 #define WATER_REFRACTION
@@ -191,7 +193,10 @@ uniform vec3 shadowLightPosition;
 
 uniform float screenBrightness;
 
+in vec3 foot_pos;
+
 #include "lib/buffers.glsl"
+#include "program/ambientOcclusion.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -1424,14 +1429,17 @@ void main() {
         }*/
 
         mediump float maxLight = MAX_LIGHT;
+        mediump float seMaxLight = SE_MAX_LIGHT;
         
         vec3 shadowLerp = GetShadow(Depth);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
         if(waterTest > 0) {
             shadowLerp = vec3(1.0);
             //lightBrightness = 1.0;
         }
+        float aoValue = 1;
         #ifdef AO
-            shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
+            //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
+            aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
         #endif
 
         float timer = 0;
@@ -1487,11 +1495,16 @@ void main() {
                 LightmapColor *= vec3(1.5025);
                 lightBrightness = max(lightBrightness, 0.5);
             #endif*/
+            if(seMaxLight < 4.1f) {
+                float lightMagnitude = length(LightmapColor);
+                lightMagnitude = clamp(lightMagnitude, SE_MIN_LIGHT, seMaxLight);
+                LightmapColor = clamp(LightmapColor, vec3(0.0),normalize2(LightmapColor) * lightMagnitude);
+            }
             LightmapColor *= vec3(3.5025);
             /*if(length(LightmapColor.xyz) > 1.0) {
                 LightmapColor.xyz = normalize(LightmapColor.xyz);
             }*/
-            vec3 Diffuse3 = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor),Albedo * ((NdotL * shadowLerp + Ambient) * currentColor),0.25);
+            vec3 Diffuse3 = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor) * aoValue,Albedo * ((NdotL * shadowLerp + Ambient) * currentColor) * aoValue,0.25);
             //Diffuse = mix2(Diffuse, seColor, 0.01);
             Diffuse3 = mix2(Diffuse3,vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
             Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
@@ -1532,7 +1545,7 @@ void main() {
                 LightmapColor = clamp(LightmapColor, vec3(0.0),normalize2(LightmapColor) * lightMagnitude);
             }
             LightmapColor = max(currentLightColor,LightmapColor * lightBrightness2 * 8)/128;
-            vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
+            vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
             Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
             Diffuse3 = mix2(unreal(Diffuse3),aces(Diffuse3),0.75);
 
