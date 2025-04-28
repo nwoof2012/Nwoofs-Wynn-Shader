@@ -289,7 +289,7 @@ value.LIGHTMAP_QUALITY.128=128 Samples
 option.LIGHTMAP_QUALITY.comment=Sample count for Scene Aware Lighting. §4§lSevere GPU Performance Impact on higher settings
 
 option.AO=Ambient Occlusion
-option.AO.comment=Enables Ambient Occlusion. &e&lMild GPU Performance Impact
+option.AO.comment=Enables Ambient Occlusion. §e§lMild GPU Performance Impact
 
 option.AO_THRESHOLD=AO Threshold
 option.AO_THRESHOLD.comment=Adjusts sensitivity of Ambient Occlusion
