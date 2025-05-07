@@ -1,13 +1,13 @@
-option.ENTITY_SHADOWS=Entity Shadows
-option.ENTITY_SHADOWS.comment=Apply shadowmapping to entities. §4§lCan impact CPU and GPU performance significantly in areas with many mobs
+option.ENTITY_SHADOWS=§7Entity Shadows
+option.ENTITY_SHADOWS.comment=§eApply shadowmapping to entities. §4§lCan impact CPU and GPU performance significantly in areas with many mobs
 value.ENTITY_SHADOWS.false=§eOff
 value.ENTITY_SHADOWS.true=§4§k§l§oa §4§l§oOn §4§k§l§oa
 
-option.SHADOWS_ENABLED=Enable Shadows
-option.SHADOWS_ENABLED.comment=Enables shadows. Will significantly improve GPU performance if off, but looks way worse
+option.SHADOWS_ENABLED=§7Enable Shadows
+option.SHADOWS_ENABLED.comment=§eEnables shadows. Will significantly improve GPU performance if off§7, §ebut looks way worse
 
-option.SHADOW_RES=Shadow Resolution
-option.SHADOW_RES.comment=Quality of the shadowmapping. §4§lSignificantly impacts VRAM usage
+option.SHADOW_RES=§7Shadow Resolution
+option.SHADOW_RES.comment=§eQuality of the shadowmapping. §4§lSignificantly impacts VRAM usage
 value.SHADOW_RES.128=128px
 value.SHADOW_RES.256=256px
 value.SHADOW_RES.512=512px
@@ -16,8 +16,8 @@ value.SHADOW_RES.2048=2048px
 value.SHADOW_RES.4096=§aDefault
 value.SHADOW_RES.8192=8192px
 
-option.SHADOW_DIST=Shadow Distance
-option.SHADOW_DIST.comment=How far away shadows can be rendered. §4§lSignificantly impacts GPU performance
+option.SHADOW_DIST=§7Shadow Distance
+option.SHADOW_DIST.comment=§eHow far away shadows can be rendered. §4§lSignificantly impacts GPU performance
 value.SHADOW_DIST.4=§a§l§o4 Chunks
 value.SHADOW_DIST.5=§a§l§o5 Chunks
 value.SHADOW_DIST.6=§a§l§o6 Chunks
@@ -92,109 +92,112 @@ option.SKY_SUNSET_B_B=§9Stratosphere Blue
 option.FOG_DAY_R=§cRed
 option.FOG_DAY_G=§aGreen
 option.FOG_DAY_B=§9Blue
-option.FOG_DAY_DIST_MIN=Minimum Fog Distance
-option.FOG_DAY_DIST_MAX=Maximum Fog Distance
+option.FOG_DAY_DIST_MIN=§7Minimum Fog Distance
+option.FOG_DAY_DIST_MAX=§7Maximum Fog Distance
 
 option.FOG_NIGHT_R=§cRed
 option.FOG_NIGHT_G=§aGreen
 option.FOG_NIGHT_B=§9Blue
-option.FOG_NIGHT_DIST_MIN=Minimum Fog Distance
-option.FOG_NIGHT_DIST_MAX=Maximum Fog Distance
+option.FOG_NIGHT_DIST_MIN=§7Minimum Fog Distance
+option.FOG_NIGHT_DIST_MAX=§7Maximum Fog Distance
 
 option.FOG_SUNSET_R=§cRed
 option.FOG_SUNSET_G=§aGreen
 option.FOG_SUNSET_B=§9Blue
-option.FOG_SUNSET_DIST_MIN=Minimum Fog Distance
-option.FOG_SUNSET_DIST_MAX=Maximum Fog Distance
+option.FOG_SUNSET_DIST_MIN=§7Minimum Fog Distance
+option.FOG_SUNSET_DIST_MAX=§7Maximum Fog Distance
 
-option.MIN_LIGHT=Minimum Light
+option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
 
-option.SE_MIN_LIGHT=Minimum Light
+option.SE_MIN_LIGHT=§bMinimum Light
 value.SE_MIN_LIGHT.0.0f=Dark
 
-option.SE_MAX_LIGHT=Maximum Light
+option.SE_MAX_LIGHT=§bMaximum Light
 value.SE_MAX_LIGHT.4.1f=Unlimited
 
-option.MIN_SE_SATURATION=Minimum Saturation
+option.MIN_SE_SATURATION=§cMinimum Saturation
 value.MIN_SE_SATURATION.0.5=§aDefault
-option.MIN_SE_SATURATION.comment=Clamps Silent Expanse desaturation in low light levels
+option.MIN_SE_SATURATION.comment=§9Clamps Silent Expanse desaturation in low light levels
 
-option.MAX_LIGHT=Maximum Light
+option.MAX_LIGHT=§bMaximum Light
 value.MAX_LIGHT.4.1f=Unlimited
 
-option.BLOOM=Bloom
-option.BLOOM.comment=Makes light sources leak into surrounding objects. §2§lLow-moderate GPU performance impact
+option.BLOOM=§eBloom
+option.BLOOM.comment=§9Makes light sources leak into surrounding objects. §2Low-moderate GPU performance impact
 
-option.BLOOM_QUALITY=Bloom Quality
-option.BLOOM_QUALITY.comment=Sample count for Bloom effect. §e§lMedium GPU performance impact
+option.BLOOM_QUALITY=§eBloom Quality
+option.BLOOM_QUALITY.comment=§9Sample count for Bloom effect. §e§lMedium GPU performance impact
 suffix.BLOOM_QUALITY=§r Samples
 
-option.BLOOM_INTENSITY=Bloom Intensity
-option.BLOOM_INTENSITY.comment=Brightness of Bloom effect
+option.BLOOM_INTENSITY=§eBloom Intensity
+option.BLOOM_INTENSITY.comment=§9Brightness of Bloom effect
 
-option.WATER_REFRACTION=Water Refraction
-option.WATER_REFRACTION.comment = Distorts light as it passes through water
+option.BLOOM_THRESHOLD=§eBloom Threshold
+option.BLOOM_THRESHOLD.comment=§9Adjusts the light level at which bloom is enabled§7/§9disabled
 
-option.WATER_FOAM=Water Foam
-option.WATER_FOAM.comment = Enables foam at the edges of water
+option.WATER_REFRACTION=§9Water Refraction
+option.WATER_REFRACTION.comment = §6Distorts light as it passes through water
 
-option.WATER_WAVES=Water Waves
-option.WATER_WAVES.comment=Enables 3-dimensional waves for water
+option.WATER_FOAM=§9Water Foam
+option.WATER_FOAM.comment = §6Enables foam at the edges of water
 
-option.WAVE_SPEED_X=Wave Speed (X)
-option.WAVE_SPEED_X.comment=Adjusts the speed of waves in the water on the X axis
+option.WATER_WAVES=§9Water Waves
+option.WATER_WAVES.comment=§6Enables 3§7-§6dimensional waves for water
 
-option.WAVE_SPEED_Y=Wave Speed (Y)
-option.WAVE_SPEED_Y.comment=Adjusts the speed of waves in the water on the Y axis
+option.WAVE_SPEED_X=§9Wave Speed (X)
+option.WAVE_SPEED_X.comment=§9Adjusts the speed of waves in the water on the X axis
 
-option.WAVE_DENSITY_X=Wave Density Length
-option.WAVE_SPEED_X.comment=Adjusts the length of waves in the water
+option.WAVE_SPEED_Y=§9Wave Speed (Y)
+option.WAVE_SPEED_Y.comment=§9Adjusts the speed of waves in the water on the Y axis
 
-option.WAVE_DENSITY_Y=Wave Density Width
-option.WAVE_SPEED_X.comment=Adjusts the width of waves in the water
+option.WAVE_DENSITY_X=§9Wave Density Length
+option.WAVE_SPEED_X.comment=§9Adjusts the length of waves in the water
 
-option.WAVE_AMPLITUDE=Wave Height
+option.WAVE_DENSITY_Y=§9Wave Density Width
+option.WAVE_SPEED_X.comment=§9Adjusts the width of waves in the water
+
+option.WAVE_AMPLITUDE=§9Wave Height
 option.WAVE_AMPLITUDE.comment=Adjusts the height of waves in the water
 
-option.TILTED_RAIN=Tilted Rain
+option.TILTED_RAIN=§9Tilted Rain
 option.TILTED_RAIN.comment=Adjusts the angle of rain to be more slanted for added realism
 
 option.SHADER_CLOUDS=Clouds
 
-option.CLOUD_STYLE = Volumetric Clouds
+option.CLOUD_STYLE = §fVolumetric Clouds
 value.CLOUD_STYLE.0 = §cOff
 value.CLOUD_STYLE.1 = §aOn
-option.CLOUD_STYLE.comment = Enables 3-Dimensional Volumetric Clouds. §6§lMedium-High Performance Impact
+option.CLOUD_STYLE.comment = §9Enables 3-Dimensional Volumetric Clouds. §6§lMedium-High Performance Impact
 
-option.CLOUD_FOG = Distant Fog
-option.CLOUD_FOG.comment = Distant Fog amount on Volumetric Clouds.
+option.CLOUD_FOG = §fDistant Fog
+option.CLOUD_FOG.comment = §9Distant Fog amount on Volumetric Clouds.
 
-option.CLOUD_SAMPLES = Volumetric Cloud Samples
-option.CLOUD_SAMPLES.comment = The sample rate for Volumetric Cloud height. §e§lMedium Performance Impact
+option.CLOUD_SAMPLES = §fVolumetric Cloud Samples
+option.CLOUD_SAMPLES.comment = §9The sample rate for Volumetric Cloud height. §e§lMedium Performance Impact
 
-option.CLOUD_DENSITY = Volumetric Cloud Density
+option.CLOUD_DENSITY = §fVolumetric Cloud Density
 
-option.CLOUD_DENSITY_RAIN = Volumetric Cloud Density (Rainy)
+option.CLOUD_DENSITY_RAIN = §fVolumetric Cloud Density §7(§aRainy§7)
 
-option.CLOUD_SPEED = Volumetric Cloud Speed
+option.CLOUD_SPEED = §fVolumetric Cloud Speed
 
-option.CLOUD_SHADING_SAMPLES = Volumetric Cloud Light Samples
-option.CLOUD_SHADING_SAMPLES.comment = Sample count for lighting on Volumetric Clouds. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
+option.CLOUD_SHADING_SAMPLES = §fVolumetric Cloud Light Samples
+option.CLOUD_SHADING_SAMPLES.comment = §9Sample count for lighting on Volumetric Clouds. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
 
-option.CLOUD_SHADING_DISTANCE = Volumetric Cloud Light Distance
+option.CLOUD_SHADING_DISTANCE = §fVolumetric Cloud Light Distance
 
-option.PATH_TRACING_GI=Path Tracing
+option.PATH_TRACING_GI=§6Path Tracing
 value.PATH_TRACING_GI.0=§eOff
 value.PATH_TRACING_GI.1=§4§k§l§oa §4§l§oOn §4§k§l§oa
-option.PATH_TRACING_GI.comment=Enables path-traced lighting. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
+option.PATH_TRACING_GI.comment=§9Enables path-traced lighting. §4§lSevere GPU/CPU Performance Impact + VRAM Usage Increase
 
-option.WAVING_FOLIAGE=Waving Foliage
+option.WAVING_FOLIAGE=§2Waving Foliage
 value.WAVING_FOLIAGE.false=§cOff
 value.WAVING_FOLIAGE.true=§aOn
-option.WAVING_FOLIAGE.comment=Enables waving foliage
+option.WAVING_FOLIAGE.comment=§9Enables waving foliage
 
-option.FOLIAGE_SPEED=Waving Foliage Speed
+option.FOLIAGE_SPEED=§2Waving Foliage Speed
 value.FOLIAGE_SPEED.0.1f=0.1x
 value.FOLIAGE_SPEED.0.2f=0.2x
 value.FOLIAGE_SPEED.0.3f=0.3x
@@ -215,10 +218,10 @@ value.FOLIAGE_SPEED.1.7f=1.7x
 value.FOLIAGE_SPEED.1.8f=1.8x
 value.FOLIAGE_SPEED.1.9f=1.9x
 value.FOLIAGE_SPEED.2.0f=2.0x
-option.FOLIAGE_SPEED.comment=Adjusts the speed of waving foliage
+option.FOLIAGE_SPEED.comment=§9Adjusts the speed of waving foliage
 suffix.FOLIAGE_SPEED=x
 
-option.FOLIAGE_INTENSITY=Waving Foliage Intensity
+option.FOLIAGE_INTENSITY=§2Waving Foliage Intensity
 value.FOLIAGE_INTENSITY.0.1f=0.1x
 value.FOLIAGE_INTENSITY.0.2f=0.2x
 value.FOLIAGE_INTENSITY.0.3f=0.3x
@@ -239,21 +242,21 @@ value.FOLIAGE_INTENSITY.1.7f=1.7x
 value.FOLIAGE_INTENSITY.1.8f=1.8x
 value.FOLIAGE_INTENSITY.1.9f=1.9x
 value.FOLIAGE_INTENSITY.2.0f=2.0x
-option.FOLIAGE_INTENSITY.comment=Adjusts the intensity of waving foliage
+option.FOLIAGE_INTENSITY.comment=§9Adjusts the intensity of waving foliage
 suffix.FOLIAGE_INTENSITY=x
 
-option.FOLIAGE_WAVE_DISTANCE=Waving Foliage Distance
+option.FOLIAGE_WAVE_DISTANCE=§2Waving Foliage Distance
 value.FOLIAGE_WAVE_DISTANCE.2=§22 Chunks
 value.FOLIAGE_WAVE_DISTANCE.4=§a4 Chunks
 value.FOLIAGE_WAVE_DISTANCE.8=§e8 Chunks
 value.FOLIAGE_WAVE_DISTANCE.16=§616 Chunks
-value.FOLIAGE_WAVE_DISTANCE.32=§4§k§l§oa §4§l32 Chunks §4§k§l§oa
-option.FOLIAGE_WAVE_DISTANCE.comment=Sets how far away visible foliage will wave. §6§lMedium-High Performance Impact
+value.FOLIAGE_WAVE_DISTANCE.32=§4§k§oa §4§l32 Chunks §4§k§l§oa
+option.FOLIAGE_WAVE_DISTANCE.comment=§9Sets how far away visible foliage will wave. §6§lMedium-High Performance Impact
 
-option.SCENE_AWARE_LIGHTING=Scene Aware Lighting
+option.SCENE_AWARE_LIGHTING=§e§lScene Aware Lighting
 option.SCENE_AWARE_LIGHTING.comment=Enables colored lighting based on the light source
 
-option.LIGHTMAP_QUALITY=Lightmap Quality
+option.LIGHTMAP_QUALITY=§e§lLightmap Quality
 value.LIGHTMAP_QUALITY.4=4 Samples
 value.LIGHTMAP_QUALITY.8=8 Samples
 value.LIGHTMAP_QUALITY.12=12 Samples
@@ -288,58 +291,69 @@ value.LIGHTMAP_QUALITY.124=124 Samples
 value.LIGHTMAP_QUALITY.128=128 Samples
 option.LIGHTMAP_QUALITY.comment=Sample count for Scene Aware Lighting. §4§lSevere GPU Performance Impact on higher settings
 
-option.AO=Ambient Occlusion
-option.AO.comment=Enables Ambient Occlusion. §e§lMild GPU Performance Impact
+option.AO=§9Ambient Occlusion
+option.AO.comment=§6Enables Ambient Occlusion. §e§lMild GPU Performance Impact
 
-option.AO_THRESHOLD=AO Threshold
-option.AO_THRESHOLD.comment=Adjusts sensitivity of Ambient Occlusion
+option.AO_THRESHOLD=§9AO Threshold
+option.AO_THRESHOLD.comment=§6Adjusts sensitivity of Ambient Occlusion
 
-option.AO_STRENGTH=AO Strength
-option.AO_STRENGTH.comment=Adjusts the emphasis of Ambient Occlusion
+option.AO_STRENGTH=§9AO Strength
+option.AO_STRENGTH.comment=§6Adjusts the emphasis of Ambient Occlusion
 
-option.GAMMA=Gamma
+option.AA=§aAntialiasing
+value.AA.0=Off
+value.AA.1=Basic
+value.AA.2=SMAA
+option.AA.comment=§6Toggles between Antialiasing modes§7:. §7 - §9Off. §7 - §9Basic. §7 - §9SMAA
+
+option.GAMMA=§fGamma
 value.GAMMA.2.2=§asRGB
-option.GAMMA.comment=Adjust scene gamma correction bias
+option.GAMMA.comment=§6Adjust scene gamma correction bias
 
-screen.PERFORMANCE=Performance
+option.VIBRANT_MODE=§5Vibrant Mode §c(Experimental)
+value.VIBRANT_MODE.0=Off
+value.VIBRANT_MODE.1=On
+option.VIBRANT_MODE.comment=§6Enables LUTs for vibrant color scheme
 
-screen.SKY = Sky
-screen.ATMOSPHERE_COLORS = Atmosphere Colors
-screen.ATMOSPHERE_DAY = Day
-screen.ATMOSPHERE_NIGHT = Night
-screen.ATMOSPHERE_SUNSET = Sunrise/Sunset
+screen.PERFORMANCE=§cPerformance
 
-screen.SKY_COLORS = Sky Colors
-screen.SKY_DAY = Day
-screen.SKY_NIGHT = Night
-screen.SKY_SUNSET = Sunrise/Sunset
+screen.SKY = §bSky
+screen.ATMOSPHERE_COLORS = §bAtmosphere Colors
+screen.ATMOSPHERE_DAY = §bDay
+screen.ATMOSPHERE_NIGHT = §9Night
+screen.ATMOSPHERE_SUNSET = §6Sunrise§7/§6Sunset
 
-screen.SKY_CLOUDS = Clouds
+screen.SKY_COLORS = §bSky Colors
+screen.SKY_DAY = §bDay
+screen.SKY_NIGHT = §9Night
+screen.SKY_SUNSET = §6Sunrise§7/§6Sunset
 
-screen.FOG = Fog
-screen.FOG_DAY = Day
-screen.FOG_NIGHT = Night
-screen.FOG_SUNSET = Sunrise/Sunset
+screen.SKY_CLOUDS = §fClouds
 
-screen.LIGHTING=Lighting
+screen.FOG = §7Fog
+screen.FOG_DAY = §bDay
+screen.FOG_NIGHT = §9Night
+screen.FOG_SUNSET = §6Sunrise§7/§6Sunset
 
-screen.WATER=Water
+screen.LIGHTING=§eLighting
 
-screen.CAMERA = Camera
+screen.WATER=§9Water
 
-screen.WORLD = World
+screen.CAMERA = §fCamera
 
-screen.SPECIAL_LIGHTING = Additional Options
+screen.WORLD = §aWorld
 
-screen.SHADOW_SETTINGS = Shadows
+screen.SPECIAL_LIGHTING = §eAdditional Options
 
-screen.SILENT_EXPANSE = Silent Expanse
+screen.SHADOW_SETTINGS = §7Shadows
 
-profile.TOASTER=Toaster
-profile.POTATO=Potato
-profile.LOW=Low
-profile.MEDIUM=Medium
-profile.HIGH=High
-profile.ULTRA=Ultra
-profile.CINEMATIC=Cinematic
-profile.CINEMATIC_PATH=Cinematic Path Tracing
+screen.SILENT_EXPANSE = §dSilent Expanse
+
+profile.TOASTER=§7Toaster
+profile.POTATO=§3Potato
+profile.LOW=§aLow
+profile.MEDIUM=§eMedium
+profile.HIGH=§bHigh
+profile.ULTRA=§6Ultra
+profile.CINEMATIC=§eCinematic
+profile.CINEMATIC_PATH=§4§lCinematic Path Tracing

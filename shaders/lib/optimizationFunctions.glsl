@@ -57,3 +57,78 @@ mediump float blockDist(vec3 a, vec3 b) {
     b -= vec3(0.5);
     return sqrt(dot(a - b, a - b));
 }
+
+
+bool isVectorLessThan(vec2 a, vec2 b) {
+    return a.x < b.x && a.y < b.y;
+}
+
+bool isVectorLessEqual(vec2 a, vec2 b) {
+    return a.x <= b.x && a.y <= b.y;
+}
+
+bool isVectorGreaterThan(vec2 a, vec2 b) {
+    return a.x > b.x && a.y > b.y;
+}
+
+bool isVectorGreaterEqual(vec2 a, vec2 b) {
+    return a.x >= b.x && a.y >= b.y;
+}
+
+
+bool isVectorLessThan(vec3 a, vec3 b) {
+    return a.x < b.x && a.y < b.y && a.z < b.z;
+}
+
+bool isVectorLessEqual(vec3 a, vec3 b) {
+    return a.x <= b.x && a.y <= b.y && a.z <= b.z;
+}
+
+bool isVectorGreaterThan(vec3 a, vec3 b) {
+    return a.x > b.x && a.y > b.y && a.z > b.z;
+}
+
+bool isVectorGreaterEqual(vec3 a, vec3 b) {
+    return a.x >= b.x && a.y >= b.y && a.z >= b.z;
+}
+
+
+bool isVectorLessThan(vec4 a, vec4 b) {
+    return a.x < b.x && a.y < b.y && a.z < b.z && a.w < b.w;
+}
+
+bool isVectorLessEqual(vec4 a, vec4 b) {
+    return a.x <= b.x && a.y <= b.y && a.z <= b.z && a.w <= b.w;
+}
+
+bool isVectorGreaterThan(vec4 a, vec4 b) {
+    return a.x > b.x && a.y > b.y && a.z > b.z && a.w > b.w;
+}
+
+bool isVectorGreaterEqual(vec4 a, vec4 b) {
+    return a.x >= b.x && a.y >= b.y && a.z >= b.z && a.w >= b.w;
+}
+
+vec2 maxVector(vec2 a, vec2 b) {
+    return mix2(b, a, step(length(b) + 1e-6,length(a)));
+}
+
+vec3 maxVector(vec3 a, vec3 b) {
+    return mix2(b, a, step(length(b) + 1e-6,length(a)));
+}
+
+vec4 maxVector(vec4 a, vec4 b) {
+    return mix2(b, a, step(length(b) + 1e-6,length(a)));
+}
+
+vec2 minVector(vec2 a, vec2 b) {
+    return mix2(b, a, 1 - step(length(b) + 1e-6,length(a)));
+}
+
+vec3 minVector(vec3 a, vec3 b) {
+    return mix2(b, a, 1 - step(length(b) + 1e-6,length(a)));
+}
+
+vec4 minVector(vec4 a, vec4 b) {
+    return mix2(b, a, 1 - step(length(b) + 1e-6,length(a)));
+}

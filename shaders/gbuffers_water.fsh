@@ -69,37 +69,57 @@ in vec3 foot_pos;
 in vec4 at_midBlock2;
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
+const float TorchBrightness = 1.0;
 const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
+const float GlowstoneBrightness = 1.0;
 const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
+const float LampBrightness = 1.0;
 const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
+const float LanternBrightness = 1.0;
 const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
+const float RedstoneBrightness = 1.0;
 const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
+const float RodBrightness = 1.0;
 const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
+const float PortalBrightness = 1.0;
+const vec3 FireColor = vec3(1.0f, 0.25f, 0.08f);
+const float FireBrightness = 5.0;
 
 vec4 decodeLightmap(vec4 lightmap) {
     vec4 lighting = vec4(vec3(0.0),1.0);
     if(lightmap.xyz == vec3(1.0, 0.0, 0.0))
     {
         lighting.xyz = TorchColor;
+        lighting.w = TorchBrightness;
     }
     else if(lightmap.xyz == vec3(0.0, 1.0, 0.0))
     {
         lighting.xyz = GlowstoneColor;
+        lighting.w = GlowstoneBrightness;
     } else if(lightmap.xyz == vec3(0.0, 0.0, 1.0))
     {
         lighting.xyz = LampColor;
+        lighting.w = LampBrightness;
     } else if(lightmap.xyz == vec3(1.0, 1.0, 0.0))
     {
         lighting.xyz = LanternColor;
+        lighting.w = LanternBrightness;
     } else if(lightmap.xyz == vec3(0.0, 1.0, 1.0))
     {
         lighting.xyz = RedstoneColor;
+        lighting.w = RedstoneBrightness;
     } else if(lightmap.xyz == vec3(1.0, 0.0, 1.0))
     {
         lighting.xyz = RodColor;
+        lighting.w = RodBrightness;
     } else if(lightmap.xyz == vec3(1.0, 1.0, 1.0))
     {
         lighting.xyz = PortalColor;
+        lighting.w = PortalBrightness;
+    } else if(lightmap.xyz == vec3(0.5, 0.0, 0.0))
+    {
+        lighting.xyz = FireColor;
+        lighting.w = FireBrightness;
     } else {
         lighting.w = 0;
     }

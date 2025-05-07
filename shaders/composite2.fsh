@@ -41,10 +41,6 @@ vec3 BloomTile(float lod, vec2 offset, vec2 scaledCoord) {
     return pow(bloom / 128.0, vec3(0.25));
 }
 
-vec3 calcLighting() {
-
-}
-
 /* RENDERTARGETS:1,2,4 */
 
 void main() {

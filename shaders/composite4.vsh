@@ -28,6 +28,7 @@ out vec3 vViewDir;
 out vec3 Tangent;
 
 out vec3 foot_pos;
+out vec3 world_pos;
 
 in vec3 at_tangent;
 in vec3 at_midBlock;
@@ -70,6 +71,7 @@ void main() {
 
     vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+    world_pos = foot_pos + cameraPosition;
 
     #ifdef SCENE_AWARE_LIGHTING
         #include "program/voxelizing.glsl"

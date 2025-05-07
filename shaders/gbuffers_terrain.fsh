@@ -27,6 +27,8 @@
 
 precision mediump float;
 
+layout (rgba16f) uniform image2D cimage7;
+
 varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec3 Tangent;
@@ -69,6 +71,9 @@ uniform bool isBiomeEnd;
 
 uniform float frameTimeCounter;
 
+uniform int viewWidth;
+uniform int viewHeight;
+
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
 const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
@@ -83,6 +88,8 @@ const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
 const float RodBrightness = 1.0;
 const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
 const float PortalBrightness = 1.0;
+const vec3 FireColor = vec3(1.0f, 0.5f, 0.08f);
+const float FireBrightness = 1.0;
 
 //#include "program/generateNormals.glsl"
 
@@ -127,37 +134,41 @@ vec4 maxVec(vec4 a, vec4 b) {
     return v*v*(3.0-2.0*v);
 }*/
 
-vec4 decodeLightmap(vec4 lightmap) {
+vec4 decodeLightmap(uint lightmap) {
     vec4 lighting = vec4(vec3(0.0),1.0);
-    if(lightmap.xyz == vec3(1.0, 0.0, 0.0))
+    if(lightmap == 1)
     {
         lighting.xyz = TorchColor;
         lighting.w = TorchBrightness;
     }
-    else if(lightmap.xyz == vec3(0.0, 1.0, 0.0))
+    else if(lightmap == 2)
     {
         lighting.xyz = GlowstoneColor;
         lighting.w = GlowstoneBrightness;
-    } else if(lightmap.xyz == vec3(0.0, 0.0, 1.0))
+    } else if(lightmap == 3)
     {
         lighting.xyz = LampColor;
         lighting.w = LampBrightness;
-    } else if(lightmap.xyz == vec3(1.0, 1.0, 0.0))
+    } else if(lightmap == 4)
     {
         lighting.xyz = LanternColor;
         lighting.w = LanternBrightness;
-    } else if(lightmap.xyz == vec3(0.0, 1.0, 1.0))
+    } else if(lightmap == 5)
     {
         lighting.xyz = RedstoneColor;
         lighting.w = RedstoneBrightness;
-    } else if(lightmap.xyz == vec3(1.0, 0.0, 1.0))
+    } else if(lightmap == 6)
     {
         lighting.xyz = RodColor;
         lighting.w = RodBrightness;
-    } else if(lightmap.xyz == vec3(1.0, 1.0, 1.0))
+    } else if(lightmap == 7)
     {
         lighting.xyz = PortalColor;
         lighting.w = PortalBrightness;
+    } else if(lightmap == 8)
+    {
+        lighting.xyz = FireColor;
+        lighting.w = FireBrightness;
     } else {
         lighting.w = 0;
     }
@@ -210,6 +221,7 @@ void main() {
     albedo.xyz = pow2(albedo.xyz, vec3(GAMMA));
 
     mediump float depth = texture2D(depthtex0, TexCoords).r;
+    mediump float depth2 = texture2D(depthtex1, TexCoords).r;
     
     if(albedo.a >= .1 && depth >= 0.1) {
         //vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
@@ -245,6 +257,7 @@ void main() {
             }
             
             vec4 lighting = vec4(0.0); //decodeLightmap(vec4(light_color, 1.0));
+            float lightBrightness = 0.0;
 
             if(lighting.w <= 0.0) {
                 vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
@@ -272,11 +285,11 @@ void main() {
                     if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
 
                     // Sample textures for light and block data
-                    vec4 bytes = unpackUnorm4x8(texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
-                    vec4 blockBytes = unpackUnorm4x8(texture3D(cSampler2, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
+                    uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
+                    uint blockBytes = texture3D(cSampler2, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
 
                     // Check light-block interactions
-                    if (bytes.xyz != vec3(0.0)) {
+                    if (bytes != 0) {
                         //mediump float distA = distance(voxel_pos2, cameraPosition);
                         //mediump float distB = distance(voxel_pos, cameraPosition);
                         /*if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0) && voxel_open > 0.0) {
@@ -292,6 +305,8 @@ void main() {
                         // Compute lighting contribution
                         lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
                                     clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
+
+                        lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0);
                         
                         //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
                         //lighting.xyz *= lightColor;
@@ -318,6 +333,9 @@ void main() {
             vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
             if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1));
             finalLighting = mix2(finalLighting, finalLighting2, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,1,finalLighting))));
+            uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
+            //finalLighting = mix2(finalLighting, vec4(vec3(0.0),1.0), float(any(equal(vec3(depth2), vec3(0.0)))));
+            //imageStore(cimage7, ivec2(gl_FragCoord.xy/2), vec4(finalLighting.xyz, lightBrightness));
             gl_FragData[2] = finalLighting;
         #endif
         gl_FragData[3] = vec4(distanceFromCamera);

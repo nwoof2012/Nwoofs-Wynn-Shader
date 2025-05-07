@@ -80,6 +80,7 @@ const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
 const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
 const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
 const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
+const vec3 FireColor = vec3(1.0f, 0.25f, 0.08f);
 
 vec3 GetRawWave(in vec3 pos, float wind) {
     mediump float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
@@ -182,7 +183,11 @@ void main() {
 
     #ifdef SCENE_AWARE_LIGHTING
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : vec4(vec3(0.0),1.0);
+            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : vec4(vec3(0.0),1.0);
+
+            uint voxel_data2 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
+
+            uint voxel_data3 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
 
             /*if(length(voxel_data.xyz) <= 0.0) {
                 voxel_data = vec4(at_midBlock.w);
@@ -195,9 +200,9 @@ void main() {
 			
 			uint integerValue2 = packUnorm4x8(block_data);
 
-            imageAtomicMax(cimage1, voxel_pos, integerValue);
+            imageAtomicMax(cimage1, voxel_pos, voxel_data2);
 
-			imageAtomicMax(cimage2, voxel_pos, integerValue2);
+			imageAtomicMax(cimage2, voxel_pos, voxel_data2);
         }
 
         LightSource source;

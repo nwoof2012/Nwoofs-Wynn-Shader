@@ -136,7 +136,7 @@ vec4 cloudStack(in vec2 uv) {
     mediump float attenuation = 0.125;
     for(float i = 0; i < cloudLevels; i++) {
         vec4 noiseA = texture2D(colortex13,uv * 0.0625f - vec2(0.0, (cloudHeight * i)/cloudLevels) - frameTimeCounter * 0.00125);
-        vec4 noiseB = texture2D(colortex14,uv * 0.015625f - vec2(0.0, (cloudHeight * i)/cloudLevels) + frameTimeCounter * 0.005);
+        vec4 noiseB = texture2D(colortex13,uv * 0.015625f - vec2(0.0, (cloudHeight * i)/cloudLevels) + frameTimeCounter * 0.005);
         noiseA = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseA, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
         noiseB = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseB, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
         finalNoise += noiseA * noiseB * attenuation;
@@ -197,7 +197,7 @@ layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
 
 void main() {
-    vec3 color = texture2D(colortex0, texCoord).rgb;
+    vec3 color = pow2(texture2D(colortex0, texCoord).rgb,vec3(2.2));
     vec3 sky_color = textureLod(colortex0, texCoord,6).rgb;
     mediump float depth = texture2D(depthtex0, texCoord).r;
 
@@ -284,7 +284,7 @@ void main() {
                         mediump float light = 1.0;
 
                         for(float s = 0.0; s < CLOUD_SHADING_SAMPLES && clouds.a < 0.99; s++) {
-                            vec3 ray_s_pos = ray_pos + sunDir*(s - vec3(normalFromHeight(frameTimeCounter + vec3(texCoord,s), 1.0, 1.0)))*scale;
+                            vec3 ray_s_pos = ray_pos + sunDir*(s - vec3(normalFromHeight(frameTimeCounter*0.001 + vec3(texCoord,s), 1.0, 1.0)))*scale;
                             mediump float cloud_shading = get_cloud(ray_s_pos);
                             light *= 1.0 - cloud_shading;
 
@@ -293,7 +293,7 @@ void main() {
                             }
                         }
 
-                        clouds.rgb *= light+mix2(vec3(0.0),sky_color,0.125);
+                        clouds.rgb *= light+mix2(vec3(0.25),sky_color,0.125);
                         
                         clouds.rgb = mix2(clouds.rgb,cloud.rgb,(1.0 - clouds.a) * cloud.a);
                         clouds.a = clamp(clouds.a +(1.0 - clouds.a) * cloud.a,0.0,1.0);
@@ -349,7 +349,7 @@ void main() {
         color.rgb = blindEffect(color.rgb);
     }
 
-    outcolor = vec4(color, 1.0);
+    outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
     gl_FragData[3] = vec4(texture2D(colortex10, texCoord).xyz,1.0);
     //outnormal = cloudsNormal;
 }

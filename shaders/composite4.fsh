@@ -38,6 +38,8 @@
 
 #define BLOOM
 
+#define VIBRANT_MODE 0 //[0 1]
+
 #define BLOOM_QUALITY 48 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
 #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
@@ -79,6 +81,8 @@ uniform sampler2D colortex4;
 uniform sampler2D colortex5;
 uniform sampler2D colortex6;
 uniform sampler2D colortex7;
+uniform sampler2D colortex13;
+uniform sampler2D colortex14;
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -134,6 +138,8 @@ uniform sampler2D colortex12;
 
 uniform sampler2D colortex15;
 
+uniform sampler2D cSampler7;
+
 const float sunPathRotation = -40.0f;
 
 const float Ambient = 0.1f;
@@ -144,6 +150,9 @@ const ivec3 voxelVolumeSize = ivec3(1,0.5, 1);
 float effectiveACLdistance = min(1, SHADOW_DIST * 2.0);
 
 uniform float maxBlindnessDarkness;
+
+uniform float near;
+uniform float far;
 
 const int ShadowSamplesPerSize = 2 * SHADOW_SAMPLES + 1;
 const int TotalSamples = ShadowSamplesPerSize * ShadowSamplesPerSize;
@@ -194,6 +203,7 @@ uniform vec3 shadowLightPosition;
 uniform float screenBrightness;
 
 in vec3 foot_pos;
+in vec3 world_pos;
 
 #include "lib/buffers.glsl"
 #include "program/ambientOcclusion.glsl"
@@ -510,7 +520,7 @@ vec3 unreal(vec3 x) {
 
 mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
     mediump float ao = 0.0;
-    vec3 samplePos = pos + vec3(AO_WIDTH * 0.1/camDist);
+    vec3 samplePos = pos + vec3(AO_WIDTH * 0.1/(camDist));
     if(texture2D(colortex15,pos.xy).g - texture2D(colortex15,samplePos.xy).g > 0.01f) return 1.0;
     vec3 sampleNormal = texture2D(colortex1, samplePos.xy).xyz;
     ao += max(0.0, dot(sampleNormal, normal));
@@ -544,6 +554,11 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     vec3 lightColor3 = texture2D(colortex2, uv).rgb;
 
     float depth = texture2D(depthtex0, uv).r;
+    float depth2 = texture2D(depthtex1, uv).r;
+
+    /*if(depth2 < 0.1f) {
+        return vec4(vec3(0.0), 1.0);
+    }*/
 
     //sum += mix2(vec3(0.0), lightColor3, float(depth >= 1.0));
 
@@ -587,7 +602,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             continue;
         }*/
         #ifdef SCENE_AWARE_LIGHTING
-            light = lightColor;
+            light = lightColor * illumination;
             sum += lightColor * sampleDepth;
         #elif PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -648,7 +663,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             continue;
         }*/
         #ifdef SCENE_AWARE_LIGHTING
-            light = lightColor;
+            light = lightColor * illumination;
             sum += lightColor * sampleDepth;
         #elif PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -737,7 +752,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     return vec4(pow2(sum,vec3(GAMMA)), illumination);
 }
 
-mediump float far = 1f;
+//mediump float far = 1f;
 
 /*vec4 GetLightVolume(vec3 pos) {
     vec4 lightVolume;
@@ -875,6 +890,10 @@ vec2 triplanarCoords(vec3 worldPos, vec3 normal, float scale) {
     return texXZ + texXY + texZY;
 }
 
+mediump float linearizeDepth(float depth, float near, float far) {
+    return (near * far) / (depth * (near - far) + far);
+}
+
 vec3 rgbToHsv(vec3 c) {
     mediump float max = max(c.r, max(c.g, c.b));
     mediump float min = min(c.r, min(c.g, c.b));
@@ -1002,21 +1021,127 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
     return finalColor;
 }
 
-float foamFactor(vec3 worldPos, vec3 worldPos2) {
-    vec2 depthA2d = triplanarCoords(abs(worldPos - worldPos2), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
+float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
+    vec2 depthA2d = triplanarCoords(abs(worldCoords - worldCoords2), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
     float depth = max(depthA2d.x, depthA2d.y);
-    vec2 depthB2d = triplanarCoords(worldPos, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy; //textureLod(depthtex0, TexCoords, 0).r;
+    vec2 depthB2d = triplanarCoords(worldCoords, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy; //textureLod(depthtex0, TexCoords, 0).r;
     float depth2 = max(depthB2d.x, depthB2d.y);
-    float foamScale = sqrt(dot(cameraPosition - worldPos, cameraPosition - worldPos));
+    float foamScale = sqrt(dot(cameraPosition - worldCoords, cameraPosition - worldCoords));
     float distanceFactor = 1.0/(1.0 + depth * 32.0);
     depth *= distanceFactor;
     float foamThreshold = clamp(1.25 * distanceFactor, 0.0, 1.0);
     float shoreDistance = clamp(depth * 5.0, 0.0, 1.0);
-    float noise = triplanarTexture(worldPos * 0.1 + vec3(0.1 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex8, 1.0).r;
+    float noiseA = triplanarTexture(worldCoords*0.125 + vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
+    float noiseB = triplanarTexture(worldCoords*0.25 - vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
+    float noise = (noiseA + noiseB)/2;
 
-    if(depth > 0.25 * distanceFactor) return 0;
+    if(depth > 0.25 * distanceFactor + noise * 0.05) return 0;
 
-    return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500 + noise * 0.15);
+    return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500);
+}
+
+vec3 loadLUT(vec3 color, sampler2D lut) {
+    color = pow2(color, vec3(1/2.2));
+    color = clamp(color, vec3(0.0), vec3(1.0));
+    float u  =  floor(color.b * 15.0) / 15.0 * 240.0;
+    u  = (floor(color.r * 15.0) / 15.0 *  15.0) + u;
+    u /= 255.0;
+    float v  = (floor(color.g * 15.0) / 15.0);
+
+    vec3 left = texture2D(lut, vec2(u, v)).rgb;
+
+    u  =  ceil(color.b * 15.0) / 15.0 * 240.0;
+    u  = (ceil(color.r * 15.0) / 15.0 *  15.0) + u;
+    u /= 255.0;
+    v  = (ceil(color.g * 15.0) / 15.0);
+
+    vec3 right = texture2D(lut, vec2(u, v)).rgb;
+
+    color.r = mix2(left.r, right.r, clamp(fract(color.r * 15),0,1));
+    color.g = mix2(left.g, right.g, clamp(fract(color.g * 15),0,1));
+    color.b = mix2(left.b, right.b, clamp(fract(color.b * 15),0,1));
+
+    color = pow2(color, vec3(2.2));
+    color = clamp(color, vec3(0.0), vec3(1.0));
+
+    return color.rgb;
+}
+
+vec3 BrightnessContrast(vec3 color, float brt, float sat, float con)
+{
+	// Increase or decrease theese values to adjust r, g and b color channels seperately
+	const float AvgLumR = 0.5;
+	const float AvgLumG = 0.5;
+	const float AvgLumB = 0.5;
+	
+	const vec3 LumCoeff = vec3(0.2125, 0.7154, 0.0721);
+	
+	vec3 AvgLumin  = vec3(AvgLumR, AvgLumG, AvgLumB);
+	vec3 brtColor  = color * brt;
+	vec3 intensity = vec3(dot(brtColor, LumCoeff));
+	vec3 satColor  = mix(intensity, brtColor, sat);
+	vec3 conColor  = mix(AvgLumin, satColor, con);
+	
+	return conColor;
+}
+
+vec3 sharpenMask(sampler2D tex, vec2 UVs, vec3 color, float factor, float blendAmount) {
+    vec2 uv2 = (UVs*vec2(viewWidth, viewHeight) + vec2(0,1))/vec2(viewWidth, viewHeight);
+    vec3 up = texture2D(tex, uv2).rgb;
+    
+    uv2 = (UVs*vec2(viewWidth, viewHeight) + vec2(-1,0))/vec2(viewWidth, viewHeight);
+    vec3 left = texture2D(tex, uv2).rgb;
+
+    uv2 = (UVs*vec2(viewWidth, viewHeight) + vec2(1,0))/vec2(viewWidth, viewHeight);
+    vec3 right = texture2D(tex, uv2).rgb;
+
+    uv2 = (UVs*vec2(viewWidth, viewHeight) + vec2(0,-1))/vec2(viewWidth, viewHeight);
+    vec3 down = texture2D(tex, uv2).rgb;
+
+    vec3 sharpenedTexture = (1.0 + 4.0*factor)*color - factor*(up + left + right + down);
+
+    return mix(color, sharpenedTexture, blendAmount);
+}
+
+#if AA == 2
+    #include "lib/smaa.glsl"
+#endif
+
+vec3 antialiasing(vec2 UVs, sampler2D tex) {
+    vec3 finalColor = vec3(0.0);
+    #if AA == 2
+        float edge = edgeFactor(UVs, tex);
+        float blendStrength = computeBlendStrength(UVs);
+
+        vec3 blended = blendSMAA(UVs, tex);
+        vec3 original = texture2D(tex, UVs).rgb;
+        vec3 aaColor = mix2(original, blended, blendStrength);
+        finalColor = mix2(aaColor, original, step(edge, 0.0));
+        //finalColor = sharpenMask(tex, UVs, finalColor, 0.25, 0.25 * step(edge, 0.0));
+    #elif AA == 1
+        float u  =  floor(UVs.x * viewWidth) / viewWidth;
+        float v  = (floor(UVs.y * viewHeight) / viewHeight);
+
+        vec3 left = texture2D(tex, vec2(u, v)).rgb;
+
+        u  =  ceil(UVs.x* viewWidth) / viewWidth;
+        v  = (ceil(UVs.y * viewHeight) / viewHeight);
+
+        vec3 right = texture2D(tex, vec2(u, v)).rgb;
+
+        vec3 color = texture2D(tex, UVs).rgb;
+
+        color.r = mix2(left.r, right.r, clamp(fract(color.r),0,1));
+        color.g = mix2(left.g, right.g, clamp(fract(color.g),0,1));
+        color.b = mix2(left.b, right.b, clamp(fract(color.b),0,1));
+
+        //color = pow2(color, vec3(2.2));
+        color = clamp(color, vec3(0.0), vec3(1.0));
+
+        finalColor = sharpenMask(tex, UVs, color, 0.75, 0.45);
+    #endif
+
+    return finalColor;
 }
 
 #if VOXEL_AREA == 32
@@ -1071,7 +1196,7 @@ void main() {
         //vec4 noiseMapB = texture2D(colortex8, worldTexCoords.xz/6.25f - vec2(fract(frameTimeCounter/120f)));
 
         vec4 noiseMapA = triplanarTexture(worldTexCoords/6.25f + vec3(fract(frameTimeCounter/120f)), vNormal, colortex8, 1.0);
-        vec4 noiseMapB = triplanarTexture(worldTexCoords/6.25f - vec3(fract(frameTimeCounter/120f)), vNormal, colortex8, 1.0);;
+        vec4 noiseMapB = triplanarTexture(worldTexCoords/6.25f - vec3(fract(frameTimeCounter/120f)), vNormal, colortex8, 1.0);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
@@ -1091,6 +1216,12 @@ void main() {
         vec3 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
         mediump float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
+
+        #if AA > 0
+            Albedo = antialiasing(TexCoords, colortex0);
+        #else
+            Albedo = texture2D(colortex0, TexCoords).rgb;
+        #endif
 
         //vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
         //vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
@@ -1161,7 +1292,8 @@ void main() {
             } else {
                 underwaterDepth = texture2D(depthtex0, TexCoords).r;
                 underwaterDepth2 = texture2D(depthtex1, TexCoords).r;
-                Albedo = pow2(mix2(texture2D(colortex0, TexCoords).rgb,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (underwaterDepth2 - underwaterDepth)) * 0.5,0,1)), vec3(GAMMA));
+                Albedo = pow2(mix2(Albedo,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (underwaterDepth2 - underwaterDepth)) * 0.5,0,1)), vec3(GAMMA));
+
                 Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
                 TexCoords2 = TexCoords;
             }
@@ -1189,7 +1321,15 @@ void main() {
             }
         } else {
             albedoAlpha = 0.0;
-            Albedo = pow2(isInWater(colortex0, vec3(0.0f,0.33f,0.55f), TexCoords2, vec2(noiseMap3.x * 0.025,0), 0.25), vec3(GAMMA));
+            if(isEyeInWater >= 1) {
+                Albedo = pow2(isInWater(colortex0, vec3(0.0f,0.33f,0.55f), TexCoords2, vec2(noiseMap3.x * 0.025,0), 0.25), vec3(GAMMA)); 
+            } else {
+                #if AA > 0
+                    Albedo = pow2(antialiasing(TexCoords, colortex0), vec3(GAMMA));
+                #else
+                    Albedo = pow2(texture2D(colortex0, TexCoords).rgb, vec3(GAMMA));
+                #endif
+            }
             Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
         }
 
@@ -1476,6 +1616,10 @@ void main() {
             transitionCompleted = false;
             doTransition = true;
         }
+
+        #if VIBRANT_MODE == 1
+            maxLight = 1.0;
+        #endif
         
         if(isBiomeEnd) {
             if(!transitionActive && doTransition) {
@@ -1582,6 +1726,16 @@ void main() {
         if(waterTest > 0) {
             Diffuse.xyz = Albedo;
         }
+
+        #if VIBRANT_MODE == 1
+            if(isBiomeEnd) {
+                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
+            } else {
+                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
+            }
+        #endif
 
         //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
 
