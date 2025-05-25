@@ -14,6 +14,9 @@ in vec4 mc_Entity;
 out vec3 viewSpaceFragPosition;
 
 uniform sampler2D noise;
+uniform mat4 gbufferProjection;
+
+uniform float aspectRatio;
 
 #include "lib/timeCycle.glsl"
 
@@ -22,6 +25,8 @@ out vec3 lightmap;
 out vec3 vNormal;
 out vec3 vViewDir;
 out vec3 Tangent;
+
+out vec2 FoV;
 
 in vec3 at_tangent;
 
@@ -60,6 +65,10 @@ void main() {
     vViewDir = normalize(-viewPos.xyz);
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
     LightmapCoords = vaUV2;
+
+    FoV = vec2(1.0);
+    FoV.y = 2.0 * atan(1.0 / gbufferProjection[1][1]);
+    FoV.x = 2.0 * atan(tan(FoV.y/2.0) * aspectRatio);
     
     #if PATH_TRACING_GI == 1
         lightmap = GenerateLightmap(1f,1f);

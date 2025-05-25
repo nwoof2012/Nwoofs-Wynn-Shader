@@ -12,8 +12,8 @@ float computeBlendStrength(vec2 UVs) {
 
     float linearDepth = linearizeDepth(depth, near, far);
 
-    float fadeStart = 0.3;
-    float fadeEnd = 1.0;
+    float fadeStart = SMAA_NEAR_THRESHOLD;
+    float fadeEnd = SMAA_FAR_THRESHOLD;
 
     float strength = 1.0 - smoothstep(fadeStart, fadeEnd, 1.0 - linearDepth);
 
@@ -21,7 +21,7 @@ float computeBlendStrength(vec2 UVs) {
 }
 
 float edgeFactor(vec2 UVs, sampler2D tex) {
-    float threshold = 0.1;
+    float threshold = SMAA_EDGE_FACTOR;
 
     vec3 center = texture2D(tex, UVs).rgb;
     vec3 right = texture2D(tex, UVs + vec2(1.0/viewWidth, 0.0)).rgb;

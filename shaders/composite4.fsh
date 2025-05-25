@@ -38,7 +38,7 @@
 
 #define BLOOM
 
-#define VIBRANT_MODE 0 //[0 1]
+#define VIBRANT_MODE 1 //[0 1]
 
 #define BLOOM_QUALITY 48 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
 #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -73,6 +73,8 @@ varying vec2 TexCoords;
 
 uniform vec3 sunPosition;
 
+uniform vec3 playerLookVector;
+
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
@@ -96,6 +98,8 @@ uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelViewInverse;
 
 uniform sampler3D cSampler1;
+uniform sampler3D cSampler8;
+layout (rgba8) uniform image2D cimage7;
 
 uniform sampler2D noisetex;
 
@@ -138,7 +142,7 @@ uniform sampler2D colortex12;
 
 uniform sampler2D colortex15;
 
-uniform sampler2D cSampler7;
+uniform float aspectRatio;
 
 const float sunPathRotation = -40.0f;
 
@@ -166,6 +170,8 @@ in vec3 viewSpaceFragPosition;
 
 in vec3 vNormal;
 in vec3 vViewDir;
+
+in vec2 FoV;
 
 in vec3 Tangent;
 
@@ -484,6 +490,8 @@ vec3 GetShadow(float depth) {
     #endif
 }
 
+#include "program/volumetricLight.glsl"
+
 vec3 SceneToVoxel(vec3 scenePos) {
 	return scenePos + fract(cameraPosition) + (0.5 * vec3(voxelVolumeSize));
 }
@@ -535,6 +543,10 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
     vec3 lightColor = texture2D(colortex2,uv).rgb;
     float illumination = texture2D(colortex2,uv).a;
+    #ifdef VOLUMETRIC_LIGHTING
+        lightColor += volumetricLight(sunPosition, depthtex1, TexCoords, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
+    #endif
+
     #ifdef SCENE_AWARE_LIGHTING
         //sum = blurLightmap(waterTest, specularCoord, Normal, Albedo, uv);
         sum += lightColor;
@@ -588,6 +600,9 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         lightColor3 = texture2D(colortex2,shiftedUVs).rgb;
         illumination += texture2D(colortex2,shiftedUVs).a;
         vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        #ifdef VOLUMETRIC_LIGHTING
+            light += volumetricLight(sunPosition, depthtex1, shiftedUVs, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
+        #endif
         /*mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
         mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
@@ -649,6 +664,9 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         lightColor3 = texture2D(colortex2,shiftedUVs).rgb;
         illumination += texture2D(colortex2,shiftedUVs).a;
         vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        #ifdef VOLUMETRIC_LIGHTING
+            light += volumetricLight(sunPosition, depthtex1, shiftedUVs, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
+        #endif
         /*mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
         mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
@@ -724,9 +742,12 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         sum *= mix2(vec3(2),vec3(0.5),clamp(dot(sum, vec3(0.333)),0,1.2));
     }*/
 
+    //sum = mix2(vec3(0.0), sum, 1 - step(1 - length(lightColor),0.1));
+
     mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
-        bloomLerp = clamp(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)),0,1);
+        //bloomLerp = clamp(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)),0,1);
+        bloomLerp = clamp(1 - smoothstep(BLOOM_THRESHOLD, 1, 1 - length(sum * vec3(0.0625))), 0, 1);
     #endif
 
     /*if(bloomLerp - 0.25 > 1.0f) {
@@ -1040,31 +1061,47 @@ float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500);
 }
 
+vec2 getUVsForLUT(vec3 color) {
+    vec2 texelSize = vec2(1.0 / 256.0, 1.0 / 16.0);
+    float tileX = mod(color.b, 16.0);
+    float tileY = floor(color.b/16.0);
+    vec2 uv = vec2(
+        (color.r + tileX * 16.0 + 0.5) * texelSize.x,
+        (color.g + tileY * 16.0 + 0.5) * texelSize.y
+    );
+
+    return uv;
+}
+
 vec3 loadLUT(vec3 color, sampler2D lut) {
     color = pow2(color, vec3(1/2.2));
     color = clamp(color, vec3(0.0), vec3(1.0));
-    float u  =  floor(color.b * 15.0) / 15.0 * 240.0;
-    u  = (floor(color.r * 15.0) / 15.0 *  15.0) + u;
-    u /= 255.0;
-    float v  = (floor(color.g * 15.0) / 15.0);
 
-    vec3 left = texture2D(lut, vec2(u, v)).rgb;
+    vec3 scaled = color * 15.0;
+    vec3 index = floor(scaled);
+    vec3 frac = scaled - index;
 
-    u  =  ceil(color.b * 15.0) / 15.0 * 240.0;
-    u  = (ceil(color.r * 15.0) / 15.0 *  15.0) + u;
-    u /= 255.0;
-    v  = (ceil(color.g * 15.0) / 15.0);
+    vec3 c000 = texture2D(lut, getUVsForLUT(index)).rgb;
+    vec3 c100 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 0.0, 0.0))).rgb;
+    vec3 c010 = texture2D(lut, getUVsForLUT(index + vec3(0.0, 1.0, 0.0))).rgb;
+    vec3 c110 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 1.0, 0.0))).rgb;
+    vec3 c001 = texture2D(lut, getUVsForLUT(index + vec3(0.0, 0.0, 1.0))).rgb;
+    vec3 c101 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 0.0, 1.0))).rgb;
+    vec3 c011 = texture2D(lut, getUVsForLUT(index + vec3(0.0, 1.0, 1.0))).rgb;
+    vec3 c111 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 1.0, 1.0))).rgb;
 
-    vec3 right = texture2D(lut, vec2(u, v)).rgb;
+    vec3 c00 = mix2(c000, c100, frac.r);
+    vec3 c01 = mix2(c001, c101, frac.r);
+    vec3 c10 = mix2(c010, c110, frac.r);
+    vec3 c11 = mix2(c011, c111, frac.r);
 
-    color.r = mix2(left.r, right.r, clamp(fract(color.r * 15),0,1));
-    color.g = mix2(left.g, right.g, clamp(fract(color.g * 15),0,1));
-    color.b = mix2(left.b, right.b, clamp(fract(color.b * 15),0,1));
+    vec3 c0 = mix2(c00, c10, frac.g);
+    vec3 c1 = mix2(c01, c11, frac.g);
 
-    color = pow2(color, vec3(2.2));
-    color = clamp(color, vec3(0.0), vec3(1.0));
+    vec3 result = mix2(c0, c1, frac.b);
 
-    return color.rgb;
+    result = pow2(result, vec3(2.2));
+    return clamp(result, vec3(0.0), vec3(1.0));
 }
 
 vec3 BrightnessContrast(vec3 color, float brt, float sat, float con)
@@ -1105,11 +1142,15 @@ vec3 sharpenMask(sampler2D tex, vec2 UVs, vec3 color, float factor, float blendA
 
 #if AA == 2
     #include "lib/smaa.glsl"
+#elif AA == 3
+    #include "lib/taa.glsl"
 #endif
 
 vec3 antialiasing(vec2 UVs, sampler2D tex) {
-    vec3 finalColor = vec3(0.0);
-    #if AA == 2
+    vec3 finalColor = texture2D(tex, UVs).rgb;
+    #if AA == 3
+        finalColor = applyTAA(UVs, tex);
+    #elif AA == 2
         float edge = edgeFactor(UVs, tex);
         float blendStrength = computeBlendStrength(UVs);
 
@@ -1138,7 +1179,7 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
         //color = pow2(color, vec3(2.2));
         color = clamp(color, vec3(0.0), vec3(1.0));
 
-        finalColor = sharpenMask(tex, UVs, color, 0.75, 0.45);
+        finalColor = sharpenMask(tex, UVs, color, BAA_SHARPEN_AMOUNT, BAA_SHARPEN_BLEND);
     #endif
 
     return finalColor;
@@ -1158,7 +1199,7 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 
 void main() {
     #if defined SCENE_AWARE_LIGHTING && defined BLOOM
-        mediump float aspectRatio = float(viewWidth)/float(viewHeight);
+        mediump float aspect = float(viewWidth)/float(viewHeight);
         mediump float waterTest = texture2D(colortex5, TexCoords).r;
         mediump float dhTest = texture2D(colortex5, TexCoords).g;
 
@@ -1571,7 +1612,7 @@ void main() {
         mediump float maxLight = MAX_LIGHT;
         mediump float seMaxLight = SE_MAX_LIGHT;
         
-        vec3 shadowLerp = GetShadow(Depth);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
+        vec3 shadowLerp = GetShadow(Depth2);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
         if(waterTest > 0) {
             shadowLerp = vec3(1.0);
             //lightBrightness = 1.0;
@@ -1617,9 +1658,9 @@ void main() {
             doTransition = true;
         }
 
-        #if VIBRANT_MODE == 1
+        /*#if VIBRANT_MODE == 1
             maxLight = 1.0;
-        #endif
+        #endif*/
         
         if(isBiomeEnd) {
             if(!transitionActive && doTransition) {
@@ -1730,7 +1771,7 @@ void main() {
         #if VIBRANT_MODE == 1
             if(isBiomeEnd) {
                 Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
-                Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
+                //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
             } else {
                 Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);

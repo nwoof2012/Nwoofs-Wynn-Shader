@@ -295,22 +295,41 @@ option.AO=§9Ambient Occlusion
 option.AO.comment=§6Enables Ambient Occlusion. §e§lMild GPU Performance Impact
 
 option.AO_THRESHOLD=§9AO Threshold
-option.AO_THRESHOLD.comment=§6Adjusts sensitivity of Ambient Occlusion
+option.AO_THRESHOLD.comment=§6Adjust sensitivity of Ambient Occlusion
 
 option.AO_STRENGTH=§9AO Strength
-option.AO_STRENGTH.comment=§6Adjusts the emphasis of Ambient Occlusion
+option.AO_STRENGTH.comment=§6Adjust the emphasis of Ambient Occlusion
 
-option.AA=§aAntialiasing
+option.AA=§aMode
 value.AA.0=Off
 value.AA.1=Basic
 value.AA.2=SMAA
-option.AA.comment=§6Toggles between Antialiasing modes§7:. §7 - §9Off. §7 - §9Basic. §7 - §9SMAA
+value.AA.3=TAA
+option.AA.comment=§6Toggle between Antialiasing modes§7:. §7 - §9Off. §7 - §9Basic. §7 - §9SMAA. §7 - §9TAA
+
+option.BAA_SHARPEN_AMOUNT=§6Basic Sharpness
+option.BAA_SHARPEN_AMOUNT.comment=§9Adjust how much sharpening is applied to Basic AA
+
+option.BAA_SHARPEN_BLEND=§6Basic Sharpen Blend
+option.BAA_SHARPEN_BLEND.comment=§9Adjust how much of the sharpened image is blended in for Basic AA
+
+option.SMAA_EDGE_FACTOR=§bSMAA Edge Factor
+option.SMAA_EDGE_FACTOR.comment=§9Adjust the edge factor threshold of SMAA
+
+option.SMAA_NEAR_THRESHOLD=§bSMAA Near Threshold
+option.SMAA_NEAR_THRESHOLD.comment=§9Adjust the starting depth of SMAA reduction in the distance
+
+option.SMAA_FAR_THRESHOLD=§bSMAA Near Threshold
+option.SMAA_FAR_THRESHOLD.comment=§9Adjust the ending depth of SMAA reduction in the distance
+
+option.TAA_BLEND=§eTAA Blend
+option.TAA_BLEND.comment=§9Adjust how much of the previous frame is blended in for TAA
 
 option.GAMMA=§fGamma
 value.GAMMA.2.2=§asRGB
 option.GAMMA.comment=§6Adjust scene gamma correction bias
 
-option.VIBRANT_MODE=§5Vibrant Mode §c(Experimental)
+option.VIBRANT_MODE=§5Vibrant Mode
 value.VIBRANT_MODE.0=Off
 value.VIBRANT_MODE.1=On
 option.VIBRANT_MODE.comment=§6Enables LUTs for vibrant color scheme
@@ -348,6 +367,8 @@ screen.SPECIAL_LIGHTING = §eAdditional Options
 screen.SHADOW_SETTINGS = §7Shadows
 
 screen.SILENT_EXPANSE = §dSilent Expanse
+
+screen.ANTIALIASING = §aAntialiasing
 
 profile.TOASTER=§7Toaster
 profile.POTATO=§3Potato

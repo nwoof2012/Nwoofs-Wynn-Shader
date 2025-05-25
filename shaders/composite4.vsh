@@ -4,6 +4,8 @@
 
 #define PATH_TRACING_GI
 
+uniform sampler2D lighting;
+
 varying vec2 TexCoords;
 varying vec2 LightmapCoords;
 
@@ -18,6 +20,9 @@ uniform sampler2D noise;
 uniform vec3 cameraPosition;
 
 uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjection;
+
+uniform float aspectRatio;
 
 #include "lib/timeCycle.glsl"
 
@@ -29,6 +34,8 @@ out vec3 Tangent;
 
 out vec3 foot_pos;
 out vec3 world_pos;
+
+out vec2 FoV;
 
 in vec3 at_tangent;
 in vec3 at_midBlock;
@@ -69,12 +76,17 @@ void main() {
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
     LightmapCoords = vaUV2;
 
+    FoV = vec2(1.0);
+    FoV.y = 2.0 * atan(1.0 / gbufferProjection[1][1]);
+    FoV.x = 2.0 * atan(tan(FoV.y/2.0) * aspectRatio);
+
     vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
     world_pos = foot_pos + cameraPosition;
 
     #ifdef SCENE_AWARE_LIGHTING
         #include "program/voxelizing.glsl"
+        //imageStore(lightData, texCoord, texture2D(lighting,texCoord));
     #endif
     
     #if PATH_TRACING_GI == 1

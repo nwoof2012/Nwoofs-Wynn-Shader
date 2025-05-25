@@ -26,6 +26,8 @@
 
 #define BLOOM
 
+#define VIBRANT_MODE 1 //[0 1]
+
 #define BLOOM_QUALITY 48 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
 #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
@@ -72,6 +74,8 @@ uniform sampler2D colortex7;
 uniform sampler2D colortex13;
 uniform sampler2D colortex14;
 
+uniform float aspectRatio;
+
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
@@ -82,6 +86,8 @@ uniform sampler2D shadowcolor0;
 
 uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelViewInverse;
+
+layout (rgba8) uniform image2D cimage7;
 
 uniform sampler2D noisetex;
 
@@ -146,6 +152,8 @@ in vec3 vaPosition;
 
 in vec3 vNormal;
 in vec3 vViewDir;
+
+in vec2 FoV;
 
 in vec3 Tangent;
 
@@ -425,6 +433,8 @@ vec3 GetShadow(float depth) {
         return ShadowAccum;
     #endif
 }
+
+#include "program/volumetricLight.glsl"
 
 vec3 SceneToVoxel(vec3 scenePos) {
 	return scenePos + fract(cameraPosition) + (0.5 * vec3(voxelVolumeSize));
@@ -958,31 +968,47 @@ float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500);
 }
 
+vec2 getUVsForLUT(vec3 color) {
+    vec2 texelSize = vec2(1.0 / 256.0, 1.0 / 16.0);
+    float tileX = mod(color.b, 16.0);
+    float tileY = floor(color.b/16.0);
+    vec2 uv = vec2(
+        (color.r + tileX * 16.0 + 0.5) * texelSize.x,
+        (color.g + tileY * 16.0 + 0.5) * texelSize.y
+    );
+
+    return uv;
+}
+
 vec3 loadLUT(vec3 color, sampler2D lut) {
     color = pow2(color, vec3(1/2.2));
     color = clamp(color, vec3(0.0), vec3(1.0));
-    float u  =  floor(color.b * 15.0) / 15.0 * 240.0;
-    u  = (floor(color.r * 15.0) / 15.0 *  15.0) + u;
-    u /= 255.0;
-    float v  = (floor(color.g * 15.0) / 15.0);
 
-    vec3 left = texture2D(lut, vec2(u, v)).rgb;
+    vec3 scaled = color * 15.0;
+    vec3 index = floor(scaled);
+    vec3 frac = scaled - index;
 
-    u  =  ceil(color.b * 15.0) / 15.0 * 240.0;
-    u  = (ceil(color.r * 15.0) / 15.0 *  15.0) + u;
-    u /= 255.0;
-    v  = (ceil(color.g * 15.0) / 15.0);
+    vec3 c000 = texture2D(lut, getUVsForLUT(index)).rgb;
+    vec3 c100 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 0.0, 0.0))).rgb;
+    vec3 c010 = texture2D(lut, getUVsForLUT(index + vec3(0.0, 1.0, 0.0))).rgb;
+    vec3 c110 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 1.0, 0.0))).rgb;
+    vec3 c001 = texture2D(lut, getUVsForLUT(index + vec3(0.0, 0.0, 1.0))).rgb;
+    vec3 c101 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 0.0, 1.0))).rgb;
+    vec3 c011 = texture2D(lut, getUVsForLUT(index + vec3(0.0, 1.0, 1.0))).rgb;
+    vec3 c111 = texture2D(lut, getUVsForLUT(index + vec3(1.0, 1.0, 1.0))).rgb;
 
-    vec3 right = texture2D(lut, vec2(u, v)).rgb;
+    vec3 c00 = mix2(c000, c100, frac.r);
+    vec3 c01 = mix2(c001, c101, frac.r);
+    vec3 c10 = mix2(c010, c110, frac.r);
+    vec3 c11 = mix2(c011, c111, frac.r);
 
-    color.r = mix2(left.r, right.r, clamp(fract(color.r * 15),0,1));
-    color.g = mix2(left.g, right.g, clamp(fract(color.g * 15),0,1));
-    color.b = mix2(left.b, right.b, clamp(fract(color.b * 15),0,1));
+    vec3 c0 = mix2(c00, c10, frac.g);
+    vec3 c1 = mix2(c01, c11, frac.g);
 
-    color = pow2(color, vec3(2.2));
-    color = clamp(color, vec3(0.0), vec3(1.0));
+    vec3 result = mix2(c0, c1, frac.b);
 
-    return color.rgb;
+    result = pow2(result, vec3(2.2));
+    return clamp(result, vec3(0.0), vec3(1.0));
 }
 
 vec3 BrightnessContrast(vec3 color, float brt, float sat, float con)
@@ -1023,11 +1049,15 @@ vec3 sharpenMask(sampler2D tex, vec2 UVs, vec3 color, float factor, float blendA
 
 #if AA == 2
     #include "lib/smaa.glsl"
+#elif AA == 3
+    #include "lib/taa.glsl"
 #endif
 
 vec3 antialiasing(vec2 UVs, sampler2D tex) {
-    vec3 finalColor = vec3(0.0);
-    #if AA == 2
+    vec3 finalColor = texture2D(tex, UVs).rgb;
+    #if AA == 3
+        finalColor = applyTAA(UVs, tex);
+    #elif AA == 2
         float edge = edgeFactor(UVs, tex);
         float blendStrength = computeBlendStrength(UVs);
 
@@ -1056,7 +1086,7 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
         //color = pow2(color, vec3(2.2));
         color = clamp(color, vec3(0.0), vec3(1.0));
 
-        finalColor = sharpenMask(tex, UVs, color, 0.75, 0.45);
+        finalColor = sharpenMask(tex, UVs, color, BAA_SHARPEN_AMOUNT, BAA_SHARPEN_BLEND);
     #endif
 
     return finalColor;
@@ -1483,6 +1513,16 @@ void main() {
         if(waterTest > 0) {
             Diffuse.xyz = Albedo;
         }
+
+        #if VIBRANT_MODE == 1
+            if(isBiomeEnd) {
+                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
+            } else {
+                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
+            }
+        #endif
 
         //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
 

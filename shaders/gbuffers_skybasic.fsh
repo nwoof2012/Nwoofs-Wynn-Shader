@@ -434,10 +434,12 @@ void main() {
         if(distToMoon > moonMaxDistance) outputColorMoon.w = 0.0;
         float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
         vec4 outputSunMoon = vec4(outputColorSun,sunGradient);
+        vec4 outputLight = vec4(outputColorSun, sunGradient);
         if(detectSunMoon > 0.99) {
             outputSunMoon = outputColorMoon.xyzw;
+            outputLight = vec4(0.0);
         } else {
-            gl_FragData[2] = vec4(outputColorSun,sunGradient);
+            gl_FragData[2] = outputLight;
         }
         if(worldTime%24000 < 12000) {
             //outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);
