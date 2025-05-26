@@ -334,6 +334,9 @@ value.VIBRANT_MODE.0=Off
 value.VIBRANT_MODE.1=On
 option.VIBRANT_MODE.comment=§6Enables LUTs for vibrant color scheme
 
+option.VOLUMETRIC_LIGHTING=§6Volumetric Lighting
+option.VOLUMETRIC_LIGHTING.comment=§9Enables volumetric godrays from the sun
+
 screen.PERFORMANCE=§cPerformance
 
 screen.SKY = §bSky
