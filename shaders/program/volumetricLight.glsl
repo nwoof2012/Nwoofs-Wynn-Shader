@@ -61,7 +61,18 @@ vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float 
     }
     
     float depthValue = texture2D(depth,UVs).r;
-    if(depthValue != 1.0) result *= dot(normalize2(shadowLightPosition), sunDir) * GetShadow(depthValue);
+    //if(depthValue != 1.0) result *= dot(normalize2(shadowLightPosition), sunDir) * GetShadow(depthValue);
+
+    float dhTest = texture2D(colortex5, TexCoords).g;
+
+    float depthTest = 1 - step(1.0, depthValue);
+    float isDh = 1 - step(1.0, dhTest);
+
+    float mask = clamp(depthTest + isDh,0.0, 1.0);
+
+    vec3 shadowLighting = max(dot(normalize2(texture2D(colortex1, TexCoords).rgb * 2 - 1), sunDir) * GetShadow(depthValue),MIN_LIGHT);
+
+    /*if(depthValue != 1.0 || dhTest < 1.0)*/ result *= mix2(vec3(1.0), shadowLighting, mask);
 
     result *= exposure;
 

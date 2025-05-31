@@ -600,9 +600,9 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         lightColor3 = texture2D(colortex2,shiftedUVs).rgb;
         illumination += texture2D(colortex2,shiftedUVs).a;
         vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        #ifdef VOLUMETRIC_LIGHTING
+        /*#ifdef VOLUMETRIC_LIGHTING
             light += volumetricLight(sunPosition, depthtex1, shiftedUVs, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
-        #endif
+        #endif*/
         /*mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
         mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
@@ -664,9 +664,9 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         lightColor3 = texture2D(colortex2,shiftedUVs).rgb;
         illumination += texture2D(colortex2,shiftedUVs).a;
         vec2 UVsOffset = -vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        #ifdef VOLUMETRIC_LIGHTING
+        /*#ifdef VOLUMETRIC_LIGHTING
             light += volumetricLight(sunPosition, depthtex1, shiftedUVs, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
-        #endif
+        #endif*/
         /*mediump float normalA = texture2D(depthtex0,shiftedUVs).r;
         mediump float normalB = texture2D(depthtex0,shiftedUVs + UVsOffset).r;
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
