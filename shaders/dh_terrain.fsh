@@ -17,27 +17,13 @@
 #define SUNSET_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define SUNSET_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 
-#define FOG_DAY_R 0.8f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_DAY_G 0.9f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_DAY_B 1.0f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_DAY_DIST_MIN 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-#define FOG_DAY_DIST_MAX 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-#define FOG_NIGHT_R 0.0f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_NIGHT_G 0.1f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_NIGHT_B 0.2f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_NIGHT_DIST_MIN 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-#define FOG_NIGHT_DIST_MAX 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-#define FOG_SUNSET_R 1.0f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_SUNSET_G 0.5f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_SUNSET_B 0.0f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f]
-#define FOG_SUNSET_DIST_MIN 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-#define FOG_SUNSET_DIST_MAX 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
+#define SE_MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
 #define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
+#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
 #define FRAGMENT_SHADER
 
@@ -94,6 +80,7 @@ uniform float dhFarPlane;
 /* RENDERTARGETS:0,2,6,5,1,12,15 */
 layout(location = 0) out vec4 outColor0;
 layout(location = 1) out vec4 outColor2;
+layout(location = 2) out vec4 fogOut;
 layout(location = 3) out vec4 isWater;
 layout(location = 4) out vec4 normal;
 layout(location = 5) out vec4 dataTex0;
@@ -238,6 +225,10 @@ void main() {
 
     mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
 
+    if(isBiomeEnd) {
+        lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, SE_MIN_LIGHT),SE_MAX_LIGHT);
+    }
+
     vec4 outputColorData = blockColor;
     vec3 outputColor = pow2(outputColorData.rgb,vec3(GAMMA));
     
@@ -253,7 +244,7 @@ void main() {
     if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
         mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
 
-        outputColor *= lightBrightness;
+        //outputColor *= lightBrightness;
 
         isWater = vec4(0.0);
 
@@ -262,11 +253,13 @@ void main() {
         }
 
         mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
-        outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
+
+        fogOut = vec4(0.0, fogBlend, 0.0, 1.0);
+        //outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
 
         outColor0 = vec4(pow2(outputColor.xyz,vec3(1/GAMMA)), alpha);
 
-        normal = vec4(Normal, 1.0);
+        normal = vec4(worldNormal * 0.5 + 0.5, 1.0);
         dataTex0 = vec4(1.0);
         camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
 

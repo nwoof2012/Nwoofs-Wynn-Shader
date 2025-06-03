@@ -202,6 +202,10 @@ vec3 baseDiffuse;
 
 vec3 baseDiffuseModifier;
 
+vec3 baseFog;
+
+vec3 fogAlbedo;
+
 in vec3 lightmap;
 
 uniform vec3 shadowLightPosition;
@@ -858,6 +862,7 @@ void noonFunc(float time, float timeFactor) {
     baseDiffuseModifier = vec3(DAY_I);
     currentColor = mix2(baseColor,dayColor,dayNightLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    fogAlbedo = mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
 }
 
 void sunsetFunc(float time, float timeFactor) {
@@ -865,6 +870,7 @@ void sunsetFunc(float time, float timeFactor) {
     baseDiffuseModifier = vec3(SUNSET_I);
     currentColor = mix2(dayColor, transitionColor, sunsetLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
 }
 
 void nightFunc(float time, float timeFactor) {
@@ -872,6 +878,7 @@ void nightFunc(float time, float timeFactor) {
     baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
     currentColor = mix2(baseColor, nightColor, dayNightLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
+    fogAlbedo = mix2(baseFog, vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), dayNightLerp);
 }
 
 void dawnFunc(float time, float timeFactor) {
@@ -879,6 +886,7 @@ void dawnFunc(float time, float timeFactor) {
     baseDiffuseModifier = vec3(SUNSET_I);
     currentColor = mix2(dayColor, transitionColor, sunsetLerp);
     Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
 }
 
 vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
@@ -1395,10 +1403,13 @@ void main() {
         vec3 baseDiffuse = Diffuse;
 
         vec3 baseDiffuseModifier;
+
+        vec3 currentFogColor = vec3(FOG_DAY_R,FOG_DAY_G,FOG_DAY_B);
         
         if(worldTime/(timePhase + 1) < 500f) {
             baseColor = currentColor;
             baseDiffuse = Diffuse;
+            baseFog = currentFogColor;
         }
         
         mediump float dayNightLerp = clamp(quadTime/11500,0,1);
@@ -1430,6 +1441,7 @@ void main() {
         vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
 
         if(isBiomeEnd) {
+            timeFunctionFrag();
             if(dhTest <= 0) {
                 currentColor = vec3(0.3f);
             } else {
@@ -1475,7 +1487,9 @@ void main() {
             mediump float detectSky = texture2D(colortex5, TexCoords).g;
             mediump float detectEntity = texture2D(colortex12, TexCoords).r;
             #ifdef BLOOM
-                vec3 lightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha)).xyz;
+                vec4 bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+                vec3 lightmapColor = bloomAmount.xyz;
+                float lightBrightness2 = bloomAmount.a;
             #else
                 vec3 lightmapColor = texture2D(colortex2, TexCoords.xy).rgb;
             #endif
@@ -1484,31 +1498,77 @@ void main() {
                 if(isBiomeEnd) {
                     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
-                    vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
+                    vec3 worldNormal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
 
-                    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
+                    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, SE_MIN_LIGHT),SE_MAX_LIGHT);
 
                     Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
-                    vec3 Diffuse2 = texture2D(colortex0, TexCoords.xy).rgb;
+                    //Diffuse *= vec3(3.5025);
+                    //Diffuse.xyz *= lightBrightness;
+
+                    //Diffuse.xyz = max(Diffuse.xyz, vec3(0.02));
+
+                    mediump float seMinLight = SE_MIN_LIGHT;
+
+                    lightmapColor = mix2(lightmapColor, max(vec3(0.5), normalize2(lightmapColor)) * vec3(seMinLight), 1 - step(seMinLight * seMinLight, dot(lightmapColor, lightmapColor)));
+
+                    //lightmapColor = max(vec3(seMinLight), lightmapColor);
+
+                    vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+                    mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
+                    //vec3 Diffuse2 = texture2D(colortex0, TexCoords.xy).rgb;
                     //Diffuse = mix2(Diffuse, Diffuse/vec3(lightBrightness),0.75);
                     //Diffuse /= lightBrightness;
                     //Diffuse = mix2(Diffuse, Diffuse * vec3(lightBrightness),0.5);
                     //Diffuse.xyz += lightmapColor;
                     //Diffuse2.xyz *= vec3(3.5025);
-                    vec3 Diffuse3 = mix2(Diffuse, Diffuse2, 0.5);
-                    Diffuse = mix2(Diffuse, Diffuse3, length(Diffuse));
-                    Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
-                    Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.5),clamp(CalcSaturation(Diffuse.xyz),0,1 - MIN_SE_SATURATION));//1.0625-clamp(vec3(dot(lightmapColor.rgb,vec3(0.333f))),0.5,1));
-                    Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
+                    //vec3 Diffuse3 = mix2(Diffuse, Diffuse2, 0.5);
+                    //Diffuse = mix2(Diffuse, Diffuse3, length(Diffuse));
+                    //Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
+                    /*Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.5),clamp(CalcSaturation(Diffuse.xyz),0,1 - MIN_SE_SATURATION));//1.0625-clamp(vec3(dot(lightmapColor.rgb,vec3(0.333f))),0.5,1));
+                    float aoValue = 1;
+                    Diffuse = mix2(Diffuse * (lightmapColor + NdotL + Ambient) * aoValue,Diffuse * (NdotL + Ambient) * aoValue,0.25);
+                    float fogFactor = texture2D(colortex6, TexCoords).y;
+                    Diffuse = mix2(Diffuse, fogAlbedo, fogFactor);*/
+
+                    float aoValue = 1;
+                    vec3 shadowLerp = GetShadow(Depth2);
+
+                    lightmapColor *= vec3(3.5025);
+
+                    vec3 Diffuse3 = mix2(Diffuse * ((mix2(lightmapColor,vec3(dot(lightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient)) * aoValue,Diffuse * ((NdotL * shadowLerp + Ambient)) * aoValue,0.25);
+                    //Diffuse = mix2(Diffuse, seColor, 0.01);
+                    Diffuse3 = mix2(Diffuse3,mix2(vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.175f),seColor * 0.125f, 0.01),1.0625-clamp(vec3(dot(lightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
+                    Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
+
+                    float fogFactor = texture2D(colortex6, TexCoords).y;
+                    Diffuse3 = mix2(Diffuse3, fogAlbedo, fogFactor);
+
+                    Diffuse.xyz = mix2(unreal(Diffuse3.xyz),aces(Diffuse3.xyz),0.75);
+                    
+
+                    Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
                 } else {
                     /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
                         LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
                     }*/
                     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
-                    vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
+                    vec3 worldNormal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
 
                     mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
+
+                    mediump float minLight = MIN_LIGHT;
+
+                    lightmapColor = mix2(lightmapColor, normalize2(lightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(lightmapColor, lightmapColor)));
+
+                    lightmapColor = max(lightmapColor, vec3(minLight));
+
+                    vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+                    mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
+
+                    float aoValue = 1;
+                    vec3 shadowLerp = GetShadow(Depth2);
 
                     Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
 
@@ -1518,15 +1578,23 @@ void main() {
 
                     Diffuse.xyz += lightmapColor;
 
+                    lightmapColor = max(currentLightColor,lightmapColor * lightBrightness2 * 8)/128;
+                    vec3 Diffuse3 = mix2(Albedo * (lightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
+                    Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
+
                     if(waterTest > 0) {
-                        Diffuse.xyz = mix2(Diffuse.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
+                        Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
                         vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
-                        vec4 Albedo4 = waterReflections(Diffuse.xyz,TexCoords,refNormal);
-                        Diffuse.xyz = Albedo4.xyz;
+                        vec4 Albedo4 = waterReflections(Diffuse3.xyz,TexCoords,refNormal);
+                        Diffuse3.xyz = Albedo4.xyz;
                         albedoAlpha = Albedo4.a;
-                        Diffuse.xyz *= lightBrightness/2f;
+                        Diffuse3.xyz *= lightBrightness/2f;
                     }
-                    Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
+
+                    float fogFactor = texture2D(colortex6, TexCoords).y;
+                    Diffuse3 = mix2(Diffuse3, fogAlbedo, fogFactor);
+
+                    Diffuse.xyz = mix2(unreal(Diffuse3.xyz),aces(Diffuse3.xyz),0.75);
                 }
                 /*if(waterTest > 0f) {
                     Diffuse = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/2.2));
@@ -1534,12 +1602,30 @@ void main() {
 
                 if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
-                gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)) * currentColor, 1.0f);
+                #if VIBRANT_MODE == 1
+                    if(isBiomeEnd) {
+                        Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                        //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
+                    } else {
+                        Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                        //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
+                    }
+                #endif
+                gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
             } else {
                 #ifdef BLOOM
                     Albedo.xyz = mix2(Albedo.xyz, lightmapColor, clamp(length(lightmapColor), 0.0, 1.0));
                 #endif
-                Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
+                #if VIBRANT_MODE == 1
+                    if(isBiomeEnd) {
+                        Albedo.xyz = loadLUT(Albedo.xyz, colortex14);
+                        //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
+                    } else {
+                        Albedo.xyz = loadLUT(Albedo.xyz, colortex9);
+                        //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
+                    }
+                #endif
+                Albedo.xyz = mix2(Albedo.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(currentColor * Albedo, 1.0f);
             }
             return;

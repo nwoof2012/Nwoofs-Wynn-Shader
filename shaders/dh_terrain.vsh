@@ -57,7 +57,7 @@ in vec3 cameraPosition;
 #include "program/pathTracing.glsl"
 
 void main() {
-    Normal = gl_NormalMatrix * gl_Normal;
+    Normal = (gl_NormalMatrix * gl_Normal);
 
     Tangent = at_tangent.xyz;
 
