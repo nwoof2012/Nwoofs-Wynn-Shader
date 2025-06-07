@@ -332,6 +332,8 @@ option.GAMMA.comment=§6Adjust scene gamma correction bias
 option.VIBRANT_MODE=§5Vibrant Mode
 value.VIBRANT_MODE.0=Off
 value.VIBRANT_MODE.1=On
+value.VIBRANT_MODE.2=SE Only
+value.VIBRANT_MODE.3=Regular Only
 option.VIBRANT_MODE.comment=§6Enables LUTs for vibrant color scheme
 
 option.VOLUMETRIC_LIGHTING=§6Volumetric Lighting

@@ -26,7 +26,7 @@
 
 #define BLOOM
 
-#define VIBRANT_MODE 1 //[0 1]
+#define VIBRANT_MODE 1 //[0 1 2 3]
 
 #define BLOOM_QUALITY 48 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
 #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -1514,16 +1514,19 @@ void main() {
             Diffuse.xyz = Albedo;
         }
 
-        #if VIBRANT_MODE == 1
+        #if VIBRANT_MODE >= 1
             if(isBiomeEnd) {
-                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                #if VIBRANT_MODE == 1 || VIBRANT_MODE == 2
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
             } else {
-                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                #if VIBRANT_MODE == 1 || VIBRANT_MODE == 3
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
             }
         #endif
-
         //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
 
         //mediump float maxBlindnessDistance = 30;

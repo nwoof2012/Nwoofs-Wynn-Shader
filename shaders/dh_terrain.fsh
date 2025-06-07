@@ -214,7 +214,7 @@ mediump float Noise3D(vec3 p) {
     return mix2(a, b, fz);
 }
 
-mediump float linearizeDepth(float depth, float near, float far) {
+mediump float calcDepth(float depth, float near, float far) {
     return (near * far) / (depth * (near - far) + far);
 }
 
@@ -238,8 +238,8 @@ void main() {
 
     mediump float depth = texture2D(depthtex0, texCoord).r;
     mediump float dhDepth = gl_FragCoord.z;
-    mediump float depthLinear = linearizeDepth(depth, near, far*4);
-    mediump float dhDepthLinear = linearizeDepth(dhDepth, dhNearPlane, dhFarPlane);
+    mediump float depthLinear = calcDepth(depth, near, far*4);
+    mediump float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
 
     if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
         mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
@@ -264,8 +264,8 @@ void main() {
         camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
 
         outColor2 = vec4(vec3(0.0), 1.0f);
-        /*#ifndef SCENE_AWARE_LIGHTING
-            outColor2 = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
+        #ifndef SCENE_AWARE_LIGHTING
+            outColor2 = vec4(lightmapCoords.x, lightmapCoords.x, lightmapCoords.y, 1.0f);
         #else
             #define VOXEL_AREA 128 //[32 64 128]
             #define VOXEL_RADIUS (VOXEL_AREA/2)
@@ -277,6 +277,6 @@ void main() {
             }
 
             outColor2 = mix2(vec4(0.0), vec4(light_color, 1.0), step(0.999, depth));
-        #endif*/
+        #endif
     }
 }

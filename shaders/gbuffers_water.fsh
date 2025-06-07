@@ -204,8 +204,8 @@ void main() {
         }
 
         #ifdef WATER_WAVES
-            newNormal = tbnMatrix * normalFromHeight(cSampler4, TexCoords/WATER_CHUNK_RESOLUTION, 1.0, true).xyz * 0.5 + 0.5;
-            newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+            //newNormal = tbnMatrix * normalFromHeight(cSampler4, TexCoords/WATER_CHUNK_RESOLUTION, 1.0, true).xyz * 0.5 + 0.5;
+            //newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
         #endif
     } else {
         albedo = texture2D(colortex0, TexCoords);

@@ -2,6 +2,11 @@ float calcDepth(float depth, float near, float far) {
     return (near * far) / (depth * (near - far) + far);
 }
 
+float linearDepth(float depth, float near, float far) {
+    float z = depth * 2.0 - 1.0;
+    return (2.0 * near * far) / (far + near - z * (far - near));
+}
+
 vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float decay, float exposure, float weight, float density, vec3 color) {
     vec3 sunDir = normalize2(sunPos); // Sun in view space
 
@@ -21,7 +26,7 @@ vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float 
     float currentWeight = weight;
 
     // Linearize the depth of current pixel once
-    float centerZ = calcDepth(texture2D(depth, UVs).r, near, far);
+    float centerZ = linearDepth(texture2D(depth, UVs).r, near, far);
 
     vec2 fragCoord = gl_FragCoord.xy/vec2(viewWidth, viewHeight);
     vec2 fragNDC = fragCoord * 2.0 - 1.0;
@@ -36,9 +41,11 @@ vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float 
     vec4 screenPos = vec4(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z, 1.0);
     vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
 
-    float moonTest = 1 - dot(sunDir, viewPos.xyz);
+    float moonTest = dot(sunDir, viewPos.xyz);
 
-    if(moonTest > 0.99) return vec3(0.0);
+    float moonFade = smoothstep(-0.2, 0.1, moonTest) * 0.5 + 0.5;
+
+    if(moonFade <= 0.5) return vec3(0.0);
 
     for (int i = 0; i < samples; i++) {
         float t = float(i) / float(samples);
@@ -48,7 +55,7 @@ vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float 
         //if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0)
             //continue;
 
-        float sampleZ = calcDepth(texture2D(depth, sampleUV).r, near, far);
+        float sampleZ = linearDepth(texture2D(depth, sampleUV).r, near, far);
         float occlusion = smoothstep(0.98, 1.0, sampleZ / centerZ);
 
         if(texture2D(depth, sampleUV).r != 1.0) continue;
@@ -75,6 +82,8 @@ vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float 
     /*if(depthValue != 1.0 || dhTest < 1.0)*/ result *= mix2(vec3(1.0), shadowLighting, mask);
 
     result *= exposure;
+
+    result *= moonFade;
 
     /*if (alignment < threshold) {
         float sunDist = length(sunScreen - UVs);

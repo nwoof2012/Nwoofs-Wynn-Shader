@@ -26,9 +26,6 @@
         }
     #endif
     #ifdef FRAGMENT_SHADER
-        mediump float random(in vec2 uv) {
-            return fract(sin(dot(uv.xy, vec2(12.9898, 78.233))) * 43758.5453);
-        }
         struct Ray {
             vec3 origin;
             vec3 direction;

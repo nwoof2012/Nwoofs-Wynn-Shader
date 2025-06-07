@@ -38,7 +38,7 @@
 
 #define BLOOM
 
-#define VIBRANT_MODE 1 //[0 1]
+#define VIBRANT_MODE 1 //[0 1 2 3]
 
 #define BLOOM_QUALITY 48 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
 #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -1244,8 +1244,8 @@ void main() {
         //vec4 noiseMapA = texture2D(colortex8, worldTexCoords.xz/6.25f + vec2(fract(frameTimeCounter/120f)));
         //vec4 noiseMapB = texture2D(colortex8, worldTexCoords.xz/6.25f - vec2(fract(frameTimeCounter/120f)));
 
-        vec4 noiseMapA = triplanarTexture(worldTexCoords/6.25f + vec3(fract(frameTimeCounter/120f)), vNormal, colortex8, 1.0);
-        vec4 noiseMapB = triplanarTexture(worldTexCoords/6.25f - vec3(fract(frameTimeCounter/120f)), vNormal, colortex8, 1.0);
+        vec4 noiseMapA = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        vec4 noiseMapB = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
@@ -1358,7 +1358,7 @@ void main() {
                 Albedo = mix2(Albedo, foamWater, 1 - step(isRain, 0.9));
             #endif
 
-            vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+            vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
             //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
             vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal);
             Albedo = mix2(Albedo, Albedo4.xyz, step(isRain, 0.9));
@@ -1584,7 +1584,7 @@ void main() {
 
                     if(waterTest > 0) {
                         Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
-                        vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+                        vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
                         vec4 Albedo4 = waterReflections(Diffuse3.xyz,TexCoords,refNormal);
                         Diffuse3.xyz = Albedo4.xyz;
                         albedoAlpha = Albedo4.a;
@@ -1854,12 +1854,16 @@ void main() {
             Diffuse.xyz = Albedo;
         }
 
-        #if VIBRANT_MODE == 1
+        #if VIBRANT_MODE >= 1
             if(isBiomeEnd) {
-                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                #if VIBRANT_MODE == 1 || VIBRANT_MODE == 2
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
             } else {
-                Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                #if VIBRANT_MODE == 1 || VIBRANT_MODE == 3
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
             }
         #endif
