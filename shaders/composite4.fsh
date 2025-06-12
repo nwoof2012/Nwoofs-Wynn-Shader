@@ -1053,8 +1053,10 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
 float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     vec2 depthA2d = triplanarCoords(abs(worldCoords - worldCoords2), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
     float depth = max(depthA2d.x, depthA2d.y);
+    //depth = linearizeDepth(depth, near, far);
     vec2 depthB2d = triplanarCoords(worldCoords, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy; //textureLod(depthtex0, TexCoords, 0).r;
     float depth2 = max(depthB2d.x, depthB2d.y);
+    //depth2 = linearizeDepth(depth2, near, far);
     float foamScale = sqrt(dot(cameraPosition - worldCoords, cameraPosition - worldCoords));
     float distanceFactor = 1.0/(1.0 + depth * 32.0);
     depth *= distanceFactor;
@@ -1064,9 +1066,9 @@ float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     float noiseB = triplanarTexture(worldCoords*0.25 - vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
     float noise = (noiseA + noiseB)/2;
 
-    if(depth > 0.25 * distanceFactor + noise * 0.05) return 0;
+    if(depth > 0.125 * distanceFactor + noise * 0.05) return 0;
 
-    return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500);
+    return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 250);
 }
 
 vec2 getUVsForLUT(vec3 color) {
@@ -1244,8 +1246,11 @@ void main() {
         //vec4 noiseMapA = texture2D(colortex8, worldTexCoords.xz/6.25f + vec2(fract(frameTimeCounter/120f)));
         //vec4 noiseMapB = texture2D(colortex8, worldTexCoords.xz/6.25f - vec2(fract(frameTimeCounter/120f)));
 
-        vec4 noiseMapA = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
-        vec4 noiseMapB = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        //vec4 noiseMapA = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        //vec4 noiseMapB = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+
+        vec4 noiseMapA = triplanarTexture((worldTexCoords + ((frameCounter)/90f)*0.5f) * 0.035f, texture2D(colortex1, TexCoords).xyz, colortex8, 1.0);
+        vec4 noiseMapB = triplanarTexture((worldTexCoords - ((frameCounter)/90f)*0.5f) * 0.035f, texture2D(colortex1, TexCoords).xyz, colortex8, 1.0);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
@@ -1253,7 +1258,7 @@ void main() {
 
         vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
 
-        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz);
+        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz * 2.0 - 1.0);
 
         //vec3 worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
 
@@ -1318,13 +1323,13 @@ void main() {
                 //vec3 fragPos = gl_FragCoord.xyz;
 
                 vec3 viewDirection = normalize2(cameraPosition - viewSpaceFragPosition);
-                vec3 reflectDir = reflect(-sunPosition, Normal);
+                //vec3 reflectDir = reflect(-sunPosition, Normal);
 
                 mediump float specularStrength = 0.5;
 
-                mediump float spec = pow2(max(dot(viewDirection, reflectDir),0.0),32);
-                vec3 specularColor = vec3(1.0);
-                vec3 specular = specularStrength * spec * specularColor;
+                //mediump float spec = pow2(max(dot(viewDirection, reflectDir),0.0),32);
+                //vec3 specularColor = vec3(1.0);
+                //vec3 specular = specularStrength * spec * specularColor;
 
                 //mediump float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
                 
@@ -1332,7 +1337,7 @@ void main() {
 
                 mediump float ambientLight = 0.0;
 
-                vec3 result = (ambientLight + Albedo.xyz + specular);
+                //vec3 result = (ambientLight + Albedo.xyz + specular);
 
                 //Albedo.xyz = mix2(Albedo.xyz, specularColor, specularStrength * clamp(spec,0,1));
 
@@ -1343,7 +1348,7 @@ void main() {
                 underwaterDepth2 = texture2D(depthtex1, TexCoords).r;
                 Albedo = pow2(mix2(Albedo,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (underwaterDepth2 - underwaterDepth)) * 0.5,0,1)), vec3(GAMMA));
 
-                Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
+                //Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
                 TexCoords2 = TexCoords;
             }
             #ifdef WATER_FOAM
@@ -1358,7 +1363,7 @@ void main() {
                 Albedo = mix2(Albedo, foamWater, 1 - step(isRain, 0.9));
             #endif
 
-            vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
+            vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2.0 - 1.0;
             //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
             vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal);
             Albedo = mix2(Albedo, Albedo4.xyz, step(isRain, 0.9));

@@ -222,7 +222,7 @@ void main() {
     }
 
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(newNormal,1.0);
+    gl_FragData[1] = vec4(newNormal * 0.5 + 0.5,1.0);
     #ifndef SCENE_AWARE_LIGHTING
         gl_FragData[2] = Lightmap;
     #else
@@ -293,5 +293,5 @@ void main() {
         gl_FragData[2] = lighting;
     #endif
     gl_FragData[3] = vec4(0.0);
-    gl_FragData[4] = vec4(isWaterBlock, 1.0, 1.0, 1.0);
+    gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, 1.0);
 }

@@ -18,7 +18,7 @@
         const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
         const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
 
-        vec4 voxel_data = mc_Entity.x == 10005? vec4(TorchColor,1.0) : mc_Entity.x == 10006? vec4(GlowstoneColorColor,1.0) : mc_Entity.x == 10007? vec4(LampColor,1.0) : mc_Entity.x == 10008? vec4(LanternColor,1.0) : mc_Entity.x == 10009? vec4(RedstoneColor,1.0) : mc_Entity.x == 10010? vec4(RodColor,1.0);
+        vec4 voxel_data = mc_Entity.x == 10005? vec4(TorchColor,1.0) : mc_Entity.x == 10006? vec4(GlowstoneColor,1.0) : mc_Entity.x == 10007? vec4(LampColor,1.0) : mc_Entity.x == 10008? vec4(LanternColor,1.0) : mc_Entity.x == 10009? vec4(RedstoneColor,1.0) : mc_Entity.x == 10010? vec4(RodColor,1.0);
 
         uint integerValue = packUnorm4x8(voxel_data);
 

@@ -176,9 +176,9 @@ void main() {
 			float waveHeight = WAVE_AMPLITUDE * length(waveCycle);
 			//Normal *= waveHeight;
 
-			uint integerValue4 = uint(waveHeight * 32767);
+			//uint integerValue4 = uint(waveHeight * 32767);
 
-			imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
+			//imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
 
 			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
 		#endif

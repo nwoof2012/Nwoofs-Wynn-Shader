@@ -10,6 +10,10 @@ uniform float viewHeight;
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
+uniform sampler2D colortex3;
+uniform sampler2D colortex4;
+uniform sampler2D colortex5;
+uniform sampler2D colortex6;
 uniform sampler2D colortex10;
 
 in vec4 lightSourceData;
@@ -41,7 +45,7 @@ vec3 BloomTile(float lod, vec2 offset, vec2 scaledCoord) {
     return pow(bloom / 128.0, vec3(0.25));
 }
 
-/* RENDERTARGETS:1,2,4 */
+/* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 
 void main() {
     vec3 blur = vec3(0.0);
@@ -70,7 +74,7 @@ void main() {
 
     gl_FragData[2] = vec4(blur, 0.0);
 
-    #ifdef SCENE_AWARE_LIGHTING
+    /*#ifdef SCENE_AWARE_LIGHTING
         vec3 lightColor = vec3(0);
         const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
         const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
@@ -96,8 +100,15 @@ void main() {
         else if(lightSourceData.z > 0.0) {
             lightColor = RodColor;
         }
-        gl_FragData[1] = vec4(texture2D(colortex2, TexCoords).xyz,1.0);
-    #endif
-    gl_FragData[0] = vec4(texture2D(colortex1, TexCoords).xyz,1.0);
+        gl_FragData[2] = vec4(texture2D(colortex2, TexCoords).xyz,1.0);
+    #endif*/
+    gl_FragData[0] = texture2D(colortex0, TexCoords);
+    gl_FragData[1] = texture2D(colortex1, TexCoords); //vec4(texture2D(colortex1, TexCoords).xyz,1.0);
+    gl_FragData[2] = texture2D(colortex2, TexCoords); //vec4(texture2D(colortex2, TexCoords).xyz,1.0);
+    gl_FragData[3] = texture2D(colortex3, TexCoords);
+    gl_FragData[4] = texture2D(colortex4, TexCoords);
+    gl_FragData[5] = texture2D(colortex5, TexCoords);
+    gl_FragData[6] = texture2D(colortex6, TexCoords);
+    gl_FragData[7] = texture2D(colortex10,TexCoords);
     //gl_FragData[3] = vec4(texture2D(colortex10, TexCoords).xyz,1.0);
 }

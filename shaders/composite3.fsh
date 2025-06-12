@@ -22,6 +22,10 @@ uniform float worldTime;
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
+uniform sampler2D colortex3;
+uniform sampler2D colortex4;
+uniform sampler2D colortex5;
+uniform sampler2D colortex6;
 uniform sampler2D colortex10;
 uniform sampler2D colortex12;
 uniform sampler2D colortex13;
@@ -192,7 +196,7 @@ mediump float remap(float origFrom, float origTo, float targetFrom, float target
   return mix2(targetFrom, targetTo, rel);
 }
 
-/* RENDERTARGETS:0,1,2,10 */
+/* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
 
@@ -350,6 +354,10 @@ void main() {
     }
 
     outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
-    gl_FragData[3] = vec4(texture2D(colortex10, texCoord).xyz,1.0);
+    gl_FragData[3] = texture2D(colortex3, texCoord);
+    gl_FragData[4] = texture2D(colortex4, texCoord);
+    gl_FragData[5] = texture2D(colortex5, texCoord);
+    gl_FragData[6] = texture2D(colortex6, texCoord);
+    gl_FragData[7] = vec4(texture2D(colortex10, texCoord).xyz,1.0);
     //outnormal = cloudsNormal;
 }

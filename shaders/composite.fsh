@@ -952,8 +952,10 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
 float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     vec2 depthA2d = triplanarCoords(abs(worldCoords - worldCoords2), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
     float depth = max(depthA2d.x, depthA2d.y);
+    //depth = linearizeDepth(depth, near, far);
     vec2 depthB2d = triplanarCoords(worldCoords, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy; //textureLod(depthtex0, TexCoords, 0).r;
     float depth2 = max(depthB2d.x, depthB2d.y);
+    //depth2 = linearizeDepth(depth2, near, far);
     float foamScale = sqrt(dot(cameraPosition - worldCoords, cameraPosition - worldCoords));
     float distanceFactor = 1.0/(1.0 + depth * 32.0);
     depth *= distanceFactor;
@@ -963,7 +965,7 @@ float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     float noiseB = triplanarTexture(worldCoords*0.25 - vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
     float noise = (noiseA + noiseB)/2;
 
-    if(depth > 0.25 * distanceFactor + noise * 0.05) return 0;
+    if(depth > 0.125 * distanceFactor + noise * 0.05) return 0;
 
     return smoothstep(foamThreshold, foamThreshold + 0.05, shoreDistance * 500);
 }
@@ -1136,7 +1138,7 @@ void main() {
 
         vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
 
-        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz);
+        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz) * 2.0 - 1.0;
 
         vec3 worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
 
@@ -1228,7 +1230,7 @@ void main() {
             #endif
 
             if(isRain == 1.0) {
-                vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+                vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2.0 - 1.0;
                 //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
                 vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal);
                 Albedo = Albedo4.xyz;
@@ -1385,7 +1387,7 @@ void main() {
 
                     if(waterTest > 0) {
                         Diffuse.xyz = mix2(Diffuse.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
-                        vec3 refNormal = texture2D(colortex1, TexCoords).rgb;
+                        vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
                         vec4 Albedo4 = waterReflections(Diffuse.xyz,TexCoords,refNormal);
                         Diffuse.xyz = Albedo4.xyz;
                         albedoAlpha = Albedo4.a;

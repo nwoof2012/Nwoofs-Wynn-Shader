@@ -84,10 +84,10 @@ void main() {
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
     world_pos = foot_pos + cameraPosition;
 
-    #ifdef SCENE_AWARE_LIGHTING
+    /*#ifdef SCENE_AWARE_LIGHTING
         #include "program/voxelizing.glsl"
         //imageStore(lightData, texCoord, texture2D(lighting,texCoord));
-    #endif
+    #endif*/
     
     #if PATH_TRACING_GI == 1
         lightmap = GenerateLightmap(1f,1f);
