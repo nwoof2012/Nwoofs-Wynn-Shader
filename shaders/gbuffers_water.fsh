@@ -68,6 +68,8 @@ in vec3 foot_pos;
 
 in vec4 at_midBlock2;
 
+in float waterShadingHeight;
+
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
 const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
@@ -161,7 +163,7 @@ vec4 normalFromHeight(sampler2D heightTex, vec2 uv, float scale, bool divide) {
 
 //attribute vec4 mc_Entity;
 
-/* DRAWBUFFERS:01235 */
+/* RENDERTARGETS:0,1,2,3,5,10,15*/
 
 void main() {
     //vec4 albedo = texture2D(texture, TexCoords) * Color;
@@ -292,6 +294,7 @@ void main() {
         }
         gl_FragData[2] = lighting;
     #endif
-    gl_FragData[3] = vec4(0.0);
+    gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
     gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, 1.0);
+    gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
 }

@@ -252,7 +252,7 @@ void main() {
             outputColor.xyz = blindEffect(outputColor.xyz);
         }
 
-        mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
+        mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2) * 0.25;
 
         fogOut = vec4(0.0, fogBlend, 0.0, 1.0);
         //outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
@@ -261,7 +261,7 @@ void main() {
 
         normal = vec4(worldNormal * 0.5 + 0.5, 1.0);
         dataTex0 = vec4(1.0);
-        camDist = vec4(distanceFromCamera, vec2(0.0), 1.0);
+        camDist = vec4(distanceFromCamera, dhDepth, 0.0, 1.0);
 
         outColor2 = vec4(vec3(0.0), 1.0f);
         #ifndef SCENE_AWARE_LIGHTING

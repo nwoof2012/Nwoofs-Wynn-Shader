@@ -117,7 +117,7 @@ option.SE_MAX_LIGHT=§bMaximum Light
 value.SE_MAX_LIGHT.4.1f=Unlimited
 
 option.MIN_SE_SATURATION=§cMinimum Saturation
-value.MIN_SE_SATURATION.0.5=§aDefault
+value.MIN_SE_SATURATION.1.0=§aDefault
 option.MIN_SE_SATURATION.comment=§9Clamps Silent Expanse desaturation in low light levels
 
 option.MAX_LIGHT=§bMaximum Light
@@ -141,6 +141,13 @@ option.WATER_REFRACTION.comment = §6Distorts light as it passes through water
 
 option.WATER_FOAM=§9Water Foam
 option.WATER_FOAM.comment = §6Enables foam at the edges of water
+
+option.SSR=§9Screen Space Reflections §7(§9SSR§7)
+option.SSR.comment = §6Enables Screen Space Reflections on water and metal
+value.SSR.0=§cOff
+value.SSR.1=§fOn
+value.SSR.2=§fWater Only
+value.SSR.3=§fMetal Only
 
 option.WATER_WAVES=§9Water Waves
 option.WATER_WAVES.comment=§6Enables 3§7-§6dimensional waves for water

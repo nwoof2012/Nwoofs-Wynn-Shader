@@ -139,8 +139,8 @@ vec4 cloudStack(in vec2 uv) {
     mediump float cloudHeight = 550/viewHeight;
     mediump float attenuation = 0.125;
     for(float i = 0; i < cloudLevels; i++) {
-        vec4 noiseA = texture2D(colortex13,uv * 0.0625f - vec2(0.0, (cloudHeight * i)/cloudLevels) - frameTimeCounter * 0.00125);
-        vec4 noiseB = texture2D(colortex13,uv * 0.015625f - vec2(0.0, (cloudHeight * i)/cloudLevels) + frameTimeCounter * 0.005);
+        vec4 noiseA = texture2D(colortex13,fract(uv * 0.0625f - vec2(0.0, (cloudHeight * i)/cloudLevels) - frameTimeCounter * 0.00125));
+        vec4 noiseB = texture2D(colortex13,fract(uv * 0.015625f - vec2(0.0, (cloudHeight * i)/cloudLevels) + frameTimeCounter * 0.005));
         noiseA = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseA, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
         noiseB = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseB, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
         finalNoise += noiseA * noiseB * attenuation;

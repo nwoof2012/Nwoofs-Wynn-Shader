@@ -72,6 +72,8 @@ attribute vec4 mc_midTexCoord;
 
 uniform vec3 cameraPosition;
 
+out float waterShadingHeight;
+
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
@@ -173,7 +175,7 @@ void main() {
 			//vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
 			//worldPos.xyz += foot_pos;
 			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
-			float waveHeight = WAVE_AMPLITUDE * length(waveCycle);
+			float waveHeight = WAVE_AMPLITUDE * (waveCycle.x + waveCycle.y)/2;
 			//Normal *= waveHeight;
 
 			//uint integerValue4 = uint(waveHeight * 32767);
@@ -181,6 +183,7 @@ void main() {
 			//imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
 
 			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
+			waterShadingHeight = (waveCycle.x + waveCycle.y)/2 + 1;
 		#endif
     }
 

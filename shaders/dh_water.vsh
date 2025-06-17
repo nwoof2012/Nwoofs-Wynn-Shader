@@ -1,6 +1,14 @@
 #version 460 compatibility
 #define PI 3.14159265358979323846f
 
+#define WATER_WAVES
+#define WAVE_SPEED_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_SPEED_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_DENSITY_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_DENSITY_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
+#define WAVE_AMPLITUDE 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define WATER_CHUNK_RESOLUTION 128 // [32 64 128]
+
 layout (r32ui) uniform uimage3D cimage1;
 
 varying vec2 TexCoords;
@@ -52,6 +60,9 @@ in vec3 at_midBlock;
 
 in vec3 cameraPosition;
 
+out float waterShadingHeight;
+
+uniform float frameTimeCounter;
 
 //in vec4 mc_Entity;
 
@@ -126,6 +137,27 @@ void main() {
 
     //gl_Position.y += sin(TexCoords + (worldTime*0.001f));
 
+	vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+	vec3 world_pos = foot_pos + cameraPosition;
+	
+	if(mat == DH_BLOCK_WATER) {
+		#ifdef WATER_WAVES
+			//vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
+			//worldPos.xyz += foot_pos;
+			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
+			float waveHeight = WAVE_AMPLITUDE * (waveCycle.x + waveCycle.y)/2;
+			//Normal *= waveHeight;
+
+			//uint integerValue4 = uint(waveHeight * 32767);
+
+			//imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
+
+			//gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
+			waterShadingHeight = (waveCycle.x + waveCycle.y)/2 + 1;
+		#endif
+	}
+	
     Color = gl_Color;
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
 

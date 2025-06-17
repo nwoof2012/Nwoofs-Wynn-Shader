@@ -74,7 +74,7 @@ in vec3 normals_face_world;
 
 in vec3 foot_pos;
 
-/* DRAWBUFFERS:01235 */
+/* RENDERTARGETS:0,1,2,3,5,12,15 */
 
 mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
     vec3 bitangent = cross(tangent, normal);
@@ -112,6 +112,11 @@ void main() {
         vec3 Albedo = pow2(albedo.xyz, vec3(GAMMA));
 
         albedo.a = 0.5f;
+
+        mediump float depth = texture2D(depthtex0, texCoord).r;
+        mediump float dhDepth = gl_FragCoord.z;
+        //mediump float depthLinear = calcDepth(depth, near, far*4);
+        //mediump float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
         
         vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
         
@@ -180,6 +185,7 @@ void main() {
             gl_FragData[2] = vec4(light_color, 1.0);
         #endif*/
         gl_FragData[3] = vec4(1.0);
+        gl_FragData[6] = vec4(distanceFromCamera, dhDepth, 0.0, 1.0);
         if(mat == DH_BLOCK_WATER) {
             gl_FragData[4] = vec4(1.0, 0.0, 0.0, 1.0);
         } else {
