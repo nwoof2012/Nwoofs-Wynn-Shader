@@ -25,9 +25,53 @@
 
 #define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
+#define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define DAY_B 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define DAY_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+#define NIGHT_R 0.9f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define NIGHT_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define NIGHT_B 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define NIGHT_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+#define SUNSET_R 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SUNSET_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SUNSET_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SUNSET_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+#define SE_R 0.7f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SE_G 0.4f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SE_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
 precision mediump float;
 
 layout (rgba16f) uniform image2D cimage7;
+
+//vec3 dayColor = vec3(1.0f,1.0f,1.0f);
+vec3 dayColor = vec3(DAY_R,DAY_G,DAY_B);
+//vec3 nightColor = vec3(0.9f,1.0f,1.1f);
+vec3 nightColor = vec3(NIGHT_R,NIGHT_G,NIGHT_B);
+//vec3 transitionColor = vec3(1.1f, 1.0f, 0.8f);
+vec3 transitionColor = vec3(SUNSET_R,SUNSET_G,SUNSET_B);
+
+vec3 seColor = vec3(SE_R,SE_G,SE_B);
+
+vec3 currentColor;
+
+vec3 Diffuse;
+
+vec3 baseColor;
+vec3 baseDiffuse;
+
+vec3 baseDiffuseModifier;
+
+vec3 baseFog;
+
+vec3 fogAlbedo;
+
+uniform int worldTime;
 
 varying vec2 TexCoords;
 varying vec3 Normal;
@@ -62,6 +106,7 @@ in vec3 worldSpaceVertexPosition;
 in vec3 normals_face_world;
 in vec3 block_centered_relative_pos;
 in vec3 foot_pos;
+in vec3 view_pos;
 in vec4 at_midBlock2;
 in vec2 signMidCoordPos;
 flat in vec2 absMidCoordPos;
@@ -72,6 +117,8 @@ in float isFoliage;
 uniform bool isBiomeEnd;
 
 uniform float frameTimeCounter;
+
+uniform vec3 shadowLightPosition;
 
 uniform int viewWidth;
 uniform int viewHeight;
@@ -215,7 +262,72 @@ bool pointsIntersect(vec3 origin, vec3 dir, vec3 solidTex) {
     return false;
 }
 
-/* RENDERTARGETS:0,1,2,3,5,10,15*/
+float baseFogDistMin;
+float baseFogDistMax;
+float fogMin;
+float fogMax;
+
+void noonFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+        fogMin = mix2(baseFogDistMin, FOG_DAY_DIST_MIN, dayNightLerp);
+        fogMax = mix2(baseFogDistMax, FOG_DAY_DIST_MAX, dayNightLerp);
+        baseDiffuseModifier = vec3(DAY_I);
+        currentColor = mix2(baseColor,dayColor,dayNightLerp);
+        Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
+    }
+}
+
+void sunsetFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+        fogMin = mix2(baseFogDistMin, FOG_SUNSET_DIST_MIN, sunsetLerp);
+        fogMax = mix2(baseFogDistMax, FOG_SUNSET_DIST_MAX, sunsetLerp);
+        baseDiffuseModifier = vec3(SUNSET_I);
+        currentColor = mix2(dayColor, transitionColor, sunsetLerp);
+        Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+    }
+}
+
+void nightFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+        fogMin = mix2(baseFogDistMin, FOG_NIGHT_DIST_MIN, dayNightLerp);
+        fogMax = mix2(baseFogDistMax, FOG_NIGHT_DIST_MAX, dayNightLerp);
+        baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
+        currentColor = mix2(baseColor, nightColor, dayNightLerp);
+        Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), dayNightLerp);
+    }
+}
+
+void dawnFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+        baseDiffuseModifier = vec3(SUNSET_I);
+        currentColor = mix2(dayColor, transitionColor, sunsetLerp);
+        Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+    }
+}
+
+#include "lib/timeCycle.glsl"
+
+/* RENDERTARGETS:0,1,2,3,5,10,6*/
 
 void main() {
     vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
@@ -247,6 +359,37 @@ void main() {
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
         #ifndef SCENE_AWARE_LIGHTING
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+
+            Diffuse = albedo.xyz;
+
+            baseColor = currentColor;
+            baseDiffuse = Diffuse;
+
+            baseDiffuseModifier = vec3(0.0);
+
+            baseFog = vec3(0.0);
+
+            fogMin = FOG_DAY_DIST_MIN;
+            fogMax = FOG_DAY_DIST_MAX;
+
+            baseFogDistMin = fogMin;
+            baseFogDistMax = fogMax;
+
+            if(worldTime/(timePhase + 1) < 500f) {
+                baseFogDistMin = fogMin;
+                baseFogDistMax = fogMax;
+            }
+            
+            timeFunctionFrag();
+
+            mediump float fogStart = fogMin;
+            mediump float fogEnd = fogMax;
+
+            mediump float fogAmount = (length(view_pos) - fogStart)/(fogEnd - fogStart);
+
+            mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
+
+            gl_FragData[6] = vec4(0.0, fogAmount * 0.125, 0.0, 1.0);
         #else
             //vec3 coords = vec3(0.0);
             // Lighting and voxel-related calculations (optimizations applied)
@@ -261,6 +404,42 @@ void main() {
             
             vec4 lighting = vec4(0.0); //decodeLightmap(vec4(light_color, 1.0));
             float lightBrightness = 0.0;
+
+            vec3 SkyColor = vec3(0.05f, 0.15f, 0.3f);
+            SkyColor = currentColor;
+
+            vec3 currentColor = dayColor;
+
+            Diffuse = albedo.xyz;
+
+            baseColor = currentColor;
+            baseDiffuse = Diffuse;
+
+            baseDiffuseModifier = vec3(0.0);
+
+            baseFog = vec3(0.0);
+
+            fogMin = FOG_DAY_DIST_MIN;
+            fogMax = FOG_DAY_DIST_MAX;
+
+            baseFogDistMin = fogMin;
+            baseFogDistMax = fogMax;
+
+            if(worldTime/(timePhase + 1) < 500f) {
+                baseFogDistMin = fogMin;
+                baseFogDistMax = fogMax;
+            }
+
+            timeFunctionFrag();
+
+            mediump float fogStart = fogMin;
+            mediump float fogEnd = fogMax;
+
+            mediump float fogAmount = (length(view_pos) - fogStart)/(fogEnd - fogStart);
+
+            mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
+
+            gl_FragData[6] = vec4(0.0, fogAmount, 0.0, 1.0);
 
             if(lighting.w <= 0.0) {
                 lowp vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
@@ -334,6 +513,7 @@ void main() {
                 }
             }
             vec4 finalLighting = lighting;
+            finalLighting += clamp(dot(normalize2(shadowLightPosition),normalize2(Normal)),0,1) * vec4(currentColor * baseDiffuseModifier * 0.5,1.0);
             #if PATH_TRACING_GI == 1
                 vec3 lightDir = normalize2(sunPosition);
                 vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -353,11 +533,12 @@ void main() {
             uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
             //finalLighting = mix2(finalLighting, vec4(vec3(0.0),1.0), float(any(equal(vec3(depth2), vec3(0.0)))));
             //imageStore(cimage7, ivec2(gl_FragCoord.xy/2), vec4(finalLighting.xyz, lightBrightness));
+            finalLighting.xyz *= 1.5;
             gl_FragData[2] = finalLighting;
         #endif
         gl_FragData[3] = vec4(distanceFromCamera);
         gl_FragData[4] = vec4(0.0, 1.0, isReflective, 1.0);
         gl_FragData[5] = vec4(worldSpaceVertexPosition, 1.0);
-        gl_FragData[6] = vec4(distanceFromCamera, distanceFromCamera/20f, isFoliage * (1 - albedo.a), 1.0);
+        //gl_FragData[6] = vec4(distanceFromCamera, distanceFromCamera/20f, isFoliage * (1 - albedo.a), 1.0);
     }
 }

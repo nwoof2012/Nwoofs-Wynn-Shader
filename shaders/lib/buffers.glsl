@@ -1,3 +1,4 @@
+//SE Transition
 struct transition_data {
     float transitionStartTime;
     float transitionTimer;
@@ -14,3 +15,17 @@ struct transition_data {
 layout(std430, binding = 0) buffer seTransition {
     transition_data data;
 } transitionSE;
+
+//Rain Transition
+layout(std430, binding = 1) buffer rainTransition {
+    bool firstInit;
+    float previousRainStrength;
+    float startTime;
+    float timer;
+    float amount;
+    bool init;
+    bool activeState;
+    bool startState;
+    vec4 startColor;
+    vec4 endColor;
+} transitionRain;

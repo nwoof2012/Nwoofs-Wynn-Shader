@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define VERTEX_SHADER
+
 #include "lib/globalDefines.glsl"
 
 #define PATH_TRACING_GI 0 // [0 1]
@@ -33,7 +35,7 @@ varying vec4 Color;
 
 varying vec2 LightmapCoords;
 
-uniform float worldTime;
+//uniform float worldTime;
 uniform float frameTimeCounter;
 
 uniform vec3 cameraPosition;
@@ -68,6 +70,8 @@ out vec3 worldSpaceVertexPosition;
 out vec3 normals_face_world;
 
 out vec3 foot_pos;
+
+out vec3 view_pos;
 
 out vec2 signMidCoordPos;
 flat out vec2 absMidCoordPos;
@@ -114,6 +118,8 @@ vec4 GenerateLightmap(LightSource source) {
     }
 }
 
+#include "lib/timeCycle.glsl"
+
 void main() {
     gl_Position = ftransform();
         
@@ -154,11 +160,13 @@ void main() {
         isReflective = 0.0;
     }
 
+    timeFunctionVert();
+
     midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
     vec2 texMinMidCoord = TexCoords - midCoord;
     absMidCoordPos  = abs(texMinMidCoord);
 
-    vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+    view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
     vec3 world_pos = foot_pos + cameraPosition;
     #define VOXEL_AREA 128 //[32 64 128]

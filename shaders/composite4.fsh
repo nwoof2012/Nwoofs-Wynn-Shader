@@ -208,7 +208,19 @@ vec3 baseDiffuseModifier;
 
 vec3 baseFog;
 
+float baseFogIntensity;
+
 vec3 fogAlbedo;
+
+float fogIntensity;
+
+#define FOG_RAIN_MULTIPLIER 10.0;
+
+float baseFogDHTransition;
+
+float fogDHTransition;
+
+uniform float rainStrength;
 
 in vec3 lightmap;
 
@@ -552,7 +564,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     vec3 lightColor = texture2D(colortex2,uv).rgb;
     float illumination = texture2D(colortex2,uv).a;
     #ifdef VOLUMETRIC_LIGHTING
-        lightColor += volumetricLight(sunPosition, depthtex1, TexCoords, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
+        //lightColor += volumetricLight(sunPosition, depthtex1, TexCoords, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
     #endif
 
     #ifdef SCENE_AWARE_LIGHTING
@@ -863,34 +875,86 @@ mediump float fresnel(vec3 normal, vec3 viewDir, float pow2er) {
 
 void noonFunc(float time, float timeFactor) {
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+    fogIntensity = FOG_DAY_INTENSITY; //mix2(baseFogIntensity, FOG_DAY_INTENSITY, dayNightLerp);
     baseDiffuseModifier = vec3(DAY_I);
-    currentColor = mix2(baseColor,dayColor,dayNightLerp);
-    Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-    fogAlbedo = mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
+    currentColor = dayColor; //mix2(baseColor,dayColor,dayNightLerp);
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    if(isBiomeEnd) {
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
+        fogIntensity = FOG_SE_INTENSITY;
+        fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+    } else {
+        vec3 fogAlbedoDry = vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
+        fogAlbedo = vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
+        float fogRain = FOG_DAY_RAIN_INTENSITY * FOG_RAIN_MULTIPLIER;
+        fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
+        float fogDHTransitionDry = far/DH_FOG_DAY_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
+        fogDHTransition = mix2(fogDHTransitionDry, far/DH_FOG_DAY_RAIN_DIST_MAX,rainStrength);
+    }
 }
 
 void sunsetFunc(float time, float timeFactor) {
-    mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
-    baseDiffuseModifier = vec3(SUNSET_I);
-    currentColor = mix2(dayColor, transitionColor, sunsetLerp);
-    Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-    fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+    mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
+    fogIntensity = mix3(FOG_DAY_INTENSITY, FOG_SUNSET_INTENSITY, FOG_NIGHT_INTENSITY, sunsetLerp, 0.5); //mix2(baseFogIntensity, FOG_SUNSET_INTENSITY, sunsetLerp);
+    baseDiffuseModifier = mix3(vec3(DAY_I), vec3(SUNSET_I), vec3(NIGHT_I), sunsetLerp, 0.5);
+    currentColor = mix3(dayColor, transitionColor, nightColor, sunsetLerp, 0.5); //mix2(dayColor, transitionColor, sunsetLerp);
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    if(isBiomeEnd) {
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
+        fogIntensity = FOG_SE_INTENSITY;
+        fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+    } else {
+        vec3 fogAlbedoDry = mix3(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+        vec3 fogAlbedoWet = mix3(vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), sunsetLerp, 0.5);
+        fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainStrength);
+        float fogRain = mix3(FOG_DAY_RAIN_INTENSITY, FOG_SUNSET_RAIN_INTENSITY, FOG_NIGHT_RAIN_INTENSITY, sunsetLerp, 0.5) * FOG_RAIN_MULTIPLIER;
+        fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
+        float fogDHTransitionDry = far/mix3(DH_FOG_DAY_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
+        float fogDHTransitionWet = far/mix3(DH_FOG_DAY_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_NIGHT_RAIN_DIST_MAX, sunsetLerp, 0.5);
+        fogDHTransition = mix2(fogDHTransitionDry, fogDHTransitionWet,rainStrength);
+    }
 }
 
 void nightFunc(float time, float timeFactor) {
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
-    baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
-    currentColor = mix2(baseColor, nightColor, dayNightLerp);
-    Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
-    fogAlbedo = mix2(baseFog, vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), dayNightLerp);
+    fogIntensity = FOG_NIGHT_INTENSITY; //mix2(baseFogIntensity, FOG_DAY_INTENSITY, dayNightLerp);
+    baseDiffuseModifier = vec3(NIGHT_I);
+    currentColor = nightColor; //mix2(baseColor,dayColor,dayNightLerp);
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    if(isBiomeEnd) {
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
+        fogIntensity = FOG_SE_INTENSITY;
+        fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+    } else {
+        vec3 fogAlbedoDry = vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
+        fogAlbedo = vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
+        float fogRain = FOG_NIGHT_RAIN_INTENSITY * FOG_RAIN_MULTIPLIER;
+        fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
+        float fogDHTransitionDry = far/DH_FOG_NIGHT_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
+        fogDHTransition = mix2(fogDHTransitionDry, far/DH_FOG_NIGHT_RAIN_DIST_MAX,rainStrength);
+    }
 }
 
 void dawnFunc(float time, float timeFactor) {
-    mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
-    baseDiffuseModifier = vec3(SUNSET_I);
-    currentColor = mix2(dayColor, transitionColor, sunsetLerp);
-    Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-    fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+    mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
+    fogIntensity = mix3(FOG_NIGHT_INTENSITY, FOG_SUNSET_INTENSITY, FOG_DAY_INTENSITY, sunsetLerp, 0.5); //mix2(baseFogIntensity, FOG_SUNSET_INTENSITY, sunsetLerp);
+    baseDiffuseModifier = mix3(vec3(NIGHT_I), vec3(SUNSET_I), vec3(DAY_I), sunsetLerp, 0.5);
+    currentColor = mix3(nightColor, transitionColor, dayColor, sunsetLerp, 0.5); //mix2(dayColor, transitionColor, sunsetLerp);
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    if(isBiomeEnd) {
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
+        fogIntensity = FOG_SE_INTENSITY;
+        fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+    } else {
+        vec3 fogAlbedoDry = mix3(vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+        vec3 fogAlbedoWet = mix3(vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), sunsetLerp, 0.5);
+        fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainStrength);
+        float fogRain = mix3(FOG_NIGHT_RAIN_INTENSITY, FOG_SUNSET_RAIN_INTENSITY, FOG_DAY_RAIN_INTENSITY, sunsetLerp, 0.5) * FOG_RAIN_MULTIPLIER;
+        fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
+        float fogDHTransitionDry = far/mix3(DH_FOG_NIGHT_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_DAY_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
+        float fogDHTransitionWet = far/mix3(DH_FOG_NIGHT_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_DAY_RAIN_DIST_MAX, sunsetLerp, 0.5);
+        fogDHTransition = mix2(fogDHTransitionDry, fogDHTransitionWet,rainStrength);
+    }
 }
 
 vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
@@ -1478,11 +1542,17 @@ void main() {
         vec3 baseDiffuseModifier;
 
         vec3 currentFogColor = vec3(FOG_DAY_R,FOG_DAY_G,FOG_DAY_B);
+
+        float currentFogIntensity = FOG_DAY_INTENSITY;
+
+        fogDHTransition = far/DH_FOG_DAY_DIST_MAX;
         
         if(worldTime/(timePhase + 1) < 500f) {
             baseColor = currentColor;
             baseDiffuse = Diffuse;
             baseFog = currentFogColor;
+            baseFogIntensity = currentFogIntensity;
+            baseFogDHTransition = fogDHTransition;
         }
         
         mediump float dayNightLerp = clamp(quadTime/11500,0,1);
@@ -1522,24 +1592,7 @@ void main() {
             }
         } else {
             timeFunctionFrag();
-        }/*else if(timePhase < 1) {
-            baseDiffuseModifier = vec3(DAY_I);
-            currentColor = mix2(baseColor,dayColor,dayNightLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-            
-        } else if(timePhase < 2) {
-            baseDiffuseModifier = vec3(SUNSET_I);
-            currentColor = mix2(dayColor, transitionColor, sunsetLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-        } else if(timePhase < 3) {
-            baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
-            currentColor = mix2(baseColor, nightColor, dayNightLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
-        } else if(timePhase < 4) {
-            baseDiffuseModifier = vec3(SUNSET_I);
-            currentColor = mix2(nightColor, transitionColor, sunsetLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(2.2)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-        }*/
+        }
 
         //Diffuse *= currentColor;
 
@@ -1618,13 +1671,12 @@ void main() {
                     Diffuse3 = mix2(Diffuse3,mix2(vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.175f),seColor * 0.125f, 0.01),1.0625-clamp(vec3(dot(lightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
                     Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
 
-                    float fogFactor = texture2D(colortex6, TexCoords).y;
-                    Diffuse3 = mix2(Diffuse3, fogAlbedo, fogFactor);
-
                     Diffuse.xyz = mix2(unreal(Diffuse3.xyz),aces(Diffuse3.xyz),0.75);
-                    
 
                     Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
+
+                    float fogFactor = clamp(texture2D(colortex6, TexCoords).y,0,1);
+                    Diffuse = mix2(Diffuse, fogAlbedo, clamp(smoothstep(fogDHTransition,1.0,fogFactor) * fogIntensity * (1 - fogDHTransition) + fogDHTransition,0.0,fogIntensity));
                 } else {
                     /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
                         LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
@@ -1674,10 +1726,10 @@ void main() {
                     vec3 Diffuse3 = mix2(Albedo * (lightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
                     Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
 
-                    float fogFactor = texture2D(colortex6, TexCoords).y;
-                    Diffuse3 = mix2(Diffuse3, fogAlbedo, fogFactor);
-
                     Diffuse.xyz = mix2(unreal(Diffuse3.xyz),aces(Diffuse3.xyz),0.75);
+
+                    float fogFactor = clamp(texture2D(colortex6, TexCoords).y,0,1);
+                    Diffuse = mix2(Diffuse, fogAlbedo, clamp(smoothstep(fogDHTransition,1.0,fogFactor * fogIntensity) * (1 - fogDHTransition) + fogDHTransition,0,fogIntensity));
                 }
                 /*if(waterTest > 0f) {
                     Diffuse = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/2.2));
@@ -1932,6 +1984,10 @@ void main() {
         //if(waterTest <= 0) {
             Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
         //}
+
+        float fogFactor = texture2D(colortex6, TexCoords).y;
+        Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, clamp(smoothstep(0.0,fogDHTransition,fogFactor * fogIntensity) * fogDHTransition,0,fogIntensity * fogDHTransition));
+
 
         /*if(waterTest > 0) {
             Diffuse.xyz = Albedo;

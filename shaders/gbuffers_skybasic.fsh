@@ -441,6 +441,7 @@ void main() {
         } else {
             gl_FragData[2] = outputLight;
         }
+        outputSunMoon *= 1 - rainStrength;
         if(worldTime%24000 < 12000) {
             //outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);
             gl_FragData[3] = vec4(vec3(distToSun * 5.0),1.0);

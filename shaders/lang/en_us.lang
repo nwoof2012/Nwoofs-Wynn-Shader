@@ -92,20 +92,50 @@ option.SKY_SUNSET_B_B=§9Stratosphere Blue
 option.FOG_DAY_R=§cRed
 option.FOG_DAY_G=§aGreen
 option.FOG_DAY_B=§9Blue
-option.FOG_DAY_DIST_MIN=§7Minimum Fog Distance
-option.FOG_DAY_DIST_MAX=§7Maximum Fog Distance
+option.FOG_DAY_DIST_MIN=§7Minimum Distance
+option.FOG_DAY_DIST_MAX=§7Maximum Distance
+option.DH_FOG_DAY_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_DAY_INTENSITY=§bIntensity
 
 option.FOG_NIGHT_R=§cRed
 option.FOG_NIGHT_G=§aGreen
 option.FOG_NIGHT_B=§9Blue
-option.FOG_NIGHT_DIST_MIN=§7Minimum Fog Distance
-option.FOG_NIGHT_DIST_MAX=§7Maximum Fog Distance
+option.FOG_NIGHT_DIST_MIN=§7Minimum Distance
+option.FOG_NIGHT_DIST_MAX=§7Maximum Distance
+option.DH_FOG_NIGHT_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_NIGHT_INTENSITY=§bIntensity
 
 option.FOG_SUNSET_R=§cRed
 option.FOG_SUNSET_G=§aGreen
 option.FOG_SUNSET_B=§9Blue
-option.FOG_SUNSET_DIST_MIN=§7Minimum Fog Distance
-option.FOG_SUNSET_DIST_MAX=§7Maximum Fog Distance
+option.FOG_SUNSET_DIST_MIN=§7Minimum Distance
+option.FOG_SUNSET_DIST_MAX=§7Maximum Distance
+option.DH_FOG_SUNSET_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_SUNSET_INTENSITY=§bIntensity
+
+option.FOG_DAY_RAIN_R=§cRed
+option.FOG_DAY_RAIN_G=§aGreen
+option.FOG_DAY_RAIN_B=§9Blue
+option.FOG_DAY_RAIN_DIST_MIN=§7Minimum Distance
+option.FOG_DAY_RAIN_DIST_MAX=§7Maximum Distance
+option.DH_FOG_DAY_RAIN_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_DAY_RAIN_INTENSITY=§bIntensity
+
+option.FOG_NIGHT_RAIN_R=§cRed
+option.FOG_NIGHT_RAIN_G=§aGreen
+option.FOG_NIGHT_RAIN_B=§9Blue
+option.FOG_NIGHT_RAIN_DIST_MIN=§7Minimum Distance
+option.FOG_NIGHT_RAIN_DIST_MAX=§7Maximum Distance
+option.DH_FOG_NIGHT_RAIN_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_NIGHT_RAIN_INTENSITY=§bIntensity
+
+option.FOG_SUNSET_RAIN_R=§cRed
+option.FOG_SUNSET_RAIN_G=§aGreen
+option.FOG_SUNSET_RAIN_B=§9Blue
+option.FOG_SUNSET_RAIN_DIST_MIN=§7Minimum Distance
+option.FOG_SUNSET_RAIN_DIST_MAX=§7Maximum Distance
+option.DH_FOG_SUNSET_RAIN_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_SUNSET_RAIN_INTENSITY=§bIntensity
 
 option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
@@ -182,6 +212,9 @@ option.CLOUD_FOG.comment = §9Distant Fog amount on Volumetric Clouds.
 
 option.CLOUD_SAMPLES = §fVolumetric Cloud Samples
 option.CLOUD_SAMPLES.comment = §9The sample rate for Volumetric Cloud height. §e§lMedium Performance Impact
+
+option.CLOUD_RESOLUTION_REDUCTION = §fVolumetric Cloud Upscaling
+option.CLOUD_RESOLUTION_REDUCTION.comment = §9Adjusts the base resolution for cloud upscaling§7, §9relative to screen
 
 option.CLOUD_DENSITY = §fVolumetric Cloud Density
 

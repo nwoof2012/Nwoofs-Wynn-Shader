@@ -15,6 +15,8 @@ in vec4 glcolor;
 
 in vec3 viewSpaceFragPosition;
 
+uniform float rainStrength;
+
 /* DRAWBUFFERS:035 */
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 isRain;

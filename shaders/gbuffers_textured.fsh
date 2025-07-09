@@ -71,5 +71,5 @@ void main() {
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
-    //gl_FragData[3] = vec4(a);
+    gl_FragData[3] = vec4(a,0.0,0.0,1.0);
 }

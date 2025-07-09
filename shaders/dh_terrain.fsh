@@ -252,7 +252,7 @@ void main() {
             outputColor.xyz = blindEffect(outputColor.xyz);
         }
 
-        mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2) * 0.25;
+        mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
 
         fogOut = vec4(0.0, fogBlend, 0.0, 1.0);
         //outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
