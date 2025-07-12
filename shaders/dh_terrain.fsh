@@ -56,8 +56,6 @@ uniform sampler2D noises;
 
 uniform sampler2D colortex0;
 
-varying float timePhase;
-varying float quadTime;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
@@ -218,6 +216,84 @@ mediump float calcDepth(float depth, float near, float far) {
     return (near * far) / (depth * (near - far) + far);
 }
 
+vec3 currentColor;
+
+vec3 Diffuse;
+
+vec3 baseColor;
+vec3 baseDiffuse;
+
+vec3 baseDiffuseModifier;
+
+vec3 baseFog;
+
+vec3 fogAlbedo;
+
+float baseFogDistMin;
+float baseFogDistMax;
+float fogMin;
+float fogMax;
+
+void noonFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+        fogMin = mix2(baseFogDistMin, FOG_DAY_DIST_MIN, dayNightLerp);
+        fogMax = mix2(baseFogDistMax, FOG_DAY_DIST_MAX, dayNightLerp);
+        //baseDiffuseModifier = vec3(DAY_I);
+        //currentColor = mix2(baseColor,dayColor,dayNightLerp);
+        //Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
+    }
+}
+
+void sunsetFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+        fogMin = mix2(baseFogDistMin, FOG_SUNSET_DIST_MIN, sunsetLerp);
+        fogMax = mix2(baseFogDistMax, FOG_SUNSET_DIST_MAX, sunsetLerp);
+        //baseDiffuseModifier = vec3(SUNSET_I);
+        //currentColor = mix2(dayColor, transitionColor, sunsetLerp);
+        //Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+    }
+}
+
+void nightFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+        fogMin = mix2(baseFogDistMin, FOG_NIGHT_DIST_MIN, dayNightLerp);
+        fogMax = mix2(baseFogDistMax, FOG_NIGHT_DIST_MAX, dayNightLerp);
+        //baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
+        //currentColor = mix2(baseColor, nightColor, dayNightLerp);
+        //Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), dayNightLerp);
+    }
+}
+
+void dawnFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        fogMin = FOG_SE_DIST_MIN;
+        fogMax = FOG_SE_DIST_MAX;
+    } else {
+        mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+        baseDiffuseModifier = vec3(SUNSET_I);
+        //currentColor = mix2(dayColor, transitionColor, sunsetLerp);
+        //Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+        fogAlbedo = mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+    }
+}
+
+#include "lib/timeCycle.glsl"
+
 void main() {
     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
@@ -251,6 +327,22 @@ void main() {
         if(blindness > 0f) {
             outputColor.xyz = blindEffect(outputColor.xyz);
         }
+
+        fogMin = FOG_DAY_DIST_MIN;
+        fogMax = FOG_DAY_DIST_MAX;
+
+        baseFogDistMin = fogMin;
+        baseFogDistMax = fogMax;
+
+        if(worldTime/(timePhase + 1) < 500f) {
+            baseFogDistMin = fogMin;
+            baseFogDistMax = fogMax;
+        }
+
+        mediump float fogStart = fogMin;
+        mediump float fogEnd = fogMax;
+
+        mediump float fogAmount = (depthLinear - fogStart)/(fogEnd - fogStart);
 
         mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
 

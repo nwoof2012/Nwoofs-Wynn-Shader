@@ -1715,12 +1715,12 @@ void main() {
 
                     //vec3 LightmapColor = vec3(1.0);
 
-                    Diffuse.xyz += lightmapColor;
+                    //Diffuse.xyz += lightmapColor;
 
                     if(waterTest > 0) {
                         Albedo = waterFunction(TexCoords, finalNoise, lightBrightness);
                         #ifdef WATER_WAVES
-                            Albedo = mix3(Albedo * 0.5, Albedo, Albedo * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
+                            Diffuse.xyz = mix3(Diffuse.xyz * 0.5, Diffuse.xyz, Diffuse.xyz * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
                         #endif
                         //Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
                         #if SSR == 1 || SSR = 2
@@ -1733,8 +1733,8 @@ void main() {
                     }
 
                     lightmapColor = max(currentLightColor,lightmapColor * lightBrightness2 * 8)/128;
-                    vec3 Diffuse3 = mix2(Albedo * (lightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
-                    Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
+                    vec3 Diffuse3 = Diffuse.xyz * lightmapColor; //mix2(Albedo * (lightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
+                    //Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
 
                     Diffuse.xyz = mix2(unreal(Diffuse3.xyz),aces(Diffuse3.xyz),0.75);
 

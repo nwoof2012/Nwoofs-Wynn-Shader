@@ -1516,7 +1516,15 @@ void main() {
 
                     //vec3 LightmapColor = vec3(1.0);
 
-                    Diffuse.xyz += lightmapColor;
+                    //Diffuse.xyz += lightmapColor;
+
+                    float weightDay = 0.5 + 0.5 * cos((timeNorm - 0.25) * 2.0 * PI);
+                    float weightNight = 0.5 + 0.5 * cos((timeNorm - 0.75) * 2.0 * PI);
+                    vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
+
+                    lightmapColor = max(currentLightColor,lightmapColor * lightBrightness);
+
+                    lightmapColor = max(lightmapColor, MIN_LIGHT);
 
                     if(waterTest > 0) {
                         Albedo = waterFunction(TexCoords, finalNoise, lightBrightness);
@@ -1533,6 +1541,7 @@ void main() {
                         #endif
                         Diffuse.xyz = Albedo.xyz;
                     }
+                    Diffuse.xyz *= lightmapColor * clamp(dot(mat3(gbufferModelViewInverse) * shadowLightDirection, worldNormal),MIN_LIGHT,1);
                     Diffuse.xyz = mix2(unreal(Diffuse.xyz),aces(Diffuse.xyz),0.75);
                 }
                 /*if(waterTest > 0f) {

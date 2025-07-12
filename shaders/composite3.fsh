@@ -388,6 +388,8 @@ void main() {
             vec2 uv = rayDir.xz*0.25/rayDir.y;
             vec2 uv2 = pos.xz*0.001+frameTimeCounter*0.1;
 
+            mediump float detectSky = texture2D(colortex12, texCoord).g;
+
             //uv = uv * 0.5 + 0.5;
             //uv2 = uv2 * 0.5 + 0.5;
             //rayDir -= normalize2(vec3(1.0));
@@ -450,8 +452,6 @@ void main() {
                 mediump float cloud_shading_amount = 0.1;
                 vec3 sunDir = normalize2(vec4(gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz);
                 float sun_dot = clamp(dot(rayDir, sunDir),0,1);
-                
-                mediump float detectSky = texture2D(colortex12, texCoord).g;
 
                 if(texCoord.x <= 1.0 || texCoord.x >= 0.0 || texCoord.y <= 1.0 || texCoord.y >= 0.0) {
                     if(detectSky != 1.0) {
@@ -580,11 +580,18 @@ void main() {
                     }*/
                 }
             }
-            #ifdef VOLUMETRIC_LIGHTING
-                gl_FragData[2] = vec4(mix2(light, texture2D(colortex2, texCoord).xyz + light, 1 - clouds.a),1.0);
-            #else
-                gl_FragData[2] = vec4(mix2(vec3(0.0), texture2D(colortex2, texCoord).xyz, 1 - clouds.a),1.0);
-            #endif
+            if(detectSky == 1.0) {
+                vec3 shadowLerp = GetShadow(depth2);
+                vec2 lightmap = texture2D(colortex12, texCoord).rg;
+                float isCave = smoothstep(MIN_LIGHT, MIN_LIGHT + 0.1, lightmap.r);
+                gl_FragData[2] = vec4(texture2D(colortex2, texCoord).xyz + mix2(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B)*dot(normalize2(mat3(gbufferModelViewInverse) * sunPosition), texture2D(colortex1,texCoord).xyz * 2 + 1)*0.0825, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,1 - (shadowLerp * isCave)),1.0);
+            } else {
+                #ifdef VOLUMETRIC_LIGHTING
+                    gl_FragData[2] = vec4(mix2(light, texture2D(colortex2, texCoord).xyz + light, 1 - clouds.a),1.0);
+                #else
+                    gl_FragData[2] = vec4(mix2(vec3(0.0), texture2D(colortex2, texCoord).xyz, 1 - clouds.a),1.0);
+                #endif
+            }
         #endif
     } else {
         vec3 shadowLerp = GetShadow(depth2);
