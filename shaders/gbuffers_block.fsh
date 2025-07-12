@@ -104,7 +104,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
-/* RENDERTARGETS:0,1,2,15,5,10,6 */
+/* RENDERTARGETS:0,1,2,15,5,10,6,12 */
 
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
@@ -200,6 +200,9 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
+
+    float isCave = LightmapCoords.r;
+    gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
 
     #ifdef SCENE_AWARE_LIGHTING
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));

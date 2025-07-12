@@ -114,6 +114,8 @@ uniform bool isBiomeDry;
 
 uniform sampler2D colortex11;
 
+uniform sampler2D moon;
+
 uniform float rainStrength;
 
 uniform sampler2D noisetex;
@@ -426,7 +428,7 @@ void main() {
         vec3 finalMoonColor = mix2(pow2(moonColor * clamp(noise + 3.0, 3.0, 4.0) * 0.25f,vec3(1/1.2)), vec3(0.0), pow2(distToMoon/0.04,4.2));
         vec3 outputColorSun = mix2(vec3(0.0), finalSunColor, sunGradient);
         //vec3 outputColorMoon = mix2(vec3(0.0), finalMoonColor, moonGradient);
-        vec4 outputColorMoon = texture2D(colortex11, getMoonCoords(1).xy).xyzw;
+        vec4 outputColorMoon = texture2D(moon, getMoonCoords(1).xy).xyzw;
         outputColorMoon = mix2(vec4(outputColorMoon.xyz, 0.0), outputColorMoon.xyzw, outputColorMoon.w);
         outputColorMoon.xyz += 0.6;
         outputColorMoon.xyz *= clamp(pow2(moonGradient,1/GAMMA) + 0.25,0.25,1);

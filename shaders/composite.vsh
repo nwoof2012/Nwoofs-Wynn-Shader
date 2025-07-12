@@ -7,6 +7,8 @@
 varying vec2 TexCoords;
 varying vec2 LightmapCoords;
 
+uniform mat4 gbufferModelViewInverse;
+
 in ivec2 vaUV2;
 
 in vec4 mc_Entity;
@@ -27,6 +29,8 @@ out vec3 vViewDir;
 out vec3 Tangent;
 
 out vec2 FoV;
+
+out vec3 foot_pos;
 
 in vec3 at_tangent;
 
@@ -65,6 +69,8 @@ void main() {
     vViewDir = normalize(-viewPos.xyz);
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
     LightmapCoords = vaUV2;
+
+    foot_pos = (gbufferModelViewInverse * vec4(viewPos.xyz, 1.0)).xyz;
 
     FoV = vec2(1.0);
     FoV.y = 2.0 * atan(1.0 / gbufferProjection[1][1]);

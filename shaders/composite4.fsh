@@ -35,6 +35,9 @@
 #define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 #define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
 
+#define AMBIENT_LIGHT_R 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define AMBIENT_LIGHT_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 #define BLOOM
 
@@ -138,6 +141,13 @@ uniform float blindness;
 
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
+
+uniform sampler2D lutnormal;
+uniform sampler2D lutse;
+
+uniform sampler2D water;
+
+uniform sampler2D noiseb;
 
 uniform sampler2D colortex10;
 uniform sampler2D colortex11;
@@ -1184,7 +1194,7 @@ float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     depth *= distanceFactor;
     float foamThreshold = clamp(1.25 * distanceFactor, 0.0, 1.0);
     float shoreDistance = clamp(depth * 5.0, 0.0, 1.0);
-    float noiseA = triplanarTexture(worldCoords*0.125 + vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
+    float noiseA = triplanarTexture(worldCoords*0.125 + vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, noiseb, 1.0).r * 2 - 1;
     float noiseB = triplanarTexture(worldCoords*0.25 - vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
     float noise = (noiseA + noiseB)/2;
 
@@ -1371,12 +1381,12 @@ void main() {
         //vec4 noiseMapA = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
         //vec4 noiseMapB = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
 
-        vec4 noiseMapA = triplanarTexture(fract((worldTexCoords + ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, colortex8, 1.0);
-        vec4 noiseMapB = triplanarTexture(fract((worldTexCoords - ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, colortex8, 1.0);
+        vec4 noiseMapA = triplanarTexture(fract((worldTexCoords + ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
+        vec4 noiseMapB = triplanarTexture(fract((worldTexCoords - ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
-        vec4 noiseMap3 = texture2D(colortex8, fract(TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f));
+        vec4 noiseMap3 = texture2D(water, fract(TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f));
 
         vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
 
@@ -1739,10 +1749,10 @@ void main() {
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 #if VIBRANT_MODE == 1
                     if(isBiomeEnd) {
-                        Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                        Diffuse.xyz = loadLUT(Diffuse.xyz, lutse);
                         //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
                     } else {
-                        Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                        Diffuse.xyz = loadLUT(Diffuse.xyz, lutnormal);
                         //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
                     }
                 #endif
@@ -1753,10 +1763,10 @@ void main() {
                 #endif
                 #if VIBRANT_MODE == 1
                     if(isBiomeEnd) {
-                        Albedo.xyz = loadLUT(Albedo.xyz, colortex14);
+                        Albedo.xyz = loadLUT(Albedo.xyz, lutse);
                         //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
                     } else {
-                        Albedo.xyz = loadLUT(Albedo.xyz, colortex9);
+                        Albedo.xyz = loadLUT(Albedo.xyz, lutnormal);
                         //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
                     }
                 #endif
@@ -1945,6 +1955,8 @@ void main() {
                 LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
             }*/
             //LightmapColor *= vec3(0.2525);
+            vec3 rawLight = LightmapColor;
+            //LightmapColor = mix2(LightmapColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT, 1 - shadowLerp);
             if(maxLight < 4.1f) {
                 float lightMagnitude = length(LightmapColor);
                 lightMagnitude = clamp(lightMagnitude, MIN_LIGHT, maxLight);
@@ -1952,7 +1964,7 @@ void main() {
             }
             LightmapColor = max(currentLightColor,LightmapColor * lightBrightness2 * 8)/128;
             vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
-            Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
+            Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
             Diffuse3 = mix2(unreal(Diffuse3),aces(Diffuse3),0.75);
 
             if(!transData.transitionCompleted) timer = frameTimeCounter - transData.transitionStartTime;
@@ -1996,12 +2008,12 @@ void main() {
         #if VIBRANT_MODE >= 1
             if(isBiomeEnd) {
                 #if VIBRANT_MODE == 1 || VIBRANT_MODE == 2
-                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, lutse);
                 #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
             } else {
                 #if VIBRANT_MODE == 1 || VIBRANT_MODE == 3
-                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, lutnormal);
                 #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
             }

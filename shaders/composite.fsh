@@ -21,6 +21,16 @@
 #define SE_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 
+#define NATURAL_LIGHT_DAY_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_B 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_I 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
+
+#define NATURAL_LIGHT_NIGHT_R 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
+
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
 #define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
@@ -128,6 +138,11 @@ uniform vec3 cameraPosition;
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
 
+uniform sampler2D water;
+
+uniform sampler2D lutnormal;
+uniform sampler2D lutse;
+
 uniform sampler2D colortex10;
 uniform sampler2D colortex11;
 
@@ -158,6 +173,8 @@ in vec3 vNormal;
 in vec3 vViewDir;
 
 in vec2 FoV;
+
+in vec3 foot_pos;
 
 in vec3 Tangent;
 
@@ -1184,6 +1201,7 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 }
 
 #include "lib/timeCycle.glsl"
+#include "program/ambientOcclusion.glsl"
 
 /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 
@@ -1212,18 +1230,18 @@ void main() {
 
         mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-        vec4 noiseMap = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
-        vec4 noiseMap2 = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        vec4 noiseMap = texture2D(water, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        vec4 noiseMap2 = texture2D(water, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
 
-        vec4 noiseMap4 = texture2D(colortex8, mod(worldTexCoords.xz/50,5)/vec2(5f) + (mod(worldTexCoords.x/50,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
-        vec4 noiseMap5 = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        vec4 noiseMap4 = texture2D(water, mod(worldTexCoords.xz/50,5)/vec2(5f) + (mod(worldTexCoords.x/50,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
+        vec4 noiseMap5 = texture2D(water, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
 
         vec4 finalNoiseA = (noiseMap * noiseMap2);
         vec4 finalNoiseB = (noiseMap4 * noiseMap5);
 
         vec4 finalNoise = (finalNoiseA * finalNoiseB);
 
-        vec4 noiseMap3 = texture2D(colortex8, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
+        vec4 noiseMap3 = texture2D(water, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
 
         vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
 
@@ -1396,6 +1414,15 @@ void main() {
 
         vec3 cloudRayDir = normalize2(viewSpaceFragPosition);
         vec4 cloudColor = rayMarch(cameraPosition, cloudRayDir, cloudFinalNoise.y);
+
+        vec3 lightColorDay = vec3(NATURAL_LIGHT_DAY_R, NATURAL_LIGHT_DAY_G, NATURAL_LIGHT_DAY_B) * NATURAL_LIGHT_DAY_I;
+        vec3 lightColorNight = vec3(NATURAL_LIGHT_NIGHT_R, NATURAL_LIGHT_NIGHT_G, NATURAL_LIGHT_NIGHT_B) * NATURAL_LIGHT_NIGHT_I;
+        
+        float timeNorm = mod(worldTime,24000.0) / 24000.0;
+
+        float weightDay = 0.5 + 0.5 * cos((timeNorm - 0.25) * 2.0 * PI);
+        float weightNight = 0.5 + 0.5 * cos((timeNorm - 0.75) * 2.0 * PI);
+        vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
 
         Diffuse = mix2(Diffuse, cloudColor.xyz, cloudColor.a);
 
@@ -1588,6 +1615,12 @@ void main() {
         }*/
 
         mediump float maxLight = MAX_LIGHT;
+
+        float aoValue = 1;
+        #ifdef AO
+            //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
+            //aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
+        #endif
         
         vec3 shadowLerp = GetShadow(Depth);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
         if(waterTest > 0) {
@@ -1635,12 +1668,12 @@ void main() {
         #if VIBRANT_MODE >= 1
             if(isBiomeEnd) {
                 #if VIBRANT_MODE == 1 || VIBRANT_MODE == 2
-                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex14);
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, lutse);
                 #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
             } else {
                 #if VIBRANT_MODE == 1 || VIBRANT_MODE == 3
-                    Diffuse.xyz = loadLUT(Diffuse.xyz, colortex9);
+                    Diffuse.xyz = loadLUT(Diffuse.xyz, lutnormal);
                 #endif
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
             }

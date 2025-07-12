@@ -46,6 +46,7 @@ uniform mat4 gbufferPreviousModelViewInverse;
 uniform mat4 gbufferPreviousProjectionInverse;
 
 uniform sampler2D cSampler9;
+
 layout (rgba8) uniform image2D cimage9;
 
 #include "program/gaussianBlur.glsl"
@@ -245,6 +246,110 @@ vec4 blurImage(vec2 UVs, float radius, float strength, int samples, vec2 resolut
     return color;
 }
 
+uniform mat4 shadowProjectionInverse;
+uniform mat4 shadowModelViewInverse;
+
+uniform mat4 shadowProjection;
+uniform mat4 shadowModelView;
+
+uniform mat4 gbufferProjection;
+
+uniform sampler2D shadowtex0;
+uniform sampler2D shadowtex1;
+
+uniform sampler2D shadowcolor0;
+
+uniform sampler2D depthtex1;
+
+in vec3 Tangent;
+
+varying vec2 LightmapCoords;
+
+uniform sampler2D lightmap;
+
+#define SHADOW_SAMPLES 2
+#define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
+#define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+
+#define AMBIENT_LIGHT_R 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define AMBIENT_LIGHT_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
+#define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+
+mediump float AdjustLightmapTorch(in float torch) {
+    const mediump float K = 2.0f;
+    const mediump float P = 5.06f;
+    return K * pow2(torch, P);
+}
+
+mediump float AdjustLightmapSky(in float sky){
+    mediump float sky_2 = sky * sky;
+    return sky_2 * sky_2;
+}
+
+vec2 AdjustLightmap(in vec2 Lightmap){
+    vec2 NewLightMap;
+    NewLightMap.x = AdjustLightmapTorch(Lightmap.x);
+    NewLightMap.y = AdjustLightmapSky(Lightmap.y);
+    return NewLightMap;
+}
+
+const int ShadowSamplesPerSize = 2 * SHADOW_SAMPLES + 1;
+const int TotalSamples = ShadowSamplesPerSize * ShadowSamplesPerSize;
+
+#include "distort.glsl"
+
+mediump float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
+    return step(SampleCoords.z - 0.001f, texture2D(ShadowMap, SampleCoords.xy).r);
+}
+
+vec3 TransparentShadow(in vec3 SampleCoords){
+    mediump float ShadowVisibility0 = Visibility(shadowtex0, SampleCoords);
+    mediump float ShadowVisibility1 = Visibility(shadowtex1, SampleCoords);
+    vec4 ShadowColor0 = texture2D(shadowcolor0, SampleCoords.xy);
+    vec3 TransmittedColor = ShadowColor0.rgb * (1.0f - ShadowColor0.a);
+    return mix2(TransmittedColor * ShadowVisibility1, vec3(1.0f), ShadowVisibility0);
+}
+
+mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
+    vec3 bitangent = cross(tangent, normal);
+    return mat3(tangent, bitangent, normal);
+}
+
+vec3 GetShadow(float depth) {
+    vec3 ClipSpace = vec3(texCoord, depth) * 2.0f - 1.0f;
+    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+    vec3 View = ViewW.xyz / ViewW.w;
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+    vec4 ShadowSpace = shadowProjection * shadowModelView * World;
+    ShadowSpace.xy = DistortPosition(ShadowSpace.xy);
+    vec3 worldSpaceSunPos = (gbufferProjection * vec4(sunPosition,1.0)).xyz;
+    vec3 lightDir = normalize2(worldSpaceSunPos);
+    vec3 normal = texture2D(colortex1, texCoord).rgb;
+    normal = tbnNormalTangent(normal, Tangent) * normal;
+    vec3 normalClip = normal * 2.0f - 1.0f;
+    vec4 normalViewW = gbufferProjectionInverse * vec4(normalClip, 1.0);
+    vec3 normalView = normalViewW.xyz/normalViewW.w;
+    vec4 normalWorld = gbufferModelViewInverse * vec4(normalView, 1.0f);
+    vec3 fragPos = texture2D(colortex10, texCoord).rgb;
+    #if RAY_TRACED_SHADOWS == 1
+        return computeShadows(lightDir, vec3(0.0), normal, World.xyz);
+    #else
+        vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
+        vec3 ShadowAccum = vec3(0.0f);
+        for(int x = -SHADOW_SAMPLES; x <= SHADOW_SAMPLES; x++){
+            for(int y = -SHADOW_SAMPLES; y <= SHADOW_SAMPLES; y++){
+                vec2 Offset = vec2(x, y) / SHADOW_RES;
+                vec3 CurrentSampleCoordinate = vec3(SampleCoords.xy + Offset, SampleCoords.z);
+                ShadowAccum += TransparentShadow(CurrentSampleCoordinate);
+            }
+        }
+        ShadowAccum /= TotalSamples;
+        return ShadowAccum;
+    #endif
+}
+
 /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
@@ -253,6 +358,7 @@ void main() {
     vec3 color = pow2(texture2D(colortex0, texCoord).rgb,vec3(2.2));
     vec3 sky_color = textureLod(colortex0, texCoord,6).rgb;
     mediump float depth = texture2D(depthtex0, texCoord).r;
+    mediump float depth2 = texture2D(depthtex1, texCoord).r;
 
     vec3 Normal = normalize(texture2D(colortex1, texCoord).rgb * 2.0f -1.0f);
 
@@ -481,7 +587,11 @@ void main() {
             #endif
         #endif
     } else {
-        gl_FragData[2] = vec4(texture2D(colortex2, texCoord).xyz,1.0);
+        vec3 shadowLerp = GetShadow(depth2);
+        vec2 lightmap = texture2D(colortex12, texCoord).rg;
+        float isCave = smoothstep(MIN_LIGHT, MIN_LIGHT + 0.1, lightmap.r);
+        gl_FragData[2] = vec4(texture2D(colortex2, texCoord).xyz + mix2(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B)*dot(normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition), texture2D(colortex1,texCoord).xyz * 2 + 1)*0.0825, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,1 - (shadowLerp * isCave)),1.0);
+        //outcolor = vec4(vec3(isCave),1.0);
     }
 
     if(blindness > 0.0f) {

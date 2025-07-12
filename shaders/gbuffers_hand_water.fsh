@@ -81,7 +81,7 @@ float baseFogDistMax;
 float fogMin;
 float fogMax;
 
-/* RENDERTARGETS:0,1,2,4,15,6 */
+/* RENDERTARGETS:0,1,2,4,15,6,12 */
 
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
@@ -171,6 +171,9 @@ void main() {
     gl_FragData[5] = vec4(0.0, fogAmount, 0.0, 1.0);
 
     mediump float a;
+
+    float isCave = LightmapCoords.r;
+    gl_FragData[6] = vec4(isCave, 0.0, 0.0, 1.0);
 
     if(albedo.a > 0 && heldItemId == 1) {
         a = 1;

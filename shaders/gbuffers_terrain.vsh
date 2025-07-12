@@ -73,6 +73,8 @@ out vec3 foot_pos;
 
 out vec3 view_pos;
 
+out vec3 worldPos;
+
 out vec2 signMidCoordPos;
 flat out vec2 absMidCoordPos;
 flat out vec2 midCoord;
@@ -130,6 +132,8 @@ void main() {
     worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
 
     foot_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+
+    worldPos = foot_pos + cameraPosition;
 
     vec3 chunkVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition,1.0)).xyz;
 

@@ -109,7 +109,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
-/* RENDERTARGETS:0,1,2,4,5,15,6 */
+/* RENDERTARGETS:0,1,2,4,5,15,6,12 */
 
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
@@ -203,6 +203,9 @@ void main() {
     mediump float fogAmount = (length(viewSpaceFragPosition) - fogStart)/(fogEnd - fogStart);
 
     gl_FragData[6] = vec4(0.0, fogAmount, 0.0, 1.0);
+
+    float isCave = LightmapCoords.r;
+    gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);

@@ -49,6 +49,8 @@ precision mediump float;
 
 layout (rgba16f) uniform image2D cimage7;
 
+layout (rgba8) uniform image2D cimage10;
+
 //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
 vec3 dayColor = vec3(DAY_R,DAY_G,DAY_B);
 //vec3 nightColor = vec3(0.9f,1.0f,1.1f);
@@ -106,6 +108,7 @@ in vec3 worldSpaceVertexPosition;
 in vec3 normals_face_world;
 in vec3 block_centered_relative_pos;
 in vec3 foot_pos;
+in vec3 worldPos;
 in vec3 view_pos;
 in vec4 at_midBlock2;
 in vec2 signMidCoordPos;
@@ -327,7 +330,7 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
-/* RENDERTARGETS:0,1,2,3,5,10,6*/
+/* RENDERTARGETS:0,1,2,3,5,10,6,12*/
 
 void main() {
     vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
@@ -441,6 +444,11 @@ void main() {
 
             gl_FragData[6] = vec4(0.0, fogAmount, 0.0, 1.0);
 
+            vec3 lightNormal = vec3(0.0);
+            float NdotL = 1.0;
+
+            vec3 rawLight;
+
             if(lighting.w <= 0.0) {
                 lowp vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
                 //lowp vec4 bytes2 = unpackUnorm4x8(texture3D(cSampler1,vec3(ivec3(block_centered_relative_pos3+VOXEL_RADIUS))/vec3(VOXEL_AREA)).r);
@@ -496,13 +504,26 @@ void main() {
                         lowp vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
 
                         block_centered_relative_pos4 = mat3(gbufferModelView) * block_centered_relative_pos4;
+
                         //foot_pos3 = mat3(gbufferProjection) * mat3(gbufferModelView) * foot_pos3;
+
+                        lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
+                        NdotL = dot(lightNormal, newNormal);
+                        /*if(NdotL <= 0.5) {
+                            continue;
+                        }*/
+
+                        rawLight = decodeLightmap(bytes).xyz;
 
                         // Compute lighting contribution
                         lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
                                     clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
+                        
+                        lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
+                        NdotL *= dot(lightNormal, newNormal);
+                        lighting *= max(NdotL, 0.0);
 
-                        lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0);
+                        lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
                         
                         //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
                         //lighting.xyz *= lightColor;
@@ -513,7 +534,9 @@ void main() {
                 }
             }
             vec4 finalLighting = lighting;
-            finalLighting += clamp(dot(normalize2(shadowLightPosition),normalize2(Normal)),0,1) * vec4(currentColor * baseDiffuseModifier * 0.5,1.0);
+            float isCave = LightmapCoords.r;
+            gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
+            finalLighting += clamp(dot(normalize2(shadowLightPosition),normalize2(Normal)),0,1) * vec4(currentColor * baseDiffuseModifier * 0.125,1.0);
             #if PATH_TRACING_GI == 1
                 vec3 lightDir = normalize2(sunPosition);
                 vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
@@ -527,9 +550,10 @@ void main() {
             /*if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
                 finalLighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
             }*/
+            //gl_FragData[0] = vec4(vec3(step(NdotL,0.5)),1.0);
             vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
             if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1));
-            finalLighting = mix2(finalLighting, finalLighting2, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,1,finalLighting))));
+            finalLighting = mix2(finalLighting * 2.0, finalLighting2 * 0.65, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))));
             uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
             //finalLighting = mix2(finalLighting, vec4(vec3(0.0),1.0), float(any(equal(vec3(depth2), vec3(0.0)))));
             //imageStore(cimage7, ivec2(gl_FragCoord.xy/2), vec4(finalLighting.xyz, lightBrightness));

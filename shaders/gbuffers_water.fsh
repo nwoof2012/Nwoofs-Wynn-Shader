@@ -31,6 +31,8 @@ uniform sampler2D gDepth;
 
 uniform sampler2D noise;
 
+uniform sampler2D water;
+
 uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -65,6 +67,8 @@ in vec3 normals_face_world;
 in vec3 block_centered_relative_pos;
 
 in vec3 foot_pos;
+
+in vec3 world_pos;
 
 in vec4 at_midBlock2;
 
@@ -161,6 +165,36 @@ vec4 normalFromHeight(sampler2D heightTex, vec2 uv, float scale, bool divide) {
     return vec4(normalize2(vec3(dxy * scale / moveStep, 1.0)),height);
 }
 
+vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
+    normal = abs(normal);
+    normal = normal / (normal.x + normal.y + normal.z + 0.0001);
+
+    vec2 uvXZ = worldPos.xz * scale;
+    vec2 uvXY = worldPos.xy * scale;
+    vec2 uvZY = worldPos.zy * scale;
+
+    vec4 texXZ = texture2D(tex,uvXZ) * normal.y;
+    vec4 texXY = texture2D(tex,uvXY) * normal.z;
+    vec4 texZY = texture2D(tex,uvZY) * normal.x;
+
+    return texXZ + texXY + texZY;
+}
+
+vec2 triplanarCoords(vec3 worldPos, vec3 normal, float scale) {
+    normal = abs(normal);
+    normal = normal / (normal.x + normal.y + normal.z + 0.0001);
+
+    vec2 uvXZ = worldPos.xz * scale;
+    vec2 uvXY = worldPos.xy * scale;
+    vec2 uvZY = worldPos.zy * scale;
+
+    vec2 texXZ = uvXZ * normal.y;
+    vec2 texXY = uvXY * normal.z;
+    vec2 texZY = uvZY * normal.x;
+
+    return texXZ + texXY + texZY;
+}
+
 //attribute vec4 mc_Entity;
 
 /* RENDERTARGETS:0,1,2,3,5,10,15*/
@@ -187,13 +221,18 @@ void main() {
 
     mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
 
-    vec3 newNormal = Normal.xyz;
+    vec4 noiseMapA = triplanarTexture(fract((world_pos + ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
+    vec4 noiseMapB = triplanarTexture(fract((world_pos - ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
+
+    vec4 finalNoise = noiseMapA * noiseMapB;
+
+    vec3 newNormal = tbnMatrix * finalNoise.xyz;
 
     newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
 
     albedo.a = 0.75f;
     
-    vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
+    //vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
     
     vec4 Lightmap;
 
