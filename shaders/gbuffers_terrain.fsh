@@ -126,6 +126,10 @@ uniform vec3 shadowLightPosition;
 uniform int viewWidth;
 uniform int viewHeight;
 
+uniform float dhFarPlane;
+
+uniform int dhRenderDistance;
+
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
 const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
@@ -330,7 +334,14 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
-/* RENDERTARGETS:0,1,2,3,5,10,6,12*/
+uniform float near;
+uniform float far;
+
+mediump float linearizeDepth(float depth, float near, float far) {
+    return (near * far) / (depth * (near - far) + far);
+}
+
+/* RENDERTARGETS:0,1,2,13,5,10,6,12*/
 
 void main() {
     vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
@@ -392,7 +403,7 @@ void main() {
 
             mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
-            gl_FragData[6] = vec4(0.0, fogAmount * 0.125, 0.0, 1.0);
+            gl_FragData[6] = vec4(0.0, fogAmount * 0.125, linearizeDepth(depth, near, far), 1.0);
         #else
             //vec3 coords = vec3(0.0);
             // Lighting and voxel-related calculations (optimizations applied)
@@ -438,11 +449,11 @@ void main() {
             mediump float fogStart = fogMin;
             mediump float fogEnd = fogMax;
 
-            mediump float fogAmount = (length(view_pos) - fogStart)/(fogEnd - fogStart);
+            mediump float fogAmount = (length(view_pos)*(far/dhRenderDistance) - fogStart)/(fogEnd - fogStart);
 
             mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
-            gl_FragData[6] = vec4(0.0, fogAmount, 0.0, 1.0);
+            gl_FragData[6] = vec4(0.0, fogAmount, length(foot_pos)/(dhRenderDistance*16), 1.0);
 
             vec3 lightNormal = vec3(0.0);
             float NdotL = 1.0;
@@ -560,7 +571,8 @@ void main() {
             finalLighting.xyz *= 1.5;
             gl_FragData[2] = finalLighting;
         #endif
-        gl_FragData[3] = vec4(distanceFromCamera);
+        //gl_FragData[3] = vec4(distanceFromCamera);
+        gl_FragData[3] = vec4(LightmapCoords, 0.0, 1.0);
         gl_FragData[4] = vec4(0.0, 1.0, isReflective, 1.0);
         gl_FragData[5] = vec4(worldSpaceVertexPosition, 1.0);
         //gl_FragData[6] = vec4(distanceFromCamera, distanceFromCamera/20f, isFoliage * (1 - albedo.a), 1.0);

@@ -226,7 +226,7 @@ void main() {
 
     vec4 finalNoise = noiseMapA * noiseMapB;
 
-    vec3 newNormal = tbnMatrix * finalNoise.xyz;
+    vec3 newNormal = Normal.xyz;
 
     newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
 
@@ -243,6 +243,10 @@ void main() {
         if(albedo.a < 0.75f) {
             albedo.a = 0.0;
         }
+
+        newNormal = tbnMatrix * finalNoise.xyz;
+
+        newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
 
         #ifdef WATER_WAVES
             //newNormal = tbnMatrix * normalFromHeight(cSampler4, TexCoords/WATER_CHUNK_RESOLUTION, 1.0, true).xyz * 0.5 + 0.5;

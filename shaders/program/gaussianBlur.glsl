@@ -33,9 +33,9 @@ vec4 gaussianBlur(sampler2D tex, vec2 pos, float radius, vec2 res) {
         vec4 c11 = texture2D(cSampler9, vec2(clamp(i1, ivec2(0), maxCoord))/vec2(res));
 
         // Interpolate
-        vec4 cx0 = mix(c00, c10, f.x);
-        vec4 cx1 = mix(c01, c11, f.x);
-        return mix(cx0, cx1, f.y);
+        vec4 cx0 = mix2(c00, c10, f.x);
+        vec4 cx1 = mix2(c01, c11, f.x);
+        return mix2(cx0, cx1, f.y);
     }
 
     vec4 gaussianBlur(vec2 uv, float radius) {

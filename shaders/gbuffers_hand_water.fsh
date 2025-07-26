@@ -51,6 +51,8 @@ uniform sampler2D texture;
 
 uniform sampler2D noise;
 
+uniform sampler2D depthtex0;
+
 uniform int heldItemId;
 
 uniform int worldTime;
@@ -81,7 +83,7 @@ float baseFogDistMax;
 float fogMin;
 float fogMax;
 
-/* RENDERTARGETS:0,1,2,4,15,6,12 */
+/* RENDERTARGETS:0,1,2,4,15,6,12,13 */
 
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
@@ -143,12 +145,17 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
+uniform float near;
+uniform float far;
+uniform int dhRenderDistance;
+
 void main() {
     vec4 noiseMap3 = texture2D(noise, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
     
     //vec4 albedo = vec4(isInWater(texture, Color.xyz, TexCoords, noiseMap3.xy, 0.125), texture2D(texture, TexCoords + noiseMap3.xy).a);
     
     vec4 albedo = texture2D(texture, TexCoords) * Color;
+    mediump float depth = texture2D(depthtex0, TexCoords).r;
 
     fogMin = FOG_DAY_DIST_MIN;
     fogMax = FOG_DAY_DIST_MAX;
@@ -166,14 +173,16 @@ void main() {
     mediump float fogStart = fogMin;
     mediump float fogEnd = fogMax;
 
-    mediump float fogAmount = (length(viewSpaceFragPosition) - fogStart)/(fogEnd - fogStart);
+    mediump float fogAmount = (length(viewSpaceFragPosition)*(far/dhRenderDistance * 0.75) - fogStart)/(fogEnd - fogStart);
 
-    gl_FragData[5] = vec4(0.0, fogAmount, 0.0, 1.0);
+    gl_FragData[5] = vec4(0.0, fogAmount, depth, 1.0);
 
     mediump float a;
 
     float isCave = LightmapCoords.r;
     gl_FragData[6] = vec4(isCave, 0.0, 0.0, 1.0);
+
+    gl_FragData[7] = vec4(LightmapCoords, 0.0, 1.0);
 
     if(albedo.a > 0 && heldItemId == 1) {
         a = 1;

@@ -93,3 +93,63 @@ vec3 volumetricLight(vec3 sunPos, sampler2D depth, vec2 UVs, int samples, float 
 
     return result * color;
 }
+
+float getBrightness(vec2 UVs) {
+    vec3 color = texture2D(colortex14, UVs).rgb;
+    return dot(color, vec3(0.299, 0.587, 0.114));
+}
+
+#define BRIGHTNESS_THRESHOLD_MIN 0.45 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+#define BRIGHTNESS_THRESHOLD_MAX 0.55 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+
+#define GODRAY_SAMPLES 4 // [2 4 8 16 24 32 64 128]
+#define GODRAY_DENSITY 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define GODRAY_DECAY 0.95 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+#define GODRAY_EXPOSURE 0.3 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
+float getBrightnessMask(vec3 sunPos, vec2 UVs, sampler2D depthTex) {
+    vec3 normalMap = texture2D(colortex1, UVs).xyz * 2 - 1;
+    vec2 ndc = UVs * 2 - 1;
+    vec3 clipSpace = normalMap;
+    //vec4 viewSpace = gbufferModelView * vec4(clipSpace, 1.0);
+    //viewSpace /= viewSpace.w;
+
+    vec4 worldSpace = normalize2(vec4(clipSpace.xyz, 1.0));
+    worldSpace /= worldSpace.w;
+
+    vec4 sunWorldPos = normalize2(gbufferModelViewInverse * vec4(sunPos, 1.0));
+    sunWorldPos /= sunWorldPos.w;
+
+    float mask = (1 - dot(worldSpace, sunWorldPos)) * step(-sunWorldPos.x, worldSpace.x);
+
+    return mask;
+}
+
+vec3 godrays(vec3 sunPos, sampler2D depthTex, vec2 UVs) {
+    vec3 sunDir = normalize2(sunPos);
+    vec4 sunPos2 = gbufferProjection * vec4(sunDir, 1.0);
+    sunPos2 /= sunPos2.w;
+    vec2 sunScreenPos = sunPos2.xy * 0.5 + 0.5;
+
+    float depth = texture2D(depthTex, UVs).r;
+    float occlusion = step(1.0, depth);
+
+    float brightnessMask = smoothstep(BRIGHTNESS_THRESHOLD_MIN, BRIGHTNESS_THRESHOLD_MAX, getBrightness(UVs));
+
+    vec2 delta = UVs - sunScreenPos;
+    float decay = GODRAY_DECAY;
+    float exposure = GODRAY_EXPOSURE;
+    float density = GODRAY_DENSITY;
+
+    vec3 lightAlbedo = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
+
+    vec3 color = vec3(0.0);
+    vec2 sampleUV = UVs;
+    for(int i = 0; i < GODRAY_SAMPLES; i++) {
+        sampleUV -= delta * density / float(GODRAY_SAMPLES);
+        color += step(1.0, texture2D(depthTex, sampleUV).r) * decay * lightAlbedo;
+        decay *= decay;
+    }
+    color *= exposure;
+    return color;
+}

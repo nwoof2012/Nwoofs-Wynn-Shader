@@ -395,9 +395,15 @@ screen.SKY_SUNSET = §6Sunrise§7/§6Sunset
 screen.SKY_CLOUDS = §fClouds
 
 screen.FOG = §7Fog
+
 screen.FOG_DAY = §bDay
+screen.FOG_DAY_RAIN = §9Rain
+
 screen.FOG_NIGHT = §9Night
+screen.FOG_NIGHT_RAIN = §9Rain
+
 screen.FOG_SUNSET = §6Sunrise§7/§6Sunset
+screen.FOG_SUNSET_RAIN = §9Rain
 
 screen.LIGHTING=§eLighting
 

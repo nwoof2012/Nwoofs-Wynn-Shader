@@ -56,6 +56,8 @@ uniform sampler2D noises;
 
 uniform sampler2D colortex0;
 
+uniform int dhRenderDistance;
+
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
@@ -75,7 +77,7 @@ uniform float far;
 uniform float dhNearPlane;
 uniform float dhFarPlane;
 
-/* RENDERTARGETS:0,2,6,5,1,12,15 */
+/* RENDERTARGETS:0,2,6,5,1,12,15,13 */
 layout(location = 0) out vec4 outColor0;
 layout(location = 1) out vec4 outColor2;
 layout(location = 2) out vec4 fogOut;
@@ -83,6 +85,8 @@ layout(location = 3) out vec4 isWater;
 layout(location = 4) out vec4 normal;
 layout(location = 5) out vec4 dataTex0;
 layout(location = 6) out vec4 camDist;
+
+layout (rgba8) uniform image2D cimage11;
 
 in vec4 blockColor;
 in vec2 lightmapCoords;
@@ -109,6 +113,7 @@ in vec3 worldSpaceVertexPosition;
 in vec3 normals_face_world;
 
 in vec3 foot_pos;
+in vec3 view_pos;
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -234,6 +239,26 @@ float baseFogDistMax;
 float fogMin;
 float fogMax;
 
+float AOMask(sampler2D depth, vec2 UVs, int kernelSize) {
+    float dhDepth = texture2D(depth, UVs).xyz;
+    float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
+
+    float depthDifference = 0f;
+    float kernel = kernelSize;
+    for(int i = 0; i < kernelSize; i++) {
+        float x = (i / sqrt(kernel)) - sqrt(kernel)/2; // Integer division for x
+        float y = mod((i / sqrt(kernel)), sqrt(kernel)) - sqrt(kernel)/2; // Integer division for y
+        vec2 offset = vec2(x,y)/1080;
+        float offsetDepth = calcLinearDepth(texture2D(depth, UVs + offset).r, dhNearPlane, dhFarPlane);
+        //float depthDist = abs(centerDepth - offsetDepth) * distance(vec3(0.0), footPos) * 50;
+        if(abs(centerDepth - offsetDepth) > 1) continue;
+        depthDifference += abs(centerDepth - offsetDepth);
+        //depthDifference += mix2(depthDist * (1 - smoothstep(0.0, AO_THRESHOLD, depthDist)),0.0, step(offsetDepth, 0.999));
+    }
+
+    return clamp(1 - pow2((depthDifference/kernel),0.5)*AO_STRENGTH, MIN_LIGHT, 1);
+}
+
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
         fogMin = FOG_SE_DIST_MIN;
@@ -316,6 +341,33 @@ void main() {
     mediump float dhDepth = gl_FragCoord.z;
     mediump float depthLinear = calcDepth(depth, near, far*4);
     mediump float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
+    
+    vec2 dh_ndc = texCoord * 2.0 + 1.0;
+    vec4 dh_clip_pos = vec4(dh_ndc, dhDepth, 1.0);
+    vec4 dh_view_pos = gbufferProjectionInverse * dh_clip_pos;
+    vec3 dh_foot_pos = (gbufferModelViewInverse * dh_view_pos).xyz;
+
+    mediump float dhDepth2 = length(dh_foot_pos);
+
+    fogMin = FOG_DAY_DIST_MIN;
+    fogMax = FOG_DAY_DIST_MAX;
+
+    baseFogDistMin = fogMin;
+    baseFogDistMax = fogMax;
+
+    if(worldTime/(timePhase + 1) < 500f) {
+        baseFogDistMin = fogMin;
+        baseFogDistMax = fogMax;
+    }
+
+    mediump float fogStart = fogMin;
+    mediump float fogEnd = fogMax;
+
+    mediump float fogAmount = (length(viewSpaceFragPosition)*(far/dhRenderDistance) - fogStart)/(fogEnd - fogStart);
+
+    mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
+
+    fogOut = vec4(0.0, fogAmount, dhDepth, 1.0);
 
     if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
         mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
@@ -328,32 +380,13 @@ void main() {
             outputColor.xyz = blindEffect(outputColor.xyz);
         }
 
-        fogMin = FOG_DAY_DIST_MIN;
-        fogMax = FOG_DAY_DIST_MAX;
-
-        baseFogDistMin = fogMin;
-        baseFogDistMax = fogMax;
-
-        if(worldTime/(timePhase + 1) < 500f) {
-            baseFogDistMin = fogMin;
-            baseFogDistMax = fogMax;
-        }
-
-        mediump float fogStart = fogMin;
-        mediump float fogEnd = fogMax;
-
-        mediump float fogAmount = (depthLinear - fogStart)/(fogEnd - fogStart);
-
-        mediump float fogBlend = pow2(smoothstep(0.9,1.0,dhDepth),4.2);
-
-        fogOut = vec4(0.0, fogBlend, 0.0, 1.0);
         //outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
 
         outColor0 = vec4(pow2(outputColor.xyz,vec3(1/GAMMA)), alpha);
 
         normal = vec4(worldNormal * 0.5 + 0.5, 1.0);
         dataTex0 = vec4(1.0);
-        camDist = vec4(distanceFromCamera, dhDepth, 0.0, 1.0);
+        camDist = vec4(distanceFromCamera, dhDepth, far/dhFarPlane, 1.0);
 
         outColor2 = vec4(vec3(0.0), 1.0f);
         #ifndef SCENE_AWARE_LIGHTING
@@ -370,5 +403,11 @@ void main() {
 
             outColor2 = mix2(vec4(0.0), vec4(light_color, 1.0), step(0.999, depth));
         #endif
+    } else {
+        camDist = vec4(0.0, dhDepth, dhFarPlane, 1.0);
     }
+
+    gl_FragData[7] = vec4(lightmapCoords, 0.0, 1.0);
+
+    imageStore(cimage11, ivec2(gl_FragCoord.xy/10), vec4(dhDepth));
 }

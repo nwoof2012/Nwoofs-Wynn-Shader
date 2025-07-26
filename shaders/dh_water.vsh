@@ -56,6 +56,8 @@ out vec3 normals_face_world;
 
 out vec3 foot_pos;
 
+out vec3 world_pos;
+
 in vec3 at_midBlock;
 
 in vec3 cameraPosition;
@@ -139,7 +141,7 @@ void main() {
 
 	vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
 	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
-	vec3 world_pos = foot_pos + cameraPosition;
+	world_pos = foot_pos + cameraPosition;
 	
 	if(mat == DH_BLOCK_WATER) {
 		#ifdef WATER_WAVES

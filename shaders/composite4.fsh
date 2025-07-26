@@ -108,6 +108,9 @@ uniform sampler3D cSampler1;
 uniform sampler3D cSampler8;
 layout (rgba8) uniform image2D cimage7;
 
+uniform sampler2D cSampler11;
+uniform sampler2D cSampler12;
+
 uniform sampler2D noisetex;
 
 uniform mat4 gbufferProjectionInverse;
@@ -155,6 +158,8 @@ uniform sampler2D colortex11;
 uniform sampler2D colortex12;
 
 uniform sampler2D colortex15;
+
+uniform int dhRenderDistance;
 
 uniform float aspectRatio;
 
@@ -229,6 +234,8 @@ float fogIntensity;
 float baseFogDHTransition;
 
 float fogDHTransition;
+
+uniform float dhFarPlane;
 
 uniform float rainStrength;
 
@@ -575,6 +582,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     float illumination = texture2D(colortex2,uv).a;
     #ifdef VOLUMETRIC_LIGHTING
         //lightColor += volumetricLight(sunPosition, depthtex1, TexCoords, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
+        //lightColor += vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B) * texture2D(colortex14,uv).x;
     #endif
 
     #ifdef SCENE_AWARE_LIGHTING
@@ -798,6 +806,10 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         sum = mix2(lightColor,sum,bloomLerp);
     #endif
 
+    if(depth == 1.0) {
+        illumination *= clamp(normalize2(mat3(gbufferModelViewInverse) * sunPosition).z,0,2) * 0.5;
+    }
+
     sum *= BLOOM_INTENSITY + 0.5;
 
     return vec4(pow2(sum,vec3(GAMMA)), illumination);
@@ -892,14 +904,14 @@ void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
         fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
         fogIntensity = FOG_SE_INTENSITY;
-        fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+        fogDHTransition = far/dhFarPlane;
     } else {
         vec3 fogAlbedoDry = vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
         fogAlbedo = vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
         float fogRain = FOG_DAY_RAIN_INTENSITY * FOG_RAIN_MULTIPLIER;
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
         float fogDHTransitionDry = far/DH_FOG_DAY_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
-        fogDHTransition = mix2(fogDHTransitionDry, far/DH_FOG_DAY_RAIN_DIST_MAX,rainStrength);
+        fogDHTransition = far/dhFarPlane;
     }
 }
 
@@ -912,7 +924,7 @@ void sunsetFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
         fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
         fogIntensity = FOG_SE_INTENSITY;
-        fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+        fogDHTransition = far/dhFarPlane;
     } else {
         vec3 fogAlbedoDry = mix3(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
         vec3 fogAlbedoWet = mix3(vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), sunsetLerp, 0.5);
@@ -921,7 +933,7 @@ void sunsetFunc(float time, float timeFactor) {
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
         float fogDHTransitionDry = far/mix3(DH_FOG_DAY_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
         float fogDHTransitionWet = far/mix3(DH_FOG_DAY_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_NIGHT_RAIN_DIST_MAX, sunsetLerp, 0.5);
-        fogDHTransition = mix2(fogDHTransitionDry, fogDHTransitionWet,rainStrength);
+        fogDHTransition = far/dhFarPlane;
     }
 }
 
@@ -941,7 +953,7 @@ void nightFunc(float time, float timeFactor) {
         float fogRain = FOG_NIGHT_RAIN_INTENSITY * FOG_RAIN_MULTIPLIER;
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
         float fogDHTransitionDry = far/DH_FOG_NIGHT_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
-        fogDHTransition = mix2(fogDHTransitionDry, far/DH_FOG_NIGHT_RAIN_DIST_MAX,rainStrength);
+        fogDHTransition = far/dhFarPlane;
     }
 }
 
@@ -963,7 +975,7 @@ void dawnFunc(float time, float timeFactor) {
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
         float fogDHTransitionDry = far/mix3(DH_FOG_NIGHT_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_DAY_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
         float fogDHTransitionWet = far/mix3(DH_FOG_NIGHT_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_DAY_RAIN_DIST_MAX, sunsetLerp, 0.5);
-        fogDHTransition = mix2(fogDHTransitionDry, fogDHTransitionWet,rainStrength);
+        fogDHTransition = far/dhFarPlane;
     }
 }
 
@@ -1029,6 +1041,12 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
         waterColor = vec3(0.0f, 0.2f, 0.22f);
         return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.85),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85)), vec3(GAMMA));
         //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
+    }
+
+    if(texture2D(depthtex0,TexCoords).x == 1.0) {
+        underwaterDepth = texture2D(cSampler11, TexCoords2).x;
+        underwaterDepth2 = texture2D(cSampler12, TexCoords2).x;
+        return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
     }
     return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
     //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
@@ -1195,7 +1213,7 @@ float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     float foamThreshold = clamp(1.25 * distanceFactor, 0.0, 1.0);
     float shoreDistance = clamp(depth * 5.0, 0.0, 1.0);
     float noiseA = triplanarTexture(worldCoords*0.125 + vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, noiseb, 1.0).r * 2 - 1;
-    float noiseB = triplanarTexture(worldCoords*0.25 - vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, colortex13, 1.0).r * 2 - 1;
+    float noiseB = triplanarTexture(worldCoords*0.25 - vec3(0.001 * frameTimeCounter), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, noiseb, 1.0).r * 2 - 1;
     float noise = (noiseA + noiseB)/2;
 
     if(depth > 0.5 * distanceFactor + noise * 0.1) return 0;
@@ -1364,6 +1382,8 @@ void main() {
 
         mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
+        float planeTransition = far/dhFarPlane;
+
         //vec4 noiseMap = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
         //vec4 noiseMap2 = texture2D(colortex9, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
 
@@ -1417,7 +1437,7 @@ void main() {
         mediump float isRain = texture2D(colortex3, TexCoords).r;
 
         if(waterTest > 0) {
-            if(underwaterDepth2 - underwaterDepth > 0f || Depth >= 1.0)
+            if(underwaterDepth2 - underwaterDepth > 0f)
             {
                 if(Depth >= 1.0) {
                     Albedo = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/GAMMA));
@@ -1604,7 +1624,20 @@ void main() {
             timeFunctionFrag();
         }
 
+        float occlusion = step(1.0, Depth2);
+
+        float brightnessMask = 0.0; //getBrightnessMask(sunPosition, TexCoords, depthtex1); // smoothstep(BRIGHTNESS_THRESHOLD_MIN, BRIGHTNESS_THRESHOLD_MAX, getBrightnessMask(sunPosition, TexCoords, depthtex1));
+
         //Diffuse *= currentColor;
+
+        mediump float minLight = MIN_LIGHT;
+        mediump float seMinLight = SE_MIN_LIGHT;
+
+        mediump float maxLight = MAX_LIGHT;
+        mediump float seMaxLight = SE_MAX_LIGHT;
+        
+        vec3 LightmapColor;
+        float lightBrightness2 = 0;
 
         if(Depth2 == 1.0f){
             /*mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
@@ -1650,7 +1683,7 @@ void main() {
 
                     //lightmapColor = max(vec3(seMinLight), lightmapColor);
 
-                    vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+                    vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
                     mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
                     //vec3 Diffuse2 = texture2D(colortex0, TexCoords.xy).rgb;
                     //Diffuse = mix2(Diffuse, Diffuse/vec3(lightBrightness),0.75);
@@ -1670,11 +1703,20 @@ void main() {
                     float aoValue = 1;
                     #ifdef AO
                         //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
-                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, colortex15, colortex1);
+                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, colortex6, colortex1);
                     #endif
                     vec3 shadowLerp = GetShadow(Depth2);
 
                     lightmapColor *= vec3(3.5025);
+
+                    vec3 rawLight = lightmapColor;
+                    //LightmapColor = mix2(LightmapColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT, 1 - shadowLerp);
+                    /*if(maxLight < 4.1f) {
+                        float lightMagnitude = length(lightmapColor);
+                        lightMagnitude = clamp(lightMagnitude, MIN_LIGHT, maxLight);
+                        lightmapColor = clamp(lightmapColor, vec3(0.0),normalize2(lightmapColor) * lightMagnitude);
+                    }*/
+                    //lightmapColor = max(currentLightColor,lightmapColor * lightBrightness2 * 8)/128;
 
                     vec3 Diffuse3 = mix2(Diffuse * ((mix2(lightmapColor,vec3(dot(lightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient)) * aoValue,Diffuse * ((NdotL * shadowLerp + Ambient)) * aoValue,0.25);
                     //Diffuse = mix2(Diffuse, seColor, 0.01);
@@ -1685,8 +1727,8 @@ void main() {
 
                     Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
 
-                    float fogFactor = clamp(texture2D(colortex6, TexCoords).y,0,1);
-                    Diffuse = mix2(Diffuse, fogAlbedo, clamp(smoothstep(fogDHTransition,1.0,fogFactor) * fogIntensity * (1 - fogDHTransition) + fogDHTransition,0.0,fogIntensity));
+                    float fogFactor = clamp(smoothstep(0.0, 1.0,texture2D(colortex6, TexCoords).y*(dhRenderDistance/far * 0.25) + (far/dhRenderDistance)),0,min(fogIntensity,1.0));
+                    Diffuse = mix2(Diffuse, fogAlbedo, fogFactor);
                 } else {
                     /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
                         LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
@@ -1701,51 +1743,73 @@ void main() {
 
                     lightmapColor = mix2(lightmapColor, normalize2(lightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(lightmapColor, lightmapColor)));
 
+                    vec3 rawLight = lightmapColor;
+                    //LightmapColor = mix2(LightmapColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT, 1 - shadowLerp);
+                    if(maxLight < 4.1f) {
+                        float lightMagnitude = length(lightmapColor);
+                        lightMagnitude = clamp(lightMagnitude, MIN_LIGHT, maxLight);
+                        lightmapColor = clamp(lightmapColor, vec3(0.0),normalize2(lightmapColor) * lightMagnitude);
+                    }
+                    //lightmapColor = max(currentLightColor,lightmapColor * lightBrightness2 * 8)/128;
+
                     lightmapColor = max(lightmapColor, vec3(minLight));
 
-                    vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+                    vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
                     mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
 
                     float aoValue = 1;
+                    #ifdef AO
+                        //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
+                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, colortex6, colortex1);
+                    #endif
                     vec3 shadowLerp = GetShadow(Depth2);
 
-                    Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
+                    //Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
 
                     //Diffuse *= lightBrightness;
 
                     //vec3 LightmapColor = vec3(1.0);
 
                     //Diffuse.xyz += lightmapColor;
-
+                    
+                    //if(waterTest == 0) {
+                        Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));   
+                    //}
                     if(waterTest > 0) {
                         Albedo = waterFunction(TexCoords, finalNoise, lightBrightness);
+                        Diffuse.xyz = mix2(Diffuse.xyz, Albedo, 0.95);
                         #ifdef WATER_WAVES
                             Diffuse.xyz = mix3(Diffuse.xyz * 0.5, Diffuse.xyz, Diffuse.xyz * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
                         #endif
                         //Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
-                        #if SSR == 1 || SSR = 2
+                        /*#if SSR == 1 || SSR = 2
                             vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
-                            vec4 Albedo4 = waterReflectionsDH(Albedo.xyz,TexCoords,refNormal, finalNoise);
-                            Albedo.xyz = Albedo4.xyz;
+                            vec4 Albedo4 = waterReflectionsDH(Diffuse.xyz,TexCoords,refNormal, finalNoise);
+                            Diffuse.xyz = Albedo4.xyz;
                             albedoAlpha = Albedo4.a;
-                            //Diffuse3.xyz *= lightBrightness;
-                        #endif
+                            //Diffuse.xyz *= lightBrightness;
+                        #endif*/
                     }
 
-                    lightmapColor = max(currentLightColor,lightmapColor * lightBrightness2 * 8)/128;
-                    vec3 Diffuse3 = Diffuse.xyz * lightmapColor; //mix2(Albedo * (lightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
+                    //lightmapColor = max(currentLightColor,lightmapColor * lightBrightness2 * 8)/128;
+                    vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
+                    vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),MIN_LIGHT, MAX_LIGHT), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT, clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue; //mix2(Albedo * (lightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
                     //Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
+
+                    Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
+
+                    Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), texture2D(colortex14,TexCoords).x * brightnessMask);
 
                     Diffuse.xyz = mix2(unreal(Diffuse3.xyz),aces(Diffuse3.xyz),0.75);
 
-                    float fogFactor = clamp(texture2D(colortex6, TexCoords).y,0,1);
-                    Diffuse = mix2(Diffuse, fogAlbedo, clamp(smoothstep(fogDHTransition,1.0,fogFactor * fogIntensity) * (1 - fogDHTransition) + fogDHTransition,0,fogIntensity));
+                    float fogFactor = clamp(smoothstep(0.0, 1.0,texture2D(colortex6, TexCoords).y*(dhRenderDistance/far * 0.25) + (far/dhRenderDistance)),0,min(fogIntensity,1.0));
+                    Diffuse = mix2(Diffuse, fogAlbedo, fogFactor);
                 }
                 /*if(waterTest > 0f) {
                     Diffuse = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/2.2));
                 }*/
 
-                if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
+                //if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
                 Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 #if VIBRANT_MODE == 1
                     if(isBiomeEnd) {
@@ -1776,11 +1840,6 @@ void main() {
             return;
         }
 
-        mediump float minLight = MIN_LIGHT;
-        mediump float seMinLight = SE_MIN_LIGHT;
-        
-        vec3 LightmapColor;
-        float lightBrightness2 = 0;
         //vec3 Lightmap = bloom();
 
         /*#ifdef PATH_TRACING
@@ -1815,7 +1874,7 @@ void main() {
             LightmapColor = mix2(LightmapColor, normalize2(LightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(LightmapColor, LightmapColor)));
         }
 
-        vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+        vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
         mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.0f);
 
         /*if((Lightmap.r + Lightmap.g + Lightmap.b)/3 < 0) {
@@ -1839,9 +1898,6 @@ void main() {
         } else {
             Diffuse.xyz = mix2(Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor),LightmapColor,Lightmap.r * vec3(0.0625));
         }*/
-
-        mediump float maxLight = MAX_LIGHT;
-        mediump float seMaxLight = SE_MAX_LIGHT;
         
         vec3 shadowLerp = GetShadow(Depth2);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
         if(waterTest > 0) {
@@ -1851,7 +1907,7 @@ void main() {
         float aoValue = 1;
         #ifdef AO
             //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
-            aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
+            aoValue = calcAO(TexCoords, foot_pos, 100, colortex12, colortex1);
         #endif
 
         float timer = 0;
@@ -1916,7 +1972,7 @@ void main() {
                 lightMagnitude = clamp(lightMagnitude, SE_MIN_LIGHT, seMaxLight);
                 LightmapColor = clamp(LightmapColor, vec3(0.0),normalize2(LightmapColor) * lightMagnitude);
             }
-            LightmapColor *= vec3(3.5025);
+            LightmapColor *= vec3(3.5025) * smoothstep(0.0, 0.1, LightmapColor);
             /*if(length(LightmapColor.xyz) > 1.0) {
                 LightmapColor.xyz = normalize(LightmapColor.xyz);
             }*/
@@ -1997,8 +2053,8 @@ void main() {
             Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
         //}
 
-        float fogFactor = texture2D(colortex6, TexCoords).y;
-        Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, clamp(smoothstep(0.0,fogDHTransition,fogFactor * fogIntensity) * fogDHTransition,0,fogIntensity * fogDHTransition));
+        float fogFactor = clamp(smoothstep(0,1,texture2D(colortex6, TexCoords).y)* (dhRenderDistance/far),0,min(fogIntensity,1.0));
+        Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, fogFactor);
 
 
         /*if(waterTest > 0) {

@@ -68,8 +68,10 @@ void main() {
     vec4 viewPos = gl_ModelViewMatrix * vec4(gl_Position.xyz, 1.0);
     vViewDir = normalize(-viewPos.xyz);
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
-    LightmapCoords = vaUV2;
-
+    
+    LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
+    LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
+    
     foot_pos = (gbufferModelViewInverse * vec4(viewPos.xyz, 1.0)).xyz;
 
     FoV = vec2(1.0);

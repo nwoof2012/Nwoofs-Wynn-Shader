@@ -166,6 +166,10 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
+uniform float near;
+uniform float far;
+uniform int dhRenderDistance;
+
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
     mediump float depth = texture2D(depthtex0, TexCoords).r;
@@ -194,9 +198,9 @@ void main() {
     mediump float fogStart = fogMin;
     mediump float fogEnd = fogMax;
 
-    mediump float fogAmount = (length(viewSpaceFragPosition) - fogStart)/(fogEnd - fogStart);
+    mediump float fogAmount = (length(viewSpaceFragPosition)*(far/dhRenderDistance * 0.75) - fogStart)/(fogEnd - fogStart);
 
-    gl_FragData[6] = vec4(0.0, fogAmount, 0.0, 1.0);
+    gl_FragData[6] = vec4(0.0, fogAmount, depth, 1.0);
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);

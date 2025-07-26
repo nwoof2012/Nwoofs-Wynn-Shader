@@ -39,6 +39,8 @@ uniform sampler2D colortex0;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex0;
 
+uniform sampler2D water;
+
 uniform mat4 gbufferProjectionInverse;
 
 uniform mat4 gbufferModelViewInverse;
@@ -74,11 +76,37 @@ in vec3 normals_face_world;
 
 in vec3 foot_pos;
 
-/* RENDERTARGETS:0,1,2,3,5,12,15 */
+in vec3 world_pos;
+
+in float waterShadingHeight;
+
+uniform float near;
+uniform float far;
+uniform float dhNearPlane;
+uniform float dhFarPlane;
+
+layout (rgba8) uniform image2D cimage12;
+
+/* RENDERTARGETS:0,1,2,3,5,12,15,14 */
 
 mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
     vec3 bitangent = cross(tangent, normal);
     return mat3(tangent, bitangent, normal);
+}
+
+vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
+    normal = abs(normal);
+    normal = normal / (normal.x + normal.y + normal.z + 0.0001);
+
+    vec2 uvXZ = worldPos.xz * scale;
+    vec2 uvXY = worldPos.xy * scale;
+    vec2 uvZY = worldPos.zy * scale;
+
+    vec4 texXZ = texture2D(tex,uvXZ) * normal.y;
+    vec4 texXY = texture2D(tex,uvXY) * normal.z;
+    vec4 texZY = texture2D(tex,uvZY) * normal.x;
+
+    return texXZ + texXY + texZY;
 }
 
 void main() {
@@ -105,8 +133,8 @@ void main() {
 
         mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
         
-        vec4 noiseMap = texture2D(noise, TexCoords + (sin(TexCoords.xy*32f + ((frameCounter)/90f)*0.0125f)/2 + 1)*2f);
-        vec4 noiseMap2 = texture2D(noise, TexCoords - (sin(TexCoords.xy*16f + ((frameCounter)/90f)*0.0125f)/2 + 1)*2f);
+        //vec4 noiseMap = texture2D(noise, TexCoords + (sin(TexCoords.xy*32f + ((frameCounter)/90f)*0.0125f)/2 + 1)*2f);
+        //vec4 noiseMap2 = texture2D(noise, TexCoords - (sin(TexCoords.xy*16f + ((frameCounter)/90f)*0.0125f)/2 + 1)*2f);
 
         vec4 albedo = texture2D(texture, TexCoords) * Color;
         vec3 Albedo = pow2(albedo.xyz, vec3(GAMMA));
@@ -118,14 +146,14 @@ void main() {
         //mediump float depthLinear = calcDepth(depth, near, far*4);
         //mediump float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
         
-        vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
+        //vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
         
         if(mat == DH_BLOCK_WATER) {
             Albedo = vec3(0.0f, 0.33f, 0.44f);
             albedo.a = 0.0f;
         }
 
-        vec3 newNormal = tbnNormalTangent(Normal.xyz, Tangent) * Normal.xyz;
+        //vec3 newNormal = tbnNormalTangent(Normal.xyz, Tangent) * Normal.xyz;
 
         /*if(isBiomeEnd) {
             albedo.xyz = mix2(albedo.xyz, vec3(dot(albedo.xyz, vec3(0.333))),0.5);
@@ -169,7 +197,6 @@ void main() {
         }
 
         gl_FragData[0] = vec4(pow2(Albedo,vec3(1/GAMMA)), albedo.a);
-        gl_FragData[1] = vec4(newNormal, 1.0);
         /*#ifndef SCENE_AWARE_LIGHTING
             gl_FragData[2] = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
         #else
@@ -185,11 +212,54 @@ void main() {
             gl_FragData[2] = vec4(light_color, 1.0);
         #endif*/
         gl_FragData[3] = vec4(1.0);
-        gl_FragData[6] = vec4(distanceFromCamera, dhDepth, 0.0, 1.0);
+        gl_FragData[6] = vec4(distanceFromCamera, dhDepth, waterShadingHeight, 1.0);
+
+        gl_FragData[7] = vec4(dhDepth, 0.0, 0.0, 1.0);
+
+        imageStore(cimage12, ivec2(gl_FragCoord.xy/10), vec4(dhDepth));
+
         if(mat == DH_BLOCK_WATER) {
             gl_FragData[4] = vec4(1.0, 0.0, 0.0, 1.0);
         } else {
             gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
         }
+
+        vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
+
+        mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
+
+        vec4 noiseMapA = triplanarTexture(fract((world_pos + ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
+        vec4 noiseMapB = triplanarTexture(fract((world_pos - ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
+
+        vec4 finalNoise = noiseMapA * noiseMapB;
+
+        vec3 newNormal = Normal.xyz;
+
+        newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+
+        albedo.a = 0.75f;
+        
+        //vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
+        
+        vec4 Lightmap;
+
+        if(mat == DH_BLOCK_WATER) {
+            albedo.xyz = mix2(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),pow2(finalNoise.x,5));
+            albedo.a = 0.0f;//mix2(0.5f,1f,pow2(finalNoise.x,5));
+            Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
+            if(albedo.a < 0.75f) {
+                albedo.a = 0.0;
+            }
+
+            //newNormal = tbnMatrix * finalNoise.xyz;
+
+            newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+
+            #ifdef WATER_WAVES
+                //newNormal = tbnMatrix * normalFromHeight(cSampler4, TexCoords/WATER_CHUNK_RESOLUTION, 1.0, true).xyz * 0.5 + 0.5;
+                //newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+            #endif
+        }
+        gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
     }
 }

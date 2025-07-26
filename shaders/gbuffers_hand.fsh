@@ -52,6 +52,8 @@ uniform sampler2D texture;
 
 uniform sampler2D noise;
 
+uniform sampler2D depthtex0;
+
 uniform int heldItemId;
 
 uniform int worldTime;
@@ -109,7 +111,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
-/* RENDERTARGETS:0,1,2,4,5,15,6,12 */
+/* RENDERTARGETS:0,1,2,13,5,15,6,12 */
 
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
@@ -171,8 +173,13 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
+uniform float near;
+uniform float far;
+uniform int dhRenderDistance;
+
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
+    mediump float depth = texture2D(depthtex0, TexCoords).r;
     
     mediump float a;
 
@@ -197,14 +204,17 @@ void main() {
 
     timeFunctionFrag();
 
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
     mediump float fogStart = fogMin;
     mediump float fogEnd = fogMax;
 
-    mediump float fogAmount = (length(viewSpaceFragPosition) - fogStart)/(fogEnd - fogStart);
+    mediump float fogAmount = (length(viewSpaceFragPosition)*(far/dhRenderDistance * 0.75) - fogStart)/(fogEnd - fogStart);
 
-    gl_FragData[6] = vec4(0.0, fogAmount, 0.0, 1.0);
+    gl_FragData[6] = vec4(0.0, fogAmount, depth, 1.0);
 
     float isCave = LightmapCoords.r;
+    gl_FragData[4] = vec4(LightmapCoords, 0.0, 1.0);
     gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
     
     gl_FragData[0] = albedo;
@@ -218,6 +228,6 @@ void main() {
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(a);
-    gl_FragData[4] = vec4(0.0, 1.0, 0.0, 1.0);
-    gl_FragData[5] = vec4(1.0);
+    //gl_FragData[4] = vec4(0.0, 1.0, 0.0, 1.0);
+    gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }
