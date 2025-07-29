@@ -379,6 +379,45 @@ option.VIBRANT_MODE.comment=§6Enables LUTs for vibrant color scheme
 option.VOLUMETRIC_LIGHTING=§6Volumetric Lighting
 option.VOLUMETRIC_LIGHTING.comment=§9Enables volumetric godrays from the sun
 
+option.VL_SAMPLES=§6Volumetric Light Samples
+option.VL_SAMPLES.comment=§9Adjusts the sample count for Volumetric Lighting
+
+option.VL_EXPOSURE=§6Volumetric Light Exposure
+option.VL_EXPOSURE.comment=§9Adjusts the intensity of Volumetric Lighting
+
+option.VL_COLOR_R=§cRed
+
+option.VL_COLOR_G=§aGreen
+
+option.VL_COLOR_B=§9Blue
+
+option.LIGHT_COLOR_R=§cLighting Red
+option.LIGHT_COLOR_G=§aLighting Green
+option.LIGHT_COLOR_B=§9Lighting Blue
+
+option.TONEMAP_SAL=§7Tonemap
+value.TONEMAP_SAL.0=§cOff
+value.TONEMAP_SAL.1=Reinhard
+value.TONEMAP_SAL.2=Aces
+value.TONEMAP_SAL.3=Lottes
+value.TONEMAP_SAL.4=Unreal
+value.TONEMAP_SAL.5=Uncharted 2
+value.TONEMAP_SAL.6=Nwoof
+option.TONEMAP_SAL.comment=§6Changes the screen's tonemapping curve
+
+option.TONEMAP_NORM=§7Tonemap
+value.TONEMAP_NORM.0=§cOff
+value.TONEMAP_NORM.1=Reinhard
+value.TONEMAP_NORM.2=Aces
+value.TONEMAP_NORM.3=Lottes
+value.TONEMAP_NORM.4=Unreal
+value.TONEMAP_NORM.5=Uncharted 2
+value.TONEMAP_NORM.6=Nwoof
+option.TONEMAP_NORM.comment=§6Changes the screen's tonemapping curve
+
+option.BRIGHTNESS=§eBrightness
+option.BRIGHTNESS.comment=§9Adjusts the brightness of the scene's lighting
+
 screen.PERFORMANCE=§cPerformance
 
 screen.SKY = §bSky
@@ -413,7 +452,13 @@ screen.CAMERA = §fCamera
 
 screen.WORLD = §aWorld
 
+screen.VOLUMETRIC_LIGHT = §6Volumetric Lighting
+
 screen.SPECIAL_LIGHTING = §eAdditional Options
+
+screen.NORMAL_LIGHTING = §bNormal Light Settings
+
+screen.SAL_LIGHTING = §5Scene Aware Lighting Settings
 
 screen.SHADOW_SETTINGS = §7Shadows
 

@@ -19,6 +19,8 @@ uniform sampler2D texture;
 
 uniform int heldItemId;
 
+uniform mat4 gbufferModelViewInverse;
+
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
     const mediump float P = 5.06f;
@@ -43,7 +45,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
-/* DRAWBUFFERS:0126 */
+/* RENDERTARGETS:0,1,2,6,5 */
 
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
@@ -63,7 +65,7 @@ void main() {
     }
     
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
+    gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, 1.0f);
     #ifdef SCENE_AWARE_LIGHTING
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
@@ -72,4 +74,5 @@ void main() {
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(a,0.0,0.0,1.0);
+    gl_FragData[4] = vec4(0.0,1.0,1.0,1.0);
 }

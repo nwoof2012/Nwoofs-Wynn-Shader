@@ -227,7 +227,7 @@ void main() {
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
-    gl_FragData[3] = vec4(a);
+    //gl_FragData[3] = vec4(a);
     //gl_FragData[4] = vec4(0.0, 1.0, 0.0, 1.0);
     gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }

@@ -216,7 +216,8 @@ void main() {
     gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
 
     float isCave = LightmapCoords.g;
-    gl_FragData[7] = vec4(LightmapCoords, 0.0, 1.0);
+    gl_FragData[5] = vec4(LightmapCoords, 0.0, 1.0);
+    gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
 
     #ifdef SCENE_AWARE_LIGHTING
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
@@ -228,10 +229,11 @@ void main() {
     #endif
     gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
     gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
-    #ifdef ENTITY_SHADOWS
+    /*#ifdef ENTITY_SHADOWS
         gl_FragData[5] = vec4(worldPosition, 1.0);
     #else
         gl_FragData[5] = vec4(0.0);
-    #endif
+    #endif*/
     //gl_FragData[3] = vec4(a);
+    gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }

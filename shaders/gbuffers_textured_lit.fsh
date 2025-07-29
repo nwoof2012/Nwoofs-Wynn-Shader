@@ -15,10 +15,12 @@ varying vec4 Color;
 uniform sampler2D colortex0;
 uniform sampler2D texture;
 
+uniform mat4 gbufferModelViewInverse;
+
 varying vec3 Normal;
 varying vec2 LightmapCoords;
 
-/* DRAWBUFFERS:01265 */
+/* RENDERTARGETS:0,1,2,6,5 */
 void main() {
     vec4 color = texture2D(texture, TexCoords) * Color;
 
@@ -39,7 +41,7 @@ void main() {
     }
     
     gl_FragData[0] = color;
-    gl_FragData[1] = vec4(Normal, 1.0);
+    gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5, 1.0);
     #ifdef SCENE_AWARE_LIGHTING
         gl_FragData[2] = vec4(color.xyz, 1.0f);
     #else

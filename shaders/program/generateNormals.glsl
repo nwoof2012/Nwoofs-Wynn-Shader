@@ -47,7 +47,6 @@ mediump float GetDif(float lOriginalAlbedo, vec2 offsetCoord, sampler2D tex) {
 }
 
 void GenerateNormals(inout vec3 normal, vec3 color, sampler2D tex, mat3 tbnMatrix) {
-
     vec2 midCoordPos2 = TexCoords - absMidCoordPos;
     mediump float lOriginalAlbedo = length(color.rgb);
 

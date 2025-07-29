@@ -337,6 +337,9 @@ void dawnFunc(float time, float timeFactor) {
 uniform float near;
 uniform float far;
 
+#define VOXEL_AREA 128 //[32 64 128]
+#define VOXEL_RADIUS (VOXEL_AREA/2)
+
 mediump float linearizeDepth(float depth, float near, float far) {
     return (near * far) / (depth * (near - far) + far);
 }
@@ -406,9 +409,6 @@ void main() {
             gl_FragData[6] = vec4(0.0, fogAmount * 0.125, linearizeDepth(depth, near, far), 1.0);
         #else
             //vec3 coords = vec3(0.0);
-            // Lighting and voxel-related calculations (optimizations applied)
-            #define VOXEL_AREA 128 //[32 64 128]
-            #define VOXEL_RADIUS (VOXEL_AREA/2)
             ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
             vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
             if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
@@ -511,6 +511,9 @@ void main() {
                             voxel_open *= step(distB, distA);
                         }*/
 
+                        lowp vec3 world_pos2 = foot_pos + vec3(x, z, y) + cameraPosition;
+                        lowp vec3 world_pos3 = foot_pos + cameraPosition;
+
                         lowp vec3 foot_pos3 = vec3(0.0); //foot_pos;
                         lowp vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
 
@@ -528,7 +531,7 @@ void main() {
 
                         // Compute lighting contribution
                         lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
-                                    clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
+                                    clamp(1.0 - blockDist(world_pos3, world_pos2) / float(LIGHT_RADIUS + 1), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
                         
                         lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
                         NdotL *= dot(lightNormal, newNormal);

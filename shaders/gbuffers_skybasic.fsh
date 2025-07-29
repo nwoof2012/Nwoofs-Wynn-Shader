@@ -90,6 +90,7 @@
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "lib/globalDefines.glsl"
 #include "program/blindness.glsl"
 
 precision mediump float;

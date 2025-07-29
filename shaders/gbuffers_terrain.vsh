@@ -131,7 +131,7 @@ void main() {
 
     worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
 
-    foot_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+    foot_pos = (gbufferModelViewInverse * vec4(viewSpaceFragPosition,1.0)).xyz;
 
     worldPos = foot_pos + cameraPosition;
 

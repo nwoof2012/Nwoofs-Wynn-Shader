@@ -352,6 +352,8 @@ vec3 GetShadow(float depth) {
     #endif
 }
 
+#include "program/bloom.glsl"
+
 /* RENDERTARGETS:0,1,2,3,4,5,6,14 */
 layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
@@ -391,7 +393,7 @@ void main() {
 
     float timeDistance = abs(worldTime - 6000);
     float maxTimeDistance = 6000.0;
-    float timeBlendFactor = clamp(timeDistance/maxTimeDistance, 0, 1);
+    float timeBlendFactor = smoothstep(0.75,1.0,clamp(timeDistance/maxTimeDistance, 0, 1));
 
     vec3 totalSunlight = mix2(sunLight*lightMask*0.016, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,(1 - timeBlendFactor) * (isCave));
     
@@ -605,7 +607,7 @@ void main() {
                     }*/
                 }
             }
-            #ifdef SCENE_AWARE_LIGHTING
+            #if defined SCENE_AWARE_LIGHTING && defined BLOOM
                 if(detectSky == 1.0) {
                     vec3 shadowLerp = GetShadow(depth2);
                     vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
@@ -618,11 +620,17 @@ void main() {
                         finalLight = vec4(mix2(vec3(0.0), texture2D(colortex2, texCoord).xyz, 1 - clouds.a),1.0);
                     #endif
                 }
+            #elif defined BLOOM
+                #ifdef VOLUMETRIC_LIGHTING
+                    finalLight = vec4(mix2(light, texture2D(colortex2, texCoord).xyz + light, 1 - clouds.a),1.0);
+                #else
+                    finalLight = vec4(mix2(vec3(0.0), texture2D(colortex2, texCoord).xyz, 1 - clouds.a),1.0);
+                #endif
             #endif
         #endif
     } else {
         #ifdef SCENE_AWARE_LIGHTING
-            vec3 shadowLerp = GetShadow(depth2);
+            vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             finalLight = vec4(texture2D(colortex2, texCoord).xyz + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,1 - min(1 - vec3(isCave), shadowLerp)),1.0);
             //outcolor = vec4(vec3(isCave),1.0);
             lightMask *= length(shadowLerp) * isCave;
@@ -633,7 +641,8 @@ void main() {
     if(blindness > 0.0f) {
         color.rgb = blindEffect(color.rgb);
     }
-
+    
+    outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
     outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
     gl_FragData[2] = finalLight;
     gl_FragData[3] = texture2D(colortex3, texCoord);

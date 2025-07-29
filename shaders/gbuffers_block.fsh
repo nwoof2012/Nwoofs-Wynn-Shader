@@ -104,7 +104,7 @@ vec4 vanillaLight(in vec2 Lightmap) {
     return lightColor;
 }
 
-/* RENDERTARGETS:0,1,2,15,5,10,6,12 */
+/* RENDERTARGETS:0,1,2,15,5,13,6,12 */
 
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
@@ -207,6 +207,7 @@ void main() {
 
     float isCave = LightmapCoords.r;
     gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
+    gl_FragData[5] = vec4(LightmapCoords, 0.0, 1.0);
 
     #ifdef SCENE_AWARE_LIGHTING
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
@@ -218,10 +219,11 @@ void main() {
     #endif
     gl_FragData[3] = vec4(1.0, distanceFromCamera, 0.0, 1.0);
     gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
-    #ifdef ENTITY_SHADOWS
+    /*#ifdef ENTITY_SHADOWS
         gl_FragData[5] = vec4(worldPosition, 1.0);
     #else
         gl_FragData[5] = vec4(0.0);
-    #endif
+    #endif*/
     //gl_FragData[3] = vec4(a);
+    gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }
