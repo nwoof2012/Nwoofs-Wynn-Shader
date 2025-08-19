@@ -48,9 +48,6 @@
 
 #define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
-#define WATER_REFRACTION
-#define WATER_FOAM
-
 #define FRAGMENT_SHADER
 
 #define PATH_TRACING_GI 0 // [0 1]
@@ -104,6 +101,9 @@ uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelViewInverse;
 
 layout (rgba8) uniform image2D cimage7;
+
+uniform sampler2D cSampler11;
+uniform sampler2D cSampler12;
 
 uniform sampler2D noisetex;
 
@@ -1090,19 +1090,25 @@ vec3 rgbToHsv(vec3 c) {
     return vec3(saturation);
 }
 
+float waterFresnel(vec3 normal, vec3 viewDir, float bias, float scale, float power) {
+    float cosTheta = clamp(dot(normalize2(normal), normalize2(viewDir)),0.0,1.0);
+
+    return bias + scale * pow2(1.0 - cosTheta, power);
+}
+
 vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
     mediump float isRain = texture2D(colortex3, TexCoords).r;
     vec2 refractionFactor = vec2(0);
     vec2 TexCoords2 = coords;
-    mediump float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
-    mediump float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+    mediump float underwaterDepth = linearizeDepth(texture2D(depthtex0, TexCoords2).r,near,far)/far;
+    mediump float underwaterDepth2 = linearizeDepth(texture2D(depthtex1, TexCoords2).r,near,far)/far;
     #ifdef WATER_REFRACTION
         if(isRain == 1.0) {
             refractionFactor = sin(noise.y) * vec2(0.03125f) / max( distanceFromCamera*2f,1);
             TexCoords2 += refractionFactor;
-            underwaterDepth = texture2D(depthtex0, TexCoords2).r;
-            underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+            underwaterDepth = linearizeDepth(texture2D(depthtex0, TexCoords2).r,near,far)/far;
+            underwaterDepth2 = linearizeDepth(texture2D(depthtex1, TexCoords2).r,near,far)/far;
         }
     #endif
     vec3 waterColor = vec3(0.0f, 0.2f, 0.22f);
@@ -1111,7 +1117,22 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
         return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.85),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85)), vec3(GAMMA));
         //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
     }
-    return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
+
+    if(texture2D(depthtex0,TexCoords).x == 1.0) {
+        underwaterDepth = texture2D(cSampler11, TexCoords2).x;
+        underwaterDepth2 = texture2D(cSampler12, TexCoords2).x;
+        return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
+    }
+    vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5));
+    
+    vec3 worldPos = screenToWorld(coords, clamp(texture2D(depthtex0,coords).x,0,1));
+    vec3 viewDir = normalize2(cameraPosition - worldPos);
+
+    vec3 reflectionColor = vec3(1.0);
+    float fresnelBlend = waterFresnel(noise.xyz, viewDir, 0.02, 0.1, 5.0);
+    finalColor = mix2(finalColor, reflectionColor, fresnelBlend);
+
+    return pow2(finalColor, vec3(GAMMA));
     //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
 }
 
@@ -1720,7 +1741,7 @@ void main() {
                     float aoValue = 1;
                     #ifdef AO
                         //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
-                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, colortex12, colortex1);
+                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
                     #endif
 
                     float weightDay = 0.5 + 0.5 * cos((timeNorm - 0.25) * 2.0 * PI);
@@ -1856,7 +1877,7 @@ void main() {
         float aoValue = 1;
         #ifdef AO
             //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
-            aoValue = calcAO(TexCoords, foot_pos, 100, colortex12, colortex1);
+            aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
         #endif
         
         vec3 shadowLerp = GetShadow(Depth);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));

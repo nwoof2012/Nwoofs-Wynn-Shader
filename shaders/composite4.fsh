@@ -51,9 +51,6 @@
 
 #define LIGHTMAP_QUALITY 16 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
 
-#define WATER_REFRACTION
-#define WATER_FOAM
-
 #define FRAGMENT_SHADER
 
 #define PATH_TRACING_GI 0 // [0 1]
@@ -275,6 +272,12 @@ vec3 screenToWorld(vec2 screenPos, float depth) {
     worldSpace.xyz += cameraPosition * 2.0;
 
     return worldSpace.xyz;
+}
+
+vec3 worldToView(vec3 worldPos) {
+    vec4 viewSpace = gbufferModelView * vec4(worldPos, 1.0);
+
+    return viewSpace.xyz;
 }
 
 vec3 screenToFoot(vec2 screenPos, float depth) {
@@ -746,19 +749,25 @@ vec3 rgbToHsv(vec3 c) {
     return vec3(saturation);
 }
 
+float waterFresnel(vec3 normal, vec3 viewDir, float bias, float scale, float power) {
+    float cosTheta = clamp(dot(normalize2(normal), normalize2(viewDir)),0.0,1.0);
+
+    return bias + scale * pow2(1.0 - cosTheta, power);
+}
+
 vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
     mediump float isRain = texture2D(colortex3, TexCoords).r;
     vec2 refractionFactor = vec2(0);
     vec2 TexCoords2 = coords;
-    mediump float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
-    mediump float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+    mediump float underwaterDepth = linearizeDepth(texture2D(depthtex0, TexCoords2).r,near,far)/far;
+    mediump float underwaterDepth2 = linearizeDepth(texture2D(depthtex1, TexCoords2).r,near,far)/far;
     #ifdef WATER_REFRACTION
         if(isRain == 1.0) {
             refractionFactor = sin(noise.y) * vec2(0.03125f) / max( distanceFromCamera*2f,1);
             TexCoords2 += refractionFactor;
-            underwaterDepth = texture2D(depthtex0, TexCoords2).r;
-            underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
+            underwaterDepth = linearizeDepth(texture2D(depthtex0, TexCoords2).r,near,far)/far;
+            underwaterDepth2 = linearizeDepth(texture2D(depthtex1, TexCoords2).r,near,far)/far;
         }
     #endif
     vec3 waterColor = vec3(0.0f, 0.2f, 0.22f);
@@ -773,7 +782,16 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
         underwaterDepth2 = texture2D(cSampler12, TexCoords2).x;
         return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
     }
-    return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
+    vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5));
+    
+    vec3 worldPos = screenToWorld(coords, clamp(texture2D(depthtex0,coords).x,0,1));
+    vec3 viewDir = normalize2(cameraPosition - worldPos);
+
+    vec3 reflectionColor = vec3(1.0);
+    float fresnelBlend = waterFresnel(noise.xyz, viewDir, 0.02, 0.1, 5.0);
+    finalColor = mix2(finalColor, reflectionColor, fresnelBlend);
+
+    return pow2(finalColor, vec3(GAMMA));
     //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
 }
 
@@ -1126,16 +1144,22 @@ void main() {
         //vec4 noiseMapA = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(5f) + (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
         //vec4 noiseMapB = texture2D(colortex8, mod(worldTexCoords.xz/5,5)/vec2(2.5f) - (mod(worldTexCoords.x/5,5)*0.005f + ((frameCounter)/90f)*2.5f) * 0.01f);
 
+        vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
+
+        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz * 2.0 - 1.0);
+
         vec4 noiseMapA = triplanarTexture(fract((worldTexCoords + ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
         vec4 noiseMapB = triplanarTexture(fract((worldTexCoords - ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
+        vec3 worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
+
+        mat3 TBN = tbnNormalTangent(worldGeoNormal,worldTangent);
+
+        //finalNoise.xyz = normalize2(TBN * finalNoise.xyz);
+
         vec4 noiseMap3 = texture2D(water, fract(TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f));
-
-        vec3 Normal = normalize2(texture2D(colortex1, TexCoords2).rgb * 2.0f -1.0f);
-
-        vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz * 2.0 - 1.0);
 
         //vec3 worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
 
@@ -1632,7 +1656,7 @@ void main() {
         float aoValue = 1;
         #ifdef AO
             //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
-            aoValue = calcAO(TexCoords, foot_pos, 100, colortex12, colortex1);
+            aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
         #endif
 
         float timer = 0;
@@ -1738,6 +1762,7 @@ void main() {
             //LightmapColor *= vec3(0.2525);
             vec3 rawLight = LightmapColor;
             //LightmapColor = mix2(LightmapColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT, 1 - shadowLerp);
+            //LightmapColor = contrastBoost(LightmapColor, 2.0)*1.5;
             if(maxLight < 4.1f) {
                 float lightMagnitude = length(LightmapColor);
                 lightMagnitude = clamp(lightMagnitude, MIN_LIGHT, maxLight);
@@ -1747,6 +1772,8 @@ void main() {
             vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
             Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
             Diffuse3 = calcTonemap(Diffuse3);
+
+            //Diffuse3 = contrastBoost(Diffuse3, 1.0625);
 
             if(!transData.transitionCompleted) timer = frameTimeCounter - transData.transitionStartTime;
 

@@ -453,7 +453,7 @@ void main() {
 
             mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
-            gl_FragData[6] = vec4(0.0, fogAmount, length(foot_pos)/(dhRenderDistance*16), 1.0);
+            gl_FragData[6] = vec4(depth, fogAmount, length(foot_pos)/(dhRenderDistance*16), 1.0);
 
             vec3 lightNormal = vec3(0.0);
             float NdotL = 1.0;

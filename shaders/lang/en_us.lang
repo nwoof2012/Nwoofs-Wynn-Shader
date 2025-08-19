@@ -403,6 +403,7 @@ value.TONEMAP_SAL.3=Lottes
 value.TONEMAP_SAL.4=Unreal
 value.TONEMAP_SAL.5=Uncharted 2
 value.TONEMAP_SAL.6=Nwoof
+value.TONEMAP_SAL.7=Nwoof 2
 option.TONEMAP_SAL.comment=§6Changes the screen's tonemapping curve
 
 option.TONEMAP_NORM=§7Tonemap
@@ -413,6 +414,7 @@ value.TONEMAP_NORM.3=Lottes
 value.TONEMAP_NORM.4=Unreal
 value.TONEMAP_NORM.5=Uncharted 2
 value.TONEMAP_NORM.6=Nwoof
+value.TONEMAP_NORM.7=Nwoof 2
 option.TONEMAP_NORM.comment=§6Changes the screen's tonemapping curve
 
 option.BRIGHTNESS=§eBrightness

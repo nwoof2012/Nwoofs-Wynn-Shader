@@ -389,7 +389,7 @@ void main() {
         camDist = vec4(distanceFromCamera, dhDepth, far/dhFarPlane, 1.0);
 
         outColor2 = vec4(vec3(0.0), 1.0f);
-        #ifndef SCENE_AWARE_LIGHTING
+        #if !defined SCENE_AWARE_LIGHTING
             outColor2 = vec4(lightmapCoords.x, lightmapCoords.x, lightmapCoords.y, 1.0f);
         #else
             #define VOXEL_AREA 128 //[32 64 128]

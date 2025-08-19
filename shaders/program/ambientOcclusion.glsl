@@ -1,5 +1,5 @@
-#define AO_THRESHOLD 0.25 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
-#define AO_STRENGTH 3.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
+#define AO_THRESHOLD 1.0 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+#define AO_STRENGTH 2.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
 
 mediump float random(in vec2 p) {
     return fract(sin(p.x*456.0+p.y*56.0)*100.0);
@@ -15,7 +15,7 @@ float calcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sample
     float depthDifference = 0f;
     float kernel = kernelSize;
 
-    vec3 centerNormal = texture2D(normalMap, UVs).rgb;
+    vec3 centerNormal = texture2D(normalMap, UVs).rgb * 2 - 1;
 
     for(int i = 0; i < kernelSize; i++) {
         float x = (i / sqrt(kernel)) - sqrt(kernel)/2; // Integer division for x
@@ -23,10 +23,13 @@ float calcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sample
         vec2 offset = vec2(x,y)/1080;
         float offsetDepth = calcLinearDepth(texture2D(depthMask, UVs + offset).r, near, far);
 
-        vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb;
+        vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2 - 1;
         //float depthDist = abs(centerDepth - offsetDepth) * distance(vec3(0.0), footPos) * 50;
-        if(abs(centerDepth - offsetDepth) > AO_THRESHOLD /*|| dot(centerNormal, offsetNormal) < 0.5*/) continue;
-        depthDifference += abs(centerDepth - offsetDepth);
+        //if(abs(centerDepth - offsetDepth) > AO_THRESHOLD /*|| dot(centerNormal, offsetNormal) < 0.5*/) continue;
+        float depthDiff = abs(centerDepth - offsetDepth);
+        float weight = smoothstep(AO_THRESHOLD, 0.0, depthDiff);
+        float normalFactor = smoothstep(1.0,0.1,abs(dot(centerNormal, offsetNormal)));
+        depthDifference += weight * depthDiff * normalFactor;
         //depthDifference += mix2(depthDist * (1 - smoothstep(0.0, AO_THRESHOLD, depthDist)),0.0, step(offsetDepth, 0.999));
     }
 
@@ -56,17 +59,20 @@ float DHcalcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
     float depthDifference = 0f;
     float kernel = kernelSize;
 
-    vec3 centerNormal = texture2D(normalMap, UVs).rgb;
+    vec3 centerNormal = texture2D(normalMap, UVs).rgb * 2 + 1;
     
     for(int i = 0; i < kernelSize; i++) {
         float x = (i / sqrt(kernel)) - sqrt(kernel)/2; // Integer division for x
         float y = mod((i / sqrt(kernel)), sqrt(kernel)) - sqrt(kernel)/2; // Integer division for y
         vec2 offset = vec2(x,y)/1080;
         float offsetDepth = texture2D(depthMask, UVs + offset).b;
-        vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb;
+        vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2 + 1;
         //float depthDist = abs(centerDepth - offsetDepth) * distance(vec3(0.0), footPos) * 50;
         if(abs(centerDepth - offsetDepth) > 0.5 /*|| dot(centerNormal, offsetNormal) < 0.5*/) continue;
-        depthDifference += abs(centerDepth - offsetDepth)*3;
+        float depthDiff = abs(centerDepth - offsetDepth);
+        float weight = smoothstep(AO_THRESHOLD, 0.0, depthDiff);
+        float normalFactor = smoothstep(1.0,0.1,abs(dot(centerNormal, offsetNormal)));
+        depthDifference += weight * depthDiff * normalFactor;
         //depthDifference += mix2(depthDist * (1 - smoothstep(0.0, AO_THRESHOLD, depthDist)),0.0, step(offsetDepth, 0.999));
     }
 

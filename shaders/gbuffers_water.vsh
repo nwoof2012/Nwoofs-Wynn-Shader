@@ -143,7 +143,7 @@ void main() {
 	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
 	world_pos = foot_pos + cameraPosition;
 
-	#ifdef SCENE_AWARE_LIGHTING
+	#if SCENE_AWARE_LIGHTING > 0
         #define VOXEL_AREA 128 //[32 64 128]
         #define VOXEL_RADIUS (VOXEL_AREA/2)
         block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);

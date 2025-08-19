@@ -174,3 +174,71 @@ float cubicBezier(float t, vec2 p1, vec2 p2) {
 
     return y;
 }
+
+float luminance(vec3 color) {
+    return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+// tex      = light buffer
+// worldTex = texture containing world-space positions (RGB = XYZ)
+// uv       = current screen-space coordinate
+// texSize  = resolution of the render target (for pixel offsets)
+// blurRadius = blur kernel radius (in pixels)
+
+vec3 blurLight(sampler2D tex, sampler2D worldTex, sampler2D depthTex, sampler2D normalTex, vec2 uv, vec2 texSize, float lightRadius, float blurRadius, int blurSamples, float depthThreshold, float normalThreshold) {
+    vec3 centerWorld = texture2D(worldTex, uv).rgb;
+    vec3 centerColor = texture2D(tex, uv).rgb;
+
+    float centerDepth = linearizeDepth(texture2D(depthTex, uv).x,near,far);
+    vec3 centerNormal = normalize2(texture2D(normalTex, uv).xyz * 2 - 1);
+
+    float centerLum = luminance(centerColor);
+
+    float minRadius = 1.0;
+    float maxRadius = 5.0;
+
+    float lumFactor = smoothstep(0.0, 1.0, centerLum);
+
+    float adaptiveRadius = mix(minRadius, maxRadius, lumFactor);
+
+    vec3 result = vec3(0.0);
+    float weightSum = 0.0;
+
+    int sampleSqrt = int(sqrt(blurSamples));
+
+    int kernel = int(adaptiveRadius);
+
+    // Loop over blur kernel
+    for (int idx = 0; idx <= blurSamples; idx++) {
+        int x = int(mod(idx, sampleSqrt)) - sampleSqrt/2;
+        int y = idx/sampleSqrt - sampleSqrt/2;
+        vec2 offset = vec2(float(x), float(y)) / texSize * blurSamples;
+        vec2 sampleUV = uv + offset*kernel;
+
+        vec3 sampleWorld = texture2D(worldTex, sampleUV).rgb;
+        vec3 sampleColor = texture2D(tex, sampleUV).rgb;
+
+        float sampleDepth = linearizeDepth(texture2D(depthTex, sampleUV).x,near,far);
+        vec3 sampleNormal = normalize2(texture2D(normalTex, sampleUV).xyz * 2 - 1);
+
+        if(abs(centerDepth - sampleDepth) > depthThreshold || length(centerNormal - sampleNormal) > normalThreshold) continue;
+
+        // World-space distance falloff
+        float dist = length(sampleWorld - centerWorld);
+
+        // Gaussian-style weight: smaller with distance in screen + world
+        float worldWeight = exp(-dist * dist / (2.0 * adaptiveRadius * adaptiveRadius)); 
+        float screenWeight = exp(-(x*x + y*y) * 0.05);
+
+        float weight = worldWeight*lightRadius;
+
+        result += sampleColor * weight;
+        weightSum += weight;
+    }
+
+    return result / max(weightSum, 1e-5);
+}
+
+vec3 contrastBoost(vec3 color, float contrast) {
+    return ((color - 0.5) * contrast + 0.5);
+}

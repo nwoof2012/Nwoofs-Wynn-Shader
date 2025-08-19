@@ -43,7 +43,7 @@ void main() {
 
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
     
-    #ifdef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING > 0
         LightSource source;
         source.id = int(mc_Entity.x);
         source.brightness = LightmapCoords.x;
