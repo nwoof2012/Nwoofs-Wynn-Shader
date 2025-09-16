@@ -11,7 +11,6 @@
 layout (r32ui) uniform uimage3D cimage3;
 
 uniform mat4 dhProjection;
-uniform mat4 gbufferModelViewInverse;
 
 out vec4 blockColor;
 out vec2 lightmapCoords;
@@ -101,7 +100,7 @@ void main() {
 
     gl_Position = ftransform();
 
-    #ifdef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING > 0
         view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
         foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
         vec3 world_pos = foot_pos + cameraPosition;

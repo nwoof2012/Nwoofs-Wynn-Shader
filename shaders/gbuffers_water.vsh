@@ -1,8 +1,6 @@
 #version 460 compatibility
 #define PI 3.14159265358979323846f
 
-#include "lib/globalDefines.glsl"
-
 #define WATER_WAVES
 #define WAVE_SPEED_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
 #define WAVE_SPEED_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
@@ -35,11 +33,6 @@ uniform float frameTimeCounter;
 
 uniform vec3 chunkOffset;
 
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -75,6 +68,8 @@ attribute vec4 mc_midTexCoord;
 uniform vec3 cameraPosition;
 
 out float waterShadingHeight;
+
+#include "lib/globalDefines.glsl"
 
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);

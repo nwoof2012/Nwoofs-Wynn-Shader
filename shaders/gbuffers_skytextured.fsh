@@ -1,9 +1,5 @@
 #version 460 compatibility
 
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
 precision mediump float;
 
 uniform sampler2D gtexture;
@@ -11,12 +7,20 @@ uniform sampler2D gtexture;
 in vec2 texcoord;
 in vec4 glcolor;
 
-in mat4 gbufferProjectionInverse;
-
 flat in vec3 upVec, sunVec;
+
+uniform float near;
+uniform float far;
 
 in float viewWidth, viewHeight;
 in vec3 position;
+
+uniform vec3 cameraPosition;
+
+#include "lib/globalDefines.glsl"
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 /* DRAWBUFFERS:0 */
 

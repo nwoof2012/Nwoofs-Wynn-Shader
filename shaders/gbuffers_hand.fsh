@@ -2,9 +2,6 @@
 
 #define FRAGMENT_SHADER
 
-#include "lib/globalDefines.glsl"
-
-#include "lib/optimizationFunctions.glsl"
 #include "program/underwater.glsl"
 
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
@@ -43,8 +40,6 @@ varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec4 Color;
 
-in vec3 viewSpaceFragPosition;
-
 varying vec2 LightmapCoords;
 
 uniform sampler2D lightmap;
@@ -59,9 +54,6 @@ uniform int heldItemId;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
 
 uniform bool isBiomeEnd;
 
@@ -86,6 +78,20 @@ float baseFogDistMin;
 float baseFogDistMax;
 float fogMin;
 float fogMax;
+
+uniform float near;
+uniform float far;
+
+uniform int viewWidth;
+uniform int viewHeight;
+
+uniform vec3 cameraPosition;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -173,8 +179,6 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
-uniform float near;
-uniform float far;
 uniform int dhRenderDistance;
 
 void main() {
@@ -219,7 +223,7 @@ void main() {
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
-    #ifdef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING > 0
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0.5,1));
         if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));

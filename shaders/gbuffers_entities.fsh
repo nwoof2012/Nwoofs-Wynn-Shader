@@ -2,12 +2,6 @@
 
 #define FRAGMENT_SHADER
 
-#include "lib/globalDefines.glsl"
-
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
 
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
@@ -49,9 +43,6 @@ varying vec2 LightmapCoords;
 uniform sampler2D texture;
 uniform sampler2D depthtex0;
 
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-
 uniform vec3 cameraPosition;
 
 uniform bool isBiomeEnd;
@@ -79,6 +70,18 @@ float baseFogDistMin;
 float baseFogDistMax;
 float fogMin;
 float fogMax;
+
+uniform float near;
+uniform float far;
+
+uniform int viewWidth;
+uniform int viewHeight;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -168,8 +171,6 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
-uniform float near;
-uniform float far;
 uniform int dhRenderDistance;
 
 void main() {
@@ -210,16 +211,18 @@ void main() {
 
     mediump float fogAmount = (length(viewSpaceFragPosition)*(far/dhRenderDistance * 0.75) - fogStart)/(fogEnd - fogStart);
 
+    vec3 newNormal = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
+
     gl_FragData[6] = vec4(0.0, fogAmount, depth, 1.0);
 
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
+    gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
 
     float isCave = LightmapCoords.g;
     gl_FragData[5] = vec4(LightmapCoords, 0.0, 1.0);
     gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
 
-    #ifdef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING > 0
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
         if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));

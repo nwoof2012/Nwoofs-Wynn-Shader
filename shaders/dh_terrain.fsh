@@ -35,12 +35,6 @@
 
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
 
-#include "lib/globalDefines.glsl"
-
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
 precision mediump float;
 
 uniform usampler3D cSampler3;
@@ -62,10 +56,6 @@ uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
 
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferModelViewInverse;
-
 uniform bool isBiomeEnd;
 
 uniform vec3 cameraPosition;
@@ -76,6 +66,12 @@ uniform float near;
 uniform float far;
 uniform float dhNearPlane;
 uniform float dhFarPlane;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 /* RENDERTARGETS:0,2,6,5,1,12,15,13 */
 layout(location = 0) out vec4 outColor0;
@@ -176,6 +172,16 @@ vec3 GetLightmapColor(in vec2 Lightmap){
     }
     vec3 LightmapLighting = TorchLighting + GlowstoneLighting + LampLighting + LanternLighting + RedstoneLighting + RodLighting + SkyLighting;
     return LightmapLighting;
+}
+
+float remapDHDepth(float depth, float nearPlane, float farPlaneChunks, float farPlaneDH) {
+    float z_dh = linearizeDepth(depth, dhNearPlane, farPlaneDH);
+
+    z_dh = clamp(z_dh, farPlaneChunks, farPlaneDH);
+
+    float d_far_chunks = (farPlaneChunks - nearPlane) / (farPlaneDH - nearPlane);
+    float t = (z_dh - farPlaneChunks) / (farPlaneDH - farPlaneChunks);
+    return mix(d_far_chunks, 1.0, t);
 }
 
 #include "program/pathTracing.glsl"
@@ -367,7 +373,7 @@ void main() {
 
     mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
-    fogOut = vec4(0.0, fogAmount, dhDepth, 1.0);
+    fogOut = vec4(0.0, fogAmount, remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
 
     if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
         mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
@@ -403,11 +409,12 @@ void main() {
 
             outColor2 = mix2(vec4(0.0), vec4(light_color, 1.0), step(0.999, depth));
         #endif
+
+        imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(vec3(remapDHDepth(dhDepth, near, far, dhFarPlane)),1.0));
     } else {
         camDist = vec4(0.0, dhDepth, dhFarPlane, 1.0);
+        imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(vec3(0.0),1.0));
     }
 
-    gl_FragData[7] = vec4(lightmapCoords, 0.0, 1.0);
-
-    imageStore(cimage11, ivec2(gl_FragCoord.xy/10), vec4(dhDepth));
+    gl_FragData[7] = vec4(lightmapCoords, remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
 }

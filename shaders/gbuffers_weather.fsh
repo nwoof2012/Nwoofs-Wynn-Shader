@@ -2,8 +2,6 @@
 
 #define TILTED_RAIN
 
-#include "lib/optimizationFunctions.glsl"
-
 precision mediump float;
 
 uniform sampler2D lightmap;
@@ -13,9 +11,21 @@ in vec2 lmcoord;
 in vec2 texcoord;
 in vec4 glcolor;
 
-in vec3 viewSpaceFragPosition;
-
 uniform float rainStrength;
+
+uniform float near;
+uniform float far;
+
+uniform int viewWidth;
+uniform int viewHeight;
+
+uniform vec3 cameraPosition;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 /* DRAWBUFFERS:035 */
 layout(location = 0) out vec4 color;

@@ -107,11 +107,6 @@ uniform sampler2D cSampler12;
 
 uniform sampler2D noisetex;
 
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -402,7 +397,7 @@ vec3 GetLightmapColor(in vec2 Lightmap){
     if(lightmap.x > 0) {
         TorchLighting = TorchColor * lightmap.x * 20.0;
     }
-    if(lightmap.x < 0) {
+    /*if(lightmap.x < 0) {
         GlowstoneLighting = GlowstoneColor * -lightmap.x;
     }
     if(lightmap.y > 0) {
@@ -416,8 +411,9 @@ vec3 GetLightmapColor(in vec2 Lightmap){
     }
     if(lightmap.z < 0) {
         RodLighting = RodColor * -lightmap.z;
-    }
-    vec3 LightmapLighting = TorchLighting + SkyLighting;
+    }*/
+    vec3 LightmapLighting = TorchLighting + SkyLighting/5;
+    if(isBiomeEnd) LightmapLighting = TorchLighting/2.5 + SkyLighting/10;
     return LightmapLighting;
 }
 
@@ -498,11 +494,11 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
         sum += rayColor;
     #else
-        vec3 lightColor = GetLightmapColor(texture2D(colortex2, TexCoords).rg) + (texture2D(colortex10, specularCoord).rgb + texture2D(colortex11, specularCoord).rgb)/vec3(2) * BRIGHTNESS;
+        vec3 lightColor = GetLightmapColor(texture2D(colortex2, TexCoords).rg) + (texture2D(colortex10, specularCoord).rgb + texture2D(colortex11, specularCoord).rgb) * BRIGHTNESS;
         sum += lightColor;
     #endif
 
-    #if defined SCENE_AWARE_LIGHTING && defined BLOOM
+    #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
         sum = blurLightmap(waterTest, specularCoord, Normal, Albedo);
     #endif
 
@@ -541,7 +537,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             sum += (specularMap + light) * sampleDepth;
             continue;
         }*/
-        #if defined SCENE_AWARE_LIGHTING && defined BLOOM
+        #if SCENE_AWARE_LIGHTING > 0 defined BLOOM
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
         #if PATH_TRACING_GI == 1
@@ -549,7 +545,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
             Ray ray = Ray(viewSpaceFragPosition + vec3(shiftedUVs, 0.0), rayDir);
-            vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a)/vec3(2) * sampleDepth;
+            vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a) * sampleDepth;
             
             /*if(dot((sum + rayColor) * vec3(10.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
                 continue;
@@ -596,7 +592,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             sum += (specularMap + light) * sampleDepth;
             continue;
         }*/
-        #if defined SCENE_AWARE_LIGHTING && defined BLOOM
+        #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
         #if PATH_TRACING_GI == 1
@@ -604,7 +600,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             cameraUp = cross(cameraRight, lightDir);
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
             Ray ray = Ray(viewSpaceFragPosition + vec3(shiftedUVs, 0.0), rayDir);
-            vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a)/vec3(2) * sampleDepth;
+            vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a) * sampleDepth;
             
             /*if(dot((sum + rayColor) * vec3(10.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
                 continue;
@@ -1078,10 +1074,6 @@ vec3 screenToWorld(vec2 screenPos, float depth) {
     return worldSpace.xyz;
 }
 
-mediump float linearizeDepth(float depth, float near, float far) {
-    return (near * far) / (depth * (near - far) + far);
-}
-
 vec3 rgbToHsv(vec3 c) {
     mediump float max = max(c.r, max(c.g, c.b));
     mediump float min = min(c.r, min(c.g, c.b));
@@ -1419,7 +1411,7 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 
 void main() {
-    #if !defined SCENE_AWARE_LIGHTING || !defined BLOOM
+    #if SCENE_AWARE_LIGHTING == 0 || !defined BLOOM
         mediump float aspectRatio = float(viewWidth)/float(viewHeight);
         mediump float waterTest = texture2D(colortex5, TexCoords).r;
         mediump float dhTest = texture2D(colortex5, TexCoords).g;
@@ -1893,7 +1885,7 @@ void main() {
                 LightmapColor *= vec3(1.5025);
                 lightBrightness = max(lightBrightness, 0.5);
             #endif
-            Diffuse.xyz = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor),Albedo * ((NdotL * shadowLerp + Ambient) * currentColor),0.25);
+            Diffuse.xyz = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75) + NdotL * shadowLerp + Ambient) * currentColor),Albedo * ((NdotL * shadowLerp + Ambient) * currentColor),0.25);
             //Diffuse = mix2(Diffuse, seColor, 0.01);
             Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
             Diffuse.xyz = calcTonemap(Diffuse.xyz);
@@ -1906,7 +1898,7 @@ void main() {
                 LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
             }*/
             if(maxLight < 4.1f) {
-                LightmapColor = clamp(LightmapColor,vec3(0f), normalize2(LightmapColor) * maxLight);
+                LightmapColor = clamp(LightmapColor*10,vec3(0f), vec3(maxLight*10))/5;
             }
             Diffuse.xyz = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
             Diffuse.xyz = calcTonemap(Diffuse.xyz);

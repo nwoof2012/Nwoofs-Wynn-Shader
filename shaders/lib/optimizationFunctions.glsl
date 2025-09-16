@@ -179,64 +179,90 @@ float luminance(vec3 color) {
     return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
 
+mediump float linearizeDepth(float depth, float near, float far) {
+    return (near * far) / (depth * (near - far) + far);
+}
+
 // tex      = light buffer
 // worldTex = texture containing world-space positions (RGB = XYZ)
 // uv       = current screen-space coordinate
 // texSize  = resolution of the render target (for pixel offsets)
 // blurRadius = blur kernel radius (in pixels)
 
-vec3 blurLight(sampler2D tex, sampler2D worldTex, sampler2D depthTex, sampler2D normalTex, vec2 uv, vec2 texSize, float lightRadius, float blurRadius, int blurSamples, float depthThreshold, float normalThreshold) {
-    vec3 centerWorld = texture2D(worldTex, uv).rgb;
-    vec3 centerColor = texture2D(tex, uv).rgb;
+vec3 worldReconstruct(vec2 UVs, sampler2D depthTex) {
+    vec2 ndc = UVs * 2.0 - 1.0;
 
-    float centerDepth = linearizeDepth(texture2D(depthTex, uv).x,near,far);
-    vec3 centerNormal = normalize2(texture2D(normalTex, uv).xyz * 2 - 1);
+    float depth = texture2D(depthTex, UVs).r;
 
-    float centerLum = luminance(centerColor);
+    vec4 clipPos = vec4(ndc, depth * 2.0 - 1.0, 1.0);
+    vec4 viewPos = gbufferProjectionInverse * clipPos;
+    viewPos /= viewPos.w;
 
-    float minRadius = 1.0;
-    float maxRadius = 5.0;
+    vec4 worldPos = gbufferModelViewInverse * viewPos;
 
-    float lumFactor = smoothstep(0.0, 1.0, centerLum);
+    return worldPos.xyz;
+}
 
-    float adaptiveRadius = mix(minRadius, maxRadius, lumFactor);
+vec2 screenReconstruct(vec3 worldPos) {
+    vec4 viewPos = gbufferModelView * vec4(worldPos, 1.0);
+    vec4 clipPos = gbufferProjection * viewPos;
+    vec3 ndc = clipPos.xyz / clipPos.w;
+    return ndc.xy * 0.5 + 0.5;
+}
 
-    vec3 result = vec3(0.0);
-    float weightSum = 0.0;
+vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int samples, float distThreshold, float depthThreshold) {
+    // Calculate UVs
+    vec3 worldPos = worldReconstruct(UVs, depthTex);
+    float depth = texture2D(depthTex, UVs).r;
 
-    int sampleSqrt = int(sqrt(blurSamples));
+    // Calculate base color
+    vec3 baseColor = texture2D(tex, UVs).xyz;
+    
+    // Calculate sample radius
+    int sampleRadius = int(sqrt(samples));
 
-    int kernel = int(adaptiveRadius);
+    // Calculate aspect ratio
+    vec2 aspectRatio = vec2(viewWidth, viewHeight);
+    aspectRatio.x = 1080.0/aspectRatio.y * aspectRatio.x;
+    aspectRatio.y = 1080.0;
+    
+    ivec2 baseRes = ivec2(aspectRatio);
 
-    // Loop over blur kernel
-    for (int idx = 0; idx <= blurSamples; idx++) {
-        int x = int(mod(idx, sampleSqrt)) - sampleSqrt/2;
-        int y = idx/sampleSqrt - sampleSqrt/2;
-        vec2 offset = vec2(float(x), float(y)) / texSize * blurSamples;
-        vec2 sampleUV = uv + offset*kernel;
+    // Output params
+    vec3 accum = vec3(0.0);
+    float weight = 0.0;
 
-        vec3 sampleWorld = texture2D(worldTex, sampleUV).rgb;
-        vec3 sampleColor = texture2D(tex, sampleUV).rgb;
+    // Blur loop
+    for(int i = 0; i < samples; i++) {
+        // Calculate sample offset
+        int x = int(mod(i, sampleRadius)) - sampleRadius/2;
+        int y = i/sampleRadius - sampleRadius/2;
+        vec2 offset = vec2(x, y) * radius;
+        //vec2 sampleUV = UVs + offset/vec2(baseRes);
 
-        float sampleDepth = linearizeDepth(texture2D(depthTex, sampleUV).x,near,far);
-        vec3 sampleNormal = normalize2(texture2D(normalTex, sampleUV).xyz * 2 - 1);
+        vec3 offsetWS = vec3(x, 0, y)/sampleRadius * radius;
 
-        if(abs(centerDepth - sampleDepth) > depthThreshold || length(centerNormal - sampleNormal) > normalThreshold) continue;
+        // Get sample world position
+        vec3 sampleWorld = worldPos + offsetWS;
 
-        // World-space distance falloff
-        float dist = length(sampleWorld - centerWorld);
+        vec2 sampleUV = screenReconstruct(sampleWorld);
 
-        // Gaussian-style weight: smaller with distance in screen + world
-        float worldWeight = exp(-dist * dist / (2.0 * adaptiveRadius * adaptiveRadius)); 
-        float screenWeight = exp(-(x*x + y*y) * 0.05);
+        float sampleDepth = texture2D(depthTex, sampleUV).r;
 
-        float weight = worldWeight*lightRadius;
+        // Test sample distance, if within threshold add to output
+        float dist = length(worldPos - sampleWorld);
 
-        result += sampleColor * weight;
-        weightSum += weight;
+        float depthDist = linearizeDepth(depth, near, far) - linearizeDepth(sampleDepth, near, far);
+
+        if(dist < distThreshold && depthDist < depthThreshold) {
+            vec3 sampleColor = texture2D(tex, sampleUV).rgb;
+            float sampleWeight = exp(-(dist * dist) / (2.0 * radius * radius));
+            accum += mix2(sampleColor,baseColor, abs(dist/distThreshold)) * sampleWeight;
+            weight += sampleWeight;
+        }
     }
 
-    return result / max(weightSum, 1e-5);
+    return accum/max(weight,1.0);
 }
 
 vec3 contrastBoost(vec3 color, float contrast) {

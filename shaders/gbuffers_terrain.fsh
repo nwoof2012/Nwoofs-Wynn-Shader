@@ -1,11 +1,5 @@
 #version 460 compatibility
 
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-#include "lib/globalDefines.glsl"
-#include "program/gaussianBlur.glsl"
-
 #define PATH_TRACING_GI 0 // [0 1]
 
 #define FRAGMENT_SHADER
@@ -90,11 +84,6 @@ uniform usampler3D cSampler1;
 uniform usampler3D cSampler2;
 uniform usampler3D cSampler5;
 
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferModelView;
-
 uniform ivec2 atlasSize;
 uniform vec3 sunPosition;
 
@@ -129,6 +118,15 @@ uniform int viewHeight;
 uniform float dhFarPlane;
 
 uniform int dhRenderDistance;
+
+uniform float far;
+uniform float near;
+
+#include "lib/globalDefines.glsl"
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
+#include "program/gaussianBlur.glsl"
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
@@ -334,15 +332,8 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
-uniform float near;
-uniform float far;
-
 #define VOXEL_AREA 128 //[32 64 128]
 #define VOXEL_RADIUS (VOXEL_AREA/2)
-
-mediump float linearizeDepth(float depth, float near, float far) {
-    return (near * far) / (depth * (near - far) + far);
-}
 
 /* RENDERTARGETS:0,1,2,13,5,10,6,12*/
 
@@ -374,7 +365,7 @@ void main() {
 
         gl_FragData[0] = albedo;
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
-        #ifndef SCENE_AWARE_LIGHTING
+        #if SCENE_AWARE_LIGHTING == 0
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
 
             Diffuse = albedo.xyz;
@@ -473,25 +464,90 @@ void main() {
                 
                 lowp float voxel_open = 1.0;
 
-                for (int idx = 0; idx < totalLightRadius + 1; idx++) {
-                    // Explicitly cast the index to (x, y, z) coordinates
-                    //int x = (idx / (2 * LIGHT_RADIUS * 2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for x
-                    //int y = ((idx / (2 * LIGHT_RADIUS)) % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for y
-                    //int z = (idx % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for z
+                #if SCENE_AWARE_LIGHTING == 2
+                    for (int idx = 0; idx < totalLightRadius + 1; idx++) {
+                        // Explicitly cast the index to (x, y, z) coordinates
+                        //int x = (idx / (2 * LIGHT_RADIUS * 2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for x
+                        //int y = ((idx / (2 * LIGHT_RADIUS)) % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for y
+                        //int z = (idx % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for z
 
+                        int x = int(idx / (side * side) - LIGHT_RADIUS);
+                        int y = int(mod(idx/side, side) - LIGHT_RADIUS);
+                        int z = int(mod(idx, side) - LIGHT_RADIUS);
+
+                        if(x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
+
+                        //coords = vec3(x, y, z);
+
+                        // Compute the block-relative position
+                        lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
+                        
+                        // Skip if out of light radius
+                        if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
+
+                        ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
+
+                        //if (x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
+
+                        // Sample textures for light and block data
+                        uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
+                        //uint blockBytes = texture3D(cSampler2, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
+
+                        if(bytes == 0u) continue;
+
+                        // Check light-block interactions
+                        if (bytes != 0) {
+                            //mediump float distA = distance(voxel_pos2, cameraPosition);
+                            //mediump float distB = distance(voxel_pos, cameraPosition);
+                            /*if (blockBytes.x == 1.0 && bytes2.xyz == vec3(0.0) && voxel_open > 0.0) {
+                                voxel_open *= step(distB, distA);
+                            }*/
+
+                            lowp vec3 world_pos2 = foot_pos + vec3(x, z, y) + cameraPosition;
+                            lowp vec3 world_pos3 = foot_pos + cameraPosition;
+
+                            lowp vec3 foot_pos3 = vec3(0.0); //foot_pos;
+                            lowp vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
+
+                            block_centered_relative_pos4 = mat3(gbufferModelView) * block_centered_relative_pos4;
+
+                            //foot_pos3 = mat3(gbufferProjection) * mat3(gbufferModelView) * foot_pos3;
+
+                            lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
+                            NdotL = dot(lightNormal, newNormal);
+                            /*if(NdotL <= 0.5) {
+                                continue;
+                            }*/
+
+                            rawLight = decodeLightmap(bytes).xyz;
+
+                            // Compute lighting contribution
+                            lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
+                                        clamp(1.0 - blockDist(world_pos3, world_pos2) / float(LIGHT_RADIUS + 1), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
+                            
+                            lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
+                            NdotL *= dot(lightNormal, newNormal);
+                            lighting *= max(NdotL, 0.0);
+
+                            lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
+                            
+                            //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
+                            //lighting.xyz *= lightColor;
+                        }
+
+                        // Update secondary light data
+                        //bytes2 = unpackUnorm4x8(texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
+                    }
+                #elif SCENE_AWARE_LIGHTING == 1
+                    int idx = 0;
                     int x = int(idx / (side * side) - LIGHT_RADIUS);
                     int y = int(mod(idx/side, side) - LIGHT_RADIUS);
                     int z = int(mod(idx, side) - LIGHT_RADIUS);
-
-                    if(x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
 
                     //coords = vec3(x, y, z);
 
                     // Compute the block-relative position
                     lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
-                    
-                    // Skip if out of light radius
-                    if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
 
                     ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
 
@@ -500,8 +556,6 @@ void main() {
                     // Sample textures for light and block data
                     uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
                     //uint blockBytes = texture3D(cSampler2, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
-
-                    if(bytes == 0u) continue;
 
                     // Check light-block interactions
                     if (bytes != 0) {
@@ -535,23 +589,17 @@ void main() {
                         
                         lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
                         NdotL *= dot(lightNormal, newNormal);
-                        lighting *= max(NdotL, 0.0);
+                        //lighting *= max(NdotL, 0.0);
 
                         lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
-                        
-                        //lighting = mix2(vec4(0.0), lighting, vanillaLight(AdjustLightmap(LightmapCoords)));
-                        //lighting.xyz *= lightColor;
                     }
-
-                    // Update secondary light data
-                    //bytes2 = unpackUnorm4x8(texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r);
-                }
+                #endif
             }
             vec4 finalLighting = lighting;
             float isCave = LightmapCoords.r;
             gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
             finalLighting += clamp(dot(normalize2(shadowLightPosition),normalize2(Normal)),0,1) * vec4(currentColor * baseDiffuseModifier * 0.125,1.0);
-            #if PATH_TRACING_GI == 1
+            /*#if PATH_TRACING_GI == 1
                 vec3 lightDir = normalize2(sunPosition);
                 vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
                 vec3 cameraUp = cross(cameraRight, lightDir);
@@ -560,18 +608,18 @@ void main() {
                 vec3 rayColor = traceRay(ray,vec2(length(lighting),1f), Normal,albedo.a)/vec3(2);
                 finalLighting *= vec4(vec3(length(rayColor)),1.0);
                 finalLighting *= 0.0035f;
-            #endif
+            #endif*/
             /*if(clamp(voxel_pos,0,VOXEL_AREA) != voxel_pos || length(finalLighting) <= 0.0) {
                 finalLighting = pow2(vanillaLight(AdjustLightmap(LightmapCoords)) * 0.25f,vec4(0.5f));
             }*/
             //gl_FragData[0] = vec4(vec3(step(NdotL,0.5)),1.0);
             vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
-            if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1));
-            finalLighting = mix2(finalLighting * 2.0, finalLighting2 * 0.65, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))));
+            if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
+            finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))));
             uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
             //finalLighting = mix2(finalLighting, vec4(vec3(0.0),1.0), float(any(equal(vec3(depth2), vec3(0.0)))));
             //imageStore(cimage7, ivec2(gl_FragCoord.xy/2), vec4(finalLighting.xyz, lightBrightness));
-            finalLighting.xyz *= 1.5;
+            finalLighting.xyz /= 3;
             gl_FragData[2] = finalLighting;
         #endif
         //gl_FragData[3] = vec4(distanceFromCamera);

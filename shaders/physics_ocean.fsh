@@ -1,11 +1,5 @@
 #version 460 compatibility
 
-#include "lib/globalDefines.glsl"
-
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
 precision mediump float;
 
 const int PHYSICS_ITERATIONS_OFFSET = 13;
@@ -45,10 +39,6 @@ uniform sampler2D noise;
 uniform sampler2D depthtex1;
 uniform sampler2D shadowtex1;
 
-uniform mat4 gbufferProjectionInverse;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -75,6 +65,12 @@ in float physics_localWaviness;
 WavePixelData physics_waveData;
 
 in float camDist;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 vec2 physics_waveDirection(vec2 position, int iterations, float time) {
     position = (position - physics_waveOffset) * PHYSICS_XZ_SCALE * physics_oceanWaveHorizontalScale;
@@ -241,8 +237,8 @@ void main() {
     WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
 
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(normalM,1);
-    #ifndef SCENE_AWARE_LIGHTING
+    gl_FragData[1] = vec4(normalM * 0.5 + 0.5,1);
+    #if SCENE_AWARE_LIGHTING == 0
         gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(1.0);

@@ -31,8 +31,6 @@ uniform sampler2D colortex13;
 uniform sampler2D colortex14;
 uniform sampler2D depthtex0;
 uniform sampler2D noisetex;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferPreviousModelView;
 uniform mat4 gbufferPreviousProjection;
 uniform mat4 gbufferPreviousModelViewInverse;
@@ -64,14 +62,10 @@ uniform sampler2D cloudtex;
 uniform float near;
 uniform float far;
 
-mediump float linearizeDepth(float depth, float near, float far) {
-    return (near * far) / (depth * (near - far) + far);
-}
-
+#include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
-#include "lib/globalDefines.glsl"
 
 #include "lib/buffers.glsl"
 
@@ -266,8 +260,6 @@ uniform mat4 shadowModelViewInverse;
 
 uniform mat4 shadowProjection;
 uniform mat4 shadowModelView;
-
-uniform mat4 gbufferProjection;
 
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
@@ -632,9 +624,10 @@ void main() {
                     }*/
                 }
             }
-            #if defined SCENE_AWARE_LIGHTING && defined BLOOM
+            #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
                 if(detectSky == 1.0) {
                     vec3 shadowLerp = GetShadow(depth2);
+                    shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
                     vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
                     //float isCave = smoothstep(MIN_LIGHT, MIN_LIGHT + 0.1, lightmap.g);
                     finalLight = vec4(texture2D(colortex2, texCoord).xyz + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,isCave),1.0);
@@ -652,14 +645,77 @@ void main() {
                     finalLight = vec4(mix2(vec3(0.0), texture2D(colortex2, texCoord).xyz, 1 - clouds.a),1.0);
                 #endif
             #endif
+        #elif defined BLOOM
+            vec3 light = vec3(0.0);
+            vec4 clouds = vec4(0.0);
+            #ifdef VOLUMETRIC_LIGHTING
+                vec4 pos = vec4(texCoord, depth, 1.0) * 2.0 - 1.0;
+                pos.xyz = projectAndDivide(gbufferProjectionInverse,pos.xyz);
+                vec3 view_pos = pos.xyz;
+                pos = gbufferModelViewInverse * vec4(pos.xyz, 1.0);
+                vec3 rayDir = normalize2(pos.xyz);
+
+                vec2 uv = rayDir.xz*0.25/rayDir.y;
+                vec2 uv2 = pos.xz*0.001+frameTimeCounter*0.1;
+
+                vec3 p = vec3(uv, 0);
+                vec3 p2 = vec3(uv, 0);
+
+                float scaleVar = smoothstep(0.1, 1.0, get_cloud(fract(p/rayDir.y*2.2/rayDir.y)));
+
+                float scaleMix = sin((length(p/rayDir.y) + scaleVar)) * 0.5 + 0.5;
+
+                mediump float starting_distance = 1.0/rayDir.y;
+                //vec3 sky_color = color;
+                mediump float scale = 0.05;
+                mediump float cloud_shading_amount = 0.1;
+                mediump float cloud_offset = mix2(-1, 1, scaleMix);
+
+                vec3 sunDir = normalize2(vec4(gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz);
+                float sun_dot = clamp(dot(rayDir, sunDir),0,1);
+                
+                vec3 player = vec3(uv*starting_distance+0.05 + cloud_time * CLOUD_SPEED, 0.0);
+                vec3 player2 = vec3(uv*starting_distance * 1.5f - cloud_time,0.0);
+                vec3 ray_pos = player + rayDir*(cloud_time + vec3(texCoord,0))*scale;
+                vec3 ray_pos2 = player + rayDir*(cloud_time*0.5 + vec3(texCoord,0))*scale;
+                light = vec3(1.0);
+                for(float s = 0.0; s < CLOUD_SHADING_SAMPLES && clouds.a < 0.99; s++) {
+                    vec3 ray_s_pos = ray_pos + sunDir*(s - cloud_time + vec3(texCoord,s))*scale;
+                    vec3 ray_s_pos2 = ray_pos + sunDir*(s + cloud_time*0.5 + vec3(texCoord,s))*scale;
+
+                    /*if(ray_s_pos.y <= 0.0) {
+                        light = vec3(0.0);
+                        continue;
+                    }*/
+
+                    float cloud_shading = clamp(get_cloud((ray_s_pos.xyz*0.01)/rayDir.y, (ray_s_pos2.xyz*0.005)/rayDir.y) * 2.0 - 0.5,0.5,1);
+                    light *= 1.0 - cloud_shading;
+                    light = mix2(light, vec3(1.0), 1 - step(0.0, clouds.a));
+                }
+
+                light.r += light.r*pow2(sun_dot,1+20*(1.0 - light.r));
+
+                light = light.r * vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
+                light = mix2(vec3(0.0), light, smoothstep(0.2, 0.9, length(light)));
+                light = mix2(light * 0.55, light, 1 - smoothstep(0.75, 1.0, clouds.a));
+                vec3 totalSunlight = mix2(sunLight*lightMask*0.016, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend);
+                finalLight = vec4(pow2(mix2(totalSunlight,texture2D(colortex2, texCoord).xyz,0.5),vec3(0.75)), 1.0);
+            #else
+                finalLight = vec4(texture2D(colortex2, texCoord).xyz, 1.0);
+            #endif
         #endif
     } else {
-        #if defined SCENE_AWARE_LIGHTING
+        #if SCENE_AWARE_LIGHTING > 0
             vec3 dynamicLight = texture2D(colortex2, texCoord).xyz;
-            #if SCENE_AWARE_LIGHTING == 1
-                dynamicLight = blurLight(colortex2, colortex10, depthtex1, colortex1, texCoord, vec2(viewWidth, viewHeight), 3.0, 32.0, 32, 0.25, 0.5);
+            //#if SCENE_AWARE_LIGHTING == 1
+            //if(length(dynamicLight) > MIN_LIGHT) {
+            #if LIGHT_BLUR == 1
+                dynamicLight = blurLight(colortex2, depthtex1, texCoord, 3.0, 25, 3.0, 1.0);
             #endif
+            //}
+            //#endif
             vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
+            shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
             float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));
             //lightBlend = clamp(contrastBoost(vec3(lightBlend), 2.0).x,0,1);
             finalLight = vec4(dynamicLight + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);

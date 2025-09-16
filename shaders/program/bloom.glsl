@@ -11,6 +11,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     mediump float hstep = 1f;
     vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
     vec3 lightColor = texture2D(colortex2,uv).rgb * BRIGHTNESS;
+    lightColor = mix2(pow2(lightColor,vec3(0.7)), lightColor * 2,1 - step(1.0, texture2D(depthtex0, uv).r));
     float illumination = texture2D(colortex2,uv).a * BRIGHTNESS;
     #ifdef VOLUMETRIC_LIGHTING
         //lightColor += volumetricLight(sunPosition, depthtex1, TexCoords, VL_SAMPLES, VL_DECAY, VL_EXPOSURE, VL_WEIGHT, VL_DENSITY, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B));
@@ -59,6 +60,8 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     //mediump float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
     //lightColor += gaussianBlur(colortex2, uv, radius, vec2(viewWidth, viewHeight)).xyz;
+
+    float weight = 0.0;
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
         mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
@@ -120,6 +123,8 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         #endif
 
         depth = texture2D(depthtex0, shiftedUVs).r;
+
+        weight += length(UVsOffset);
 
         //sum += mix2(vec3(0.0), lightColor3, float(depth >= 1.0));
     }
@@ -186,9 +191,11 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         depth = texture2D(depthtex0, shiftedUVs).r;
 
         //sum += mix2(vec3(0.0), lightColor3, float(depth >= 1.0));
+
+        weight += length(UVsOffset);
     }
 
-    sum /= BLOOM_QUALITY/8;
+    sum /= weight;
 
     /*sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 8.0 * blur * hstep, TexCoords.y - 8.0 * blur * hstep)).rg) * 0.0162162162;
     sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 7.0 * blur * hstep, TexCoords.y - 7.0 * blur * hstep)).rg) * 0.0540540541;

@@ -40,10 +40,6 @@ uniform float frameTimeCounter;
 
 uniform vec3 cameraPosition;
 uniform vec3 chunkOffset;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferProjection;
 uniform mat4 modelViewMatrix;
 
 out vec3 viewSpaceFragPosition;
@@ -193,7 +189,7 @@ void main() {
         }
     #endif
 
-    #ifdef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING > 0
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : vec4(vec3(0.0),1.0);
 

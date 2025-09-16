@@ -1,8 +1,6 @@
 #version 460 compatibility
 #define PI 3.14159265358979323846f
 
-#include "lib/optimizationFunctions.glsl"
-
 precision mediump float;
 
 const int PHYSICS_ITERATIONS_OFFSET = 13;
@@ -31,11 +29,6 @@ uniform float frameTime;
 
 uniform vec3 chunkOffset;
 
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -72,6 +65,11 @@ out float camDist;
 out vec3 physics_localPosition;
 out vec3 physics_foamColor;
 out float physics_localWaviness;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 mediump float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);

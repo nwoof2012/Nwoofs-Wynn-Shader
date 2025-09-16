@@ -66,9 +66,9 @@
                     // Update color based on intersection
                     vec3 lightmapColor = SkyColor;
 
-                    /*if(lightmap.x > 0f) {
-                        lightmapColor = TorchColor;
-                    }*/
+                    if(lightmap.x > 0f) {
+                        lightmapColor = texture2D(colortex2, TexCoords).xyz;
+                    }
                     color += attenuation * lightmapColor * hitColor;
 
                     // Update attenuation (e.g., based on material properties)
@@ -124,4 +124,65 @@
             return clamp(color, 0.0, 1.0);
         }
     #endif
+#endif
+
+#if PATH_TRACED_REFLECTIONS == 1
+    float ptLinearDepth(float z, float near, float far) {
+        return (2.0 * near) / (f far + near - z * (far - near));
+    }
+
+    vec3 reconstructViewPos(vec2 uvNDC, float depth01) {
+        vec4 clip = vec4(uvNDC * 2.0 - 1.0, depth01 * 2.0 - 1.0, 1.0);
+        vec4 view = gbufferProjectionInverse * clip;
+        return view.xyz / view.w;
+    }
+
+    vec4 viewToWorld(vec3 v) {
+        return (gbufferModelViewInverse * vec4(v, 1.0)).xyz;
+    }
+
+    vec4 worldToView(vec3 w) {
+        return (gbufferModelView * vec4(w, 1.0)).xyz;
+    }
+
+    vec3 decodeNormalFromDepth(vec2 uvNDC) {
+        vec2 o = vec2(1.0) / vec2(viewWidth, viewHeight);
+
+        float d = texture2D(depthtex0, uvNDC).r;
+        float dx = texture2D(depthtex0, uvNDC + vec2(o.x, 0.0)).r - d;
+        float dy texture2D(depthtex0, uvNDC + vec2(0.0, o.y)).r - d;
+
+        vec3 p = reconstructViewPos(uvNDC, d);
+        vec3 px = reconstructViewPos(uvNDC + vec2(o.x, 0.0), d + dx);
+        vec3 py = reconstructViewPos(uvNDC + vec2(0.0, o.y), d + dx);
+
+        vec3 N - normalize2(cross(py - p, px - p));
+        return N;
+    }
+
+    uint pcg_hash(uint x) {
+        x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x;
+    }
+
+    float rand(inout uint state) {
+        state = pcg_hash(state);
+        return float(state) / 4294967296.0;
+    }
+
+    vec2 halton23(uint i) {
+        float f1 = 0.0, f2 = 0.0, f = 1.0;
+        uint ii = i;
+        f = 1.0; float r1 = 0.0; uint b = 2U; ii = i;
+        for (int k=0;k<16;k++){f/=2.0; r1 += float(ii % b)*f; ii/=b;}
+        f = 1.0; float r2 = 0.0; b = 3U; ii = i;
+        for (int k=0;k<16;k++){f/=3.0; r2 += float(ii % b)*f; ii/=b;}
+        return vec2(r1, r2);
+    }
+
+    vec2 reprojectUVs(vec3 worldPos) {
+        vec4 prevView = gbufferPreviousModelView * vec4(worldPos, 1.0);
+        vec4 prevClip = gbufferPreviousProjection * prevView;
+        vec2 prevNDC = prevClip.xy / prevClip.w * 0.5 + 0.5;
+        return prevNDC;
+    }
 #endif

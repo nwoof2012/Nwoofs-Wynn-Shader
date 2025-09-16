@@ -8,11 +8,6 @@ in vec4 glColor;
 
 in float sunVisibility2;
 
-#include "lib/optimizationFunctions.glsl"
-#include "lib/common.glsl"
-#include "lib/colorMultipliers.glsl"
-#include "lib/spaceConversion.glsl"
-
 varying vec2 TexCoords;
 varying vec3 Normal;
 

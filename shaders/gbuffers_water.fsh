@@ -1,11 +1,5 @@
 #version 460 compatibility
 
-#include "lib/globalDefines.glsl"
-
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
 #define WATER_WAVES
 #define WATER_WAVES_DISTANCE 12 // [4 6 8 10 12 14 16]
 #define WATER_CHUNK_RESOLUTION 128 // [32 64 128]
@@ -37,9 +31,6 @@ uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
-uniform mat4 gbufferProjectionInverse;
-
-uniform mat4 gbufferModelViewInverse;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -73,6 +64,15 @@ in vec3 world_pos;
 in vec4 at_midBlock2;
 
 in float waterShadingHeight;
+
+uniform float near;
+uniform float far;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
@@ -268,7 +268,7 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5,1.0);
-    #ifndef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING == 0
         gl_FragData[2] = Lightmap;
     #else
         #define VOXEL_AREA 128 //[32 64 128]
@@ -338,6 +338,6 @@ void main() {
         gl_FragData[2] = lighting;
     #endif
     gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
-    gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, 1.0);
+    gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, isWaterBlock);
     gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
 }

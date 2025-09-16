@@ -41,6 +41,9 @@
 
 #define VIBRANT_MODE 1 //[0 1 2 3]
 
+#define LUT_NORM 1 // [0 1]
+#define LUT_SE 0 // [0 1]
+
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
 #define SE_MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
@@ -104,11 +107,6 @@ uniform sampler2D cSampler12;
 
 uniform sampler2D noisetex;
 
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
@@ -220,11 +218,17 @@ vec3 fogAlbedo;
 
 float fogIntensity;
 
-#define FOG_RAIN_MULTIPLIER 10.0;
+#define FOG_RAIN_MULTIPLIER 1.0;
 
 float baseFogDHTransition;
 
 float fogDHTransition;
+
+float baseFogDistMin;
+float baseFogDistMax;
+
+float fogDistMin;
+float fogDistMax;
 
 uniform float dhFarPlane;
 
@@ -241,6 +245,11 @@ in vec3 world_pos;
 
 #include "lib/buffers.glsl"
 #include "program/ambientOcclusion.glsl"
+
+float getDepthMask(sampler2D local, sampler2D distant) {
+    //float linearDepth = linearizeDepth(texture2D(local, TexCoords).r,near,far);
+    return mix2(linearizeDepth(texture2D(depthtex0, TexCoords).x,near,far) / dhFarPlane, texture2D(colortex13, TexCoords).z * 0.475, step(1.0, texture2D(depthtex0, TexCoords).x)) * 32;
+}
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -633,6 +642,8 @@ void noonFunc(float time, float timeFactor) {
         fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
         fogIntensity = FOG_SE_INTENSITY;
         fogDHTransition = far/dhFarPlane;
+        fogDistMin = FOG_SE_DIST_MIN;
+        fogDistMax = FOG_SE_DIST_MAX;
     } else {
         vec3 fogAlbedoDry = vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
         fogAlbedo = vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
@@ -640,6 +651,8 @@ void noonFunc(float time, float timeFactor) {
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
         float fogDHTransitionDry = far/DH_FOG_DAY_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
         fogDHTransition = far/dhFarPlane;
+        fogDistMin = FOG_DAY_DIST_MIN;
+        fogDistMax = FOG_DAY_DIST_MAX;
     }
 }
 
@@ -653,6 +666,8 @@ void sunsetFunc(float time, float timeFactor) {
         fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
         fogIntensity = FOG_SE_INTENSITY;
         fogDHTransition = far/dhFarPlane;
+        fogDistMin = FOG_SE_DIST_MIN;
+        fogDistMax = FOG_SE_DIST_MAX;
     } else {
         vec3 fogAlbedoDry = mix3(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
         vec3 fogAlbedoWet = mix3(vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), sunsetLerp, 0.5);
@@ -662,6 +677,8 @@ void sunsetFunc(float time, float timeFactor) {
         float fogDHTransitionDry = far/mix3(DH_FOG_DAY_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
         float fogDHTransitionWet = far/mix3(DH_FOG_DAY_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_NIGHT_RAIN_DIST_MAX, sunsetLerp, 0.5);
         fogDHTransition = far/dhFarPlane;
+        fogDistMin = FOG_SUNSET_DIST_MIN;
+        fogDistMax = FOG_SUNSET_DIST_MAX;
     }
 }
 
@@ -675,6 +692,8 @@ void nightFunc(float time, float timeFactor) {
         fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
         fogIntensity = FOG_SE_INTENSITY;
         fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+        fogDistMin = FOG_SE_DIST_MIN;
+        fogDistMax = FOG_SE_DIST_MAX;
     } else {
         vec3 fogAlbedoDry = vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
         fogAlbedo = vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
@@ -682,6 +701,8 @@ void nightFunc(float time, float timeFactor) {
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
         float fogDHTransitionDry = far/DH_FOG_NIGHT_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
         fogDHTransition = far/dhFarPlane;
+        fogDistMin = FOG_NIGHT_DIST_MIN;
+        fogDistMax = FOG_NIGHT_DIST_MAX;
     }
 }
 
@@ -695,6 +716,8 @@ void dawnFunc(float time, float timeFactor) {
         fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
         fogIntensity = FOG_SE_INTENSITY;
         fogDHTransition = far/DH_FOG_SE_DIST_MAX;
+        fogDistMin = FOG_SE_DIST_MIN;
+        fogDistMax = FOG_SE_DIST_MAX;
     } else {
         vec3 fogAlbedoDry = mix3(vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
         vec3 fogAlbedoWet = mix3(vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), sunsetLerp, 0.5);
@@ -704,6 +727,8 @@ void dawnFunc(float time, float timeFactor) {
         float fogDHTransitionDry = far/mix3(DH_FOG_NIGHT_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_DAY_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
         float fogDHTransitionWet = far/mix3(DH_FOG_NIGHT_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_DAY_RAIN_DIST_MAX, sunsetLerp, 0.5);
         fogDHTransition = far/dhFarPlane;
+        fogDistMin = FOG_SUNSET_DIST_MIN;
+        fogDistMax = FOG_SUNSET_DIST_MAX;
     }
 }
 
@@ -737,10 +762,6 @@ vec2 triplanarCoords(vec3 worldPos, vec3 normal, float scale) {
     return texXZ + texXY + texZY;
 }
 
-mediump float linearizeDepth(float depth, float near, float far) {
-    return (near * far) / (depth * (near - far) + far);
-}
-
 vec3 rgbToHsv(vec3 c) {
     mediump float max = max(c.r, max(c.g, c.b));
     mediump float min = min(c.r, min(c.g, c.b));
@@ -760,14 +781,14 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     mediump float isRain = texture2D(colortex3, TexCoords).r;
     vec2 refractionFactor = vec2(0);
     vec2 TexCoords2 = coords;
-    mediump float underwaterDepth = linearizeDepth(texture2D(depthtex0, TexCoords2).r,near,far)/far;
-    mediump float underwaterDepth2 = linearizeDepth(texture2D(depthtex1, TexCoords2).r,near,far)/far;
+    mediump float underwaterDepth = getDepthMask(depthtex0, cSampler11);
+    mediump float underwaterDepth2 = getDepthMask(depthtex1, cSampler11);
     #ifdef WATER_REFRACTION
         if(isRain == 1.0) {
             refractionFactor = sin(noise.y) * vec2(0.03125f) / max( distanceFromCamera*2f,1);
             TexCoords2 += refractionFactor;
-            underwaterDepth = linearizeDepth(texture2D(depthtex0, TexCoords2).r,near,far)/far;
-            underwaterDepth2 = linearizeDepth(texture2D(depthtex1, TexCoords2).r,near,far)/far;
+            underwaterDepth = getDepthMask(depthtex0, cSampler11);
+            underwaterDepth2 = getDepthMask(depthtex1, cSampler11);
         }
     #endif
     vec3 waterColor = vec3(0.0f, 0.2f, 0.22f);
@@ -778,8 +799,8 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     }
 
     if(texture2D(depthtex0,TexCoords).x == 1.0) {
-        underwaterDepth = texture2D(cSampler11, TexCoords2).x;
-        underwaterDepth2 = texture2D(cSampler12, TexCoords2).x;
+        underwaterDepth = getDepthMask(depthtex0, cSampler11);
+        underwaterDepth2 = getDepthMask(depthtex1, cSampler11);
         return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
     }
     vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5));
@@ -845,7 +866,7 @@ vec2 ssrRay(vec3 startPosition, vec3 reflectionDir) {
         // Get UV coordinates of ray
         currUV = getUVFromPosition(currPos);
         // Get depth of ray
-        mediump float currDepth = texture2D(depthtex0, currUV.xy).r;
+        mediump float currDepth = getDepthMask(depthtex0, cSampler11);
 
         if (isOutOfTexture(currUV.xy)) {
             return vec2(-1);
@@ -871,7 +892,7 @@ vec4 waterReflections(vec3 color, vec2 uv, vec3 normal, vec4 noise) {
     
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
     mediump float isRain = texture2D(colortex3, uv).r;
-    mediump float depth = texture2D(depthtex0, uv).r;
+    mediump float depth = getDepthMask(depthtex0, cSampler11);
     vec3 position = getWorldPosition(uv, depth);
     vec3 viewDir = normalize2(position);
     //vec3 newNormal = (gbufferModelView * gbufferProjection * vec4(normal,1.0)).xyz;
@@ -927,7 +948,7 @@ vec4 waterReflectionsDH(vec3 color, vec2 uv, vec3 normal, vec4 noise) {
 vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
     vec4 finalColor = vec4(color, 1.0);
 
-    mediump float depth = texture2D(depthtex0, uv).r;
+    mediump float depth = getDepthMask(depthtex0, cSampler11);
     vec3 position = getViewPosition(uv, depth);
     vec3 viewDir = normalize2(position);
     vec3 reflectedDir = normalize2(reflect(viewDir, normal));
@@ -1101,7 +1122,9 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 #include "lib/timeCycle.glsl"
 
 void main() {
-    #if defined SCENE_AWARE_LIGHTING && defined BLOOM
+    //gl_FragData[0] = vec4(vec3(getDepthMask(depthtex0, colortex13)), 1.0);
+    //return;
+    #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
         mediump float aspect = float(viewWidth)/float(viewHeight);
         mediump float waterTest = texture2D(colortex5, TexCoords).r;
         mediump float dhTest = texture2D(colortex5, TexCoords).g;
@@ -1249,8 +1272,8 @@ void main() {
                 //lightBrightness = ambientLight + diffuseLight + specularLight;
                 //Albedo.xyz = mix2(Albedo.xyz, vec3(1.0), lightBrightness);
             } else {
-                underwaterDepth = texture2D(depthtex0, TexCoords).r;
-                underwaterDepth2 = texture2D(depthtex1, TexCoords).r;
+                underwaterDepth = getDepthMask(depthtex0, cSampler11);
+                underwaterDepth2 = getDepthMask(depthtex0, cSampler11);
                 Albedo = pow2(mix2(Albedo,vec3(0.0f,0.33f,0.55f),clamp((0.5 - (underwaterDepth2 - underwaterDepth)) * 0.5,0,1)), vec3(GAMMA));
 
                 //Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
@@ -1325,6 +1348,9 @@ void main() {
         float currentFogIntensity = FOG_DAY_INTENSITY;
 
         fogDHTransition = far/DH_FOG_DAY_DIST_MAX;
+
+        baseFogDistMin = FOG_DAY_DIST_MIN;
+        baseFogDistMax = FOG_DAY_DIST_MAX;
         
         if(worldTime/(timePhase + 1) < 500f) {
             baseColor = currentColor;
@@ -1332,6 +1358,8 @@ void main() {
             baseFog = currentFogColor;
             baseFogIntensity = currentFogIntensity;
             baseFogDHTransition = fogDHTransition;
+            fogDistMin = baseFogDistMin;
+            fogDistMax = baseFogDistMax;
         }
         
         mediump float dayNightLerp = clamp(quadTime/11500,0,1);
@@ -1387,6 +1415,10 @@ void main() {
         
         vec3 LightmapColor;
         float lightBrightness2 = 0;
+
+        float globalDepthMask = getDepthMask(depthtex0, colortex13) * dhFarPlane;
+
+        float globalDepthMask2 = getDepthMask(depthtex1, colortex13) * dhFarPlane;
 
         if(Depth2 == 1.0f){
             /*mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
@@ -1476,7 +1508,7 @@ void main() {
 
                     Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
 
-                    float fogFactor = clamp(smoothstep(0.0, 1.0,texture2D(colortex6, TexCoords).y*(dhRenderDistance/far * 0.25) + (far/dhRenderDistance)),0,min(fogIntensity,1.0));
+                   float fogFactor = clamp(smoothstep(fogDistMin, fogDistMax,globalDepthMask),0,min(fogIntensity,1.0));
                     Diffuse = mix2(Diffuse, fogAlbedo, fogFactor);
                 } else {
                     /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
@@ -1551,7 +1583,7 @@ void main() {
 
                     Diffuse.xyz = calcTonemap(Diffuse3.xyz);
 
-                    float fogFactor = clamp(smoothstep(0.0, 1.0,texture2D(colortex6, TexCoords).y*(dhRenderDistance/far * 0.25) + (far/dhRenderDistance)),0,min(fogIntensity,1.0));
+                    float fogFactor = clamp(smoothstep(fogDistMin, fogDistMax, globalDepthMask),0,min(fogIntensity,1.0));
                     Diffuse = mix2(Diffuse, fogAlbedo, fogFactor);
                 }
                 /*if(waterTest > 0f) {
@@ -1649,10 +1681,12 @@ void main() {
         }*/
         
         vec3 shadowLerp = GetShadow(Depth2);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
+
         if(waterTest > 0) {
             shadowLerp = vec3(1.0);
             //lightBrightness = 1.0;
         }
+        shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
         float aoValue = 1;
         #ifdef AO
             //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
@@ -1805,7 +1839,7 @@ void main() {
             Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
         //}
 
-        float fogFactor = clamp(smoothstep(0,1,texture2D(colortex6, TexCoords).y)* (dhRenderDistance/far),0,min(fogIntensity,1.0));
+        float fogFactor = clamp(smoothstep(fogDistMin, fogDistMax,globalDepthMask),0,min(fogIntensity,1.0));
         Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, fogFactor);
 
 

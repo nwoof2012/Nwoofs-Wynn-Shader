@@ -1,11 +1,5 @@
 #version 460 compatibility
 
-#include "lib/globalDefines.glsl"
-
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -19,7 +13,19 @@ uniform sampler2D texture;
 
 uniform int heldItemId;
 
-uniform mat4 gbufferModelViewInverse;
+uniform float near;
+uniform float far;
+
+uniform int viewWidth;
+uniform int viewHeight;
+
+uniform vec3 cameraPosition;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -66,7 +72,7 @@ void main() {
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, 1.0f);
-    #ifdef SCENE_AWARE_LIGHTING
+    #if SCENE_AWARE_LIGHTING > 0
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
         gl_FragData[2] = vec4(lighting.xyz, 1.0);

@@ -88,11 +88,6 @@
 
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
 
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "lib/globalDefines.glsl"
-#include "program/blindness.glsl"
-
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -103,10 +98,6 @@ uniform float viewHeight;
 uniform int worldTime;
 uniform int frameCounter;
 uniform float frameTime;
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
 uniform vec3 fogColor;
 uniform vec3 skyColor;
 
@@ -148,6 +139,11 @@ vec3 transitionColorB;
 
 vec3 currentColorA;
 vec3 currentColorB;
+
+#include "lib/globalDefines.glsl"
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 mediump float fogify(float x, float w) {
     return w / (x * x + w);

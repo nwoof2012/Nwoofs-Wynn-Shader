@@ -1,9 +1,19 @@
 #version 460 compatibility
+
+uniform float near;
+uniform float far;
+
+uniform int viewWidth;
+uniform int viewHeight;
+
+uniform vec3 cameraPosition;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 #include "distort.glsl"
-
-#define SCENE_AWARE_LIGHTING
-
 #define ENTITY_SHADOWS
 
 precision mediump float;

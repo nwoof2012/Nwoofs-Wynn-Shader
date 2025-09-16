@@ -2,11 +2,6 @@
 
 #define FRAGMENT_SHADER
 
-#include "lib/globalDefines.glsl"
-#include "lib/optimizationFunctions.glsl"
-
-#include "program/underwater.glsl"
-
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
 
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
@@ -42,8 +37,6 @@ precision mediump float;
 varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec4 Color;
-
-in vec3 viewSpaceFragPosition;
 
 varying vec2 LightmapCoords;
 
@@ -82,6 +75,20 @@ float baseFogDistMin;
 float baseFogDistMax;
 float fogMin;
 float fogMax;
+
+uniform float near;
+uniform float far;
+
+uniform int viewWidth;
+uniform int viewHeight;
+
+uniform vec3 cameraPosition;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+#include "program/blindness.glsl"
 
 /* RENDERTARGETS:0,1,2,4,15,6,12,13 */
 
@@ -145,8 +152,6 @@ void dawnFunc(float time, float timeFactor) {
 
 #include "lib/timeCycle.glsl"
 
-uniform float near;
-uniform float far;
 uniform int dhRenderDistance;
 
 void main() {
@@ -189,10 +194,12 @@ void main() {
     } else {
         a = 0;
     }
+
+    vec3 newNormal = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
     
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(Normal * 0.5 + 0.5f, 1.0f);
-    #ifndef SCENE_AWARE_LIGHTING
+    gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
+    #if SCENE_AWARE_LIGHTING == 0
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(a);

@@ -294,7 +294,10 @@ value.FOLIAGE_WAVE_DISTANCE.32=§4§k§oa §4§l32 Chunks §4§k§l§oa
 option.FOLIAGE_WAVE_DISTANCE.comment=§9Sets how far away visible foliage will wave. §6§lMedium-High Performance Impact
 
 option.SCENE_AWARE_LIGHTING=§e§lScene Aware Lighting
-option.SCENE_AWARE_LIGHTING.comment=Enables colored lighting based on the light source
+value.SCENE_AWARE_LIGHTING.0=§cOff
+value.SCENE_AWARE_LIGHTING.1=§aBlur
+value.SCENE_AWARE_LIGHTING.2=§4§k§l§4§k§oa §4§l§oON §4§k§l§oa
+option.SCENE_AWARE_LIGHTING.comment=Enables colored lighting based on the light source. §e§lMedium §6to §4§lSevere §6performance impact
 
 option.LIGHTMAP_QUALITY=§e§lLightmap Quality
 value.LIGHTMAP_QUALITY.4=4 Samples
