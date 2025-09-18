@@ -91,7 +91,6 @@ uniform vec3 cameraPosition;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;

@@ -88,7 +88,6 @@ uniform vec3 cameraPosition;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 /* RENDERTARGETS:0,1,2,4,15,6,12,13 */
 

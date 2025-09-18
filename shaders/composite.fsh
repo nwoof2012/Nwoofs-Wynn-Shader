@@ -147,6 +147,8 @@ uniform sampler2D colortex12;
 
 uniform sampler2D colortex15;
 
+uniform float dhFarPlane;
+
 const mediump float sunPathRotation = -40.0f;
 
 const mediump float Ambient = 0.1f;
@@ -1794,13 +1796,15 @@ void main() {
 
                 //if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
 
-                Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
+                //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness)
+                Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)) * currentColor, 1.0f);
             } else {
                 #ifdef BLOOM
                     Albedo.xyz = mix2(Albedo.xyz, max(normalize2(lightmapColor),lightmapColor/10), clamp(length(lightmapColor), 0.0, 1.0));
                 #endif
-                Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
+                Albedo.xyz = blindEffect(Albedo.xyz, TexCoords);
+                //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(currentColor * Albedo, 1.0f);
             }
             return;
@@ -1946,6 +1950,8 @@ void main() {
         /*if(timePhase < 4 && timePhase > 2) {
             Diffuse.xyz *= vec3(0.4f);
         }*/
+
+        Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
 
         gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
         gl_FragData[1] = texture2D(colortex1,TexCoords);

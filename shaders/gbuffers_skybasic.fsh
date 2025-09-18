@@ -140,10 +140,11 @@ vec3 transitionColorB;
 vec3 currentColorA;
 vec3 currentColorB;
 
+uniform float blindness;
+
 #include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 mediump float fogify(float x, float w) {
     return w / (x * x + w);
@@ -451,9 +452,9 @@ void main() {
         //discard;
     }
 
-    if(blindness > 0.0) {
+    /*if(blindness > 0.0) {
         outputColor.rgb = blindEffect(outputColor.rgb);
-    }
+    }*/
     gl_FragData[1] = vec4(0.0, 1.0, 0.0, 1.0);
 
     /*if(timePhase < 4 && timePhase > 2) {

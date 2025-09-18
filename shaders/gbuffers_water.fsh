@@ -72,7 +72,6 @@ uniform float far;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
@@ -262,9 +261,9 @@ void main() {
     //normalDefine = normalDefine + noiseMap;
     mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
     
-    if(blindness > 0f) {
+    /*if(blindness > 0f) {
         albedo.xyz = blindEffect(albedo.xyz);
-    }
+    }*/
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5,1.0);

@@ -24,7 +24,6 @@ uniform vec3 cameraPosition;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 /* RENDERTARGETS:0,1,2,6,5 */
 void main() {
@@ -42,9 +41,9 @@ void main() {
 
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-    if(blindness > 0f) {
+    /*if(blindness > 0f) {
         color.xyz = blindEffect(color.xyz);
-    }
+    }*/
     
     gl_FragData[0] = color;
     gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5, 1.0);

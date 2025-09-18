@@ -129,7 +129,7 @@ uniform float viewHeight;
 
 uniform vec3 cameraPosition;
 
-uniform float blindness;
+//uniform float blindness;
 
 uniform sampler2D colortex8;
 uniform sampler2D colortex9;
@@ -677,8 +677,8 @@ void sunsetFunc(float time, float timeFactor) {
         float fogDHTransitionDry = far/mix3(DH_FOG_DAY_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
         float fogDHTransitionWet = far/mix3(DH_FOG_DAY_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_NIGHT_RAIN_DIST_MAX, sunsetLerp, 0.5);
         fogDHTransition = far/dhFarPlane;
-        fogDistMin = FOG_SUNSET_DIST_MIN;
-        fogDistMax = FOG_SUNSET_DIST_MAX;
+        fogDistMin = mix3(FOG_DAY_DIST_MIN, FOG_SUNSET_DIST_MIN, FOG_NIGHT_DIST_MIN, sunsetLerp, 0.5);
+        fogDistMax = mix3(FOG_DAY_DIST_MAX, FOG_SUNSET_DIST_MAX, FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5);
     }
 }
 
@@ -727,8 +727,8 @@ void dawnFunc(float time, float timeFactor) {
         float fogDHTransitionDry = far/mix3(DH_FOG_NIGHT_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_DAY_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
         float fogDHTransitionWet = far/mix3(DH_FOG_NIGHT_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_DAY_RAIN_DIST_MAX, sunsetLerp, 0.5);
         fogDHTransition = far/dhFarPlane;
-        fogDistMin = FOG_SUNSET_DIST_MIN;
-        fogDistMax = FOG_SUNSET_DIST_MAX;
+        fogDistMin = mix3(FOG_NIGHT_DIST_MIN, FOG_SUNSET_DIST_MIN, FOG_DAY_DIST_MIN, sunsetLerp, 0.5);
+        fogDistMax = mix3(FOG_NIGHT_DIST_MAX, FOG_SUNSET_DIST_MAX, FOG_DAY_DIST_MAX, sunsetLerp, 0.5);
     }
 }
 
@@ -1109,6 +1109,8 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
     return finalColor;
 }
 
+#include "program/blindness.glsl"
+
 #if VOXEL_AREA == 32
     const mediump float voxelDistance = 32.0;
 #endif
@@ -1420,7 +1422,7 @@ void main() {
 
         float globalDepthMask2 = getDepthMask(depthtex1, colortex13) * dhFarPlane;
 
-        if(Depth2 == 1.0f){
+        if(Depth == 1.0f){
             /*mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
             mediump float maxBlindnessDistance = 30;
@@ -1457,6 +1459,22 @@ void main() {
                     //Diffuse.xyz *= lightBrightness;
 
                     //Diffuse.xyz = max(Diffuse.xyz, vec3(0.02));
+
+                    if(waterTest > 0) {
+                        Albedo = waterFunction(TexCoords, finalNoise, lightBrightness);
+                        Diffuse.xyz = mix2(Diffuse.xyz, Albedo, 0.95);
+                        #ifdef WATER_WAVES
+                            Diffuse.xyz = mix3(Diffuse.xyz * 0.5, Diffuse.xyz, Diffuse.xyz * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
+                        #endif
+                        //Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
+                        /*#if SSR == 1 || SSR = 2
+                            vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
+                            vec4 Albedo4 = waterReflectionsDH(Diffuse.xyz,TexCoords,refNormal, finalNoise);
+                            Diffuse.xyz = Albedo4.xyz;
+                            albedoAlpha = Albedo4.a;
+                            //Diffuse.xyz *= lightBrightness;
+                        #endif*/
+                    }
 
                     mediump float seMinLight = SE_MIN_LIGHT;
 
@@ -1591,7 +1609,7 @@ void main() {
                 }*/
 
                 //if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
-                Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
+                //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 #if VIBRANT_MODE == 1
                     if(isBiomeEnd) {
                         Diffuse.xyz = loadLUT(Diffuse.xyz, lutse);
@@ -1601,6 +1619,7 @@ void main() {
                         //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
                     }
                 #endif
+                Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
             } else {
                 #ifdef BLOOM
@@ -1615,6 +1634,7 @@ void main() {
                         //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
                     }
                 #endif
+                Albedo.xyz = blindEffect(Albedo.xyz, TexCoords);
                 Albedo.xyz = mix2(Albedo.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(currentColor * Albedo, 1.0f);
             }
@@ -1842,7 +1862,6 @@ void main() {
         float fogFactor = clamp(smoothstep(fogDistMin, fogDistMax,globalDepthMask),0,min(fogIntensity,1.0));
         Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, fogFactor);
 
-
         /*if(waterTest > 0) {
             Diffuse.xyz = Albedo;
         }*/
@@ -1860,6 +1879,8 @@ void main() {
                 //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
             }
         #endif
+
+        Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
 
         //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
 

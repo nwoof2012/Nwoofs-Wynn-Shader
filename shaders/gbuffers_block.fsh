@@ -81,7 +81,6 @@ uniform int viewHeight;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -187,9 +186,9 @@ void main() {
 
     vec3 worldPosition = cameraPosition + (gbufferModelViewInverse * vec4(viewSpaceFragPosition, depth)).xyz;
 
-    if(blindness > 0f) {
+    /*if(blindness > 0f) {
         albedo.xyz = blindEffect(albedo.xyz);
-    }
+    }*/
 
     fogMin = FOG_DAY_DIST_MIN;
     fogMax = FOG_DAY_DIST_MAX;

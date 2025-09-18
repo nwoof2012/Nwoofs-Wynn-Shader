@@ -71,7 +71,6 @@ uniform float dhFarPlane;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 /* RENDERTARGETS:0,2,6,5,1,12,15,13 */
 layout(location = 0) out vec4 outColor0;
@@ -382,9 +381,9 @@ void main() {
 
         isWater = vec4(0.0);
 
-        if(blindness > 0f) {
+        /*if(blindness > 0f) {
             outputColor.xyz = blindEffect(outputColor.xyz);
-        }
+        }*/
 
         //outputColor.xyz = mix2(outputColor, fogColor, fogBlend);
 

@@ -25,7 +25,6 @@ uniform vec3 cameraPosition;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -66,9 +65,9 @@ void main() {
 
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-    if(blindness > 0f) {
+    /*if(blindness > 0f) {
         albedo.xyz = blindEffect(albedo.xyz);
-    }
+    }*/
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, 1.0f);

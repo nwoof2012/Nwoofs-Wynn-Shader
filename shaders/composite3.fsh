@@ -62,6 +62,8 @@ uniform sampler2D cloudtex;
 uniform float near;
 uniform float far;
 
+uniform float dhFarPlane;
+
 #include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
@@ -725,10 +727,11 @@ void main() {
         #endif
     }
 
-    if(blindness > 0.0f) {
+    /*if(blindness > 0.0f) {
         color.rgb = blindEffect(color.rgb);
-    }
+    }*/
     
+    color.xyz = blindEffect(color.xyz, texCoord);
     outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
     gl_FragData[2] = finalLight;
     gl_FragData[3] = texture2D(colortex3, texCoord);

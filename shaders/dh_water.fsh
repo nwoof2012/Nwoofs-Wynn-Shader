@@ -11,6 +11,9 @@
 
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
 
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
+
 precision mediump float;
 
 uniform usampler3D cSampler1;
@@ -36,9 +39,6 @@ uniform sampler2D depthtex1;
 uniform sampler2D depthtex0;
 
 uniform sampler2D water;
-
-uniform mat4 shadowModelView;
-uniform mat4 shadowProjection;
 
 uniform int worldTime;
 uniform int frameCounter;
@@ -78,15 +78,9 @@ uniform float far;
 uniform float dhNearPlane;
 uniform float dhFarPlane;
 
-uniform vec3 cameraPosition;
+layout (rgba8) uniform image2D cimage12;
 
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
-
-layout (rgba8) uniform image2D cimage11;
-
-/* RENDERTARGETS:0,1,2,3,5,12,15,13 */
+/* RENDERTARGETS:0,1,2,3,5,12,15,14 */
 
 mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
     vec3 bitangent = cross(tangent, normal);
@@ -108,16 +102,6 @@ vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
     return texXZ + texXY + texZY;
 }
 
-float remapDHDepth(float depth, float nearPlane, float farPlaneChunks, float farPlaneDH) {
-    float z_dh = linearizeDepth(depth, dhNearPlane, farPlaneDH);
-
-    z_dh = clamp(z_dh, farPlaneChunks, farPlaneDH);
-
-    float d_far_chunks = (farPlaneChunks - nearPlane) / (farPlaneDH - nearPlane);
-    float t = (z_dh - farPlaneChunks) / (farPlaneDH - farPlaneChunks);
-    return mix2(pow2(d_far_chunks,0.2), 1.0, t);
-}
-
 void main() {
     //vec4 albedo = texture2D(texture, TexCoords) * Color;
 
@@ -130,7 +114,7 @@ void main() {
 
     mediump float discardDepth = 1f;
 
-    if(depth == discardDepth) {
+    if(depth2 == discardDepth) {
         vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
         vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
         vec3 View = ViewW.xyz / ViewW.w;
@@ -197,9 +181,9 @@ void main() {
         }*/
         float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-        if(blindness > 0f) {
+        /*if(blindness > 0f) {
             Albedo = blindEffect(Albedo);
-        }
+        }*/
 
         if(mat == DH_BLOCK_WATER) {
             albedo.a = 0.0;
@@ -223,9 +207,9 @@ void main() {
         gl_FragData[3] = vec4(1.0);
         gl_FragData[6] = vec4(distanceFromCamera, dhDepth, waterShadingHeight, 1.0);
 
-        gl_FragData[7] = vec4(dhDepth, 0.0, remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
+        gl_FragData[7] = vec4(dhDepth, 0.0, 0.0, 1.0);
 
-        imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(vec3(remapDHDepth(dhDepth, near, far, dhFarPlane)),1.0));
+        imageStore(cimage12, ivec2(gl_FragCoord.xy/10), vec4(dhDepth));
 
         if(mat == DH_BLOCK_WATER) {
             gl_FragData[4] = vec4(1.0, 0.0, 0.0, 1.0);
@@ -255,7 +239,7 @@ void main() {
         if(mat == DH_BLOCK_WATER) {
             albedo.xyz = mix2(vec3(0.0f,0.33f,0.55f),vec3(1.0f,1.0f,1.0f),pow2(finalNoise.x,5));
             albedo.a = 0.0f;//mix2(0.5f,1f,pow2(finalNoise.x,5));
-            Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
+            //Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
             if(albedo.a < 0.75f) {
                 albedo.a = 0.0;
             }

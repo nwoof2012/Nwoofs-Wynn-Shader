@@ -20,7 +20,6 @@ uniform vec3 cameraPosition;
 #include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 
 /* DRAWBUFFERS:0 */
 

@@ -12,7 +12,6 @@ uniform vec3 cameraPosition;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
 #include "distort.glsl"
 #define ENTITY_SHADOWS
 
