@@ -95,7 +95,7 @@ varying vec2 TexCoords;
 uniform float viewWidth;
 uniform float viewHeight;
 
-uniform int worldTime;
+flat in int worldTime2;
 uniform int frameCounter;
 uniform float frameTime;
 uniform vec3 fogColor;
@@ -340,7 +340,7 @@ void main() {
     mediump float dayNightLerp = clamp(quadTime/500,0,1);
     mediump float sunsetLerp = clamp((quadTime - 500)/500,0,1);
 
-    /*if(worldTime > 500 && worldTime <= 11500) {
+    /*if(worldTime2 > 500 && worldTime2 <= 11500) {
         //baseOutputColorModifier = vec3(DAY_I);
         if(rainStrength < 0.2f) {
             currentColorA = dayColorA;
@@ -349,21 +349,21 @@ void main() {
             currentColorA = dayColorRainA;//mix2(baseColorA,dayColorA,dayNightLerp);
             currentColorB = mix2(transitionColorB,dayColorRainB,dayNightLerp);//mix2(baseColorB,dayColorB,dayNightLerp);   
         }
-        //outputColor = mix2(baseOutputColor, baseOutputColor * baseOutputColorModifier, mod(worldTime/6000f,2f));
+        //outputColor = mix2(baseOutputColor, baseOutputColor * baseOutputColorModifier, mod(worldTime2/6000f,2f));
         
-    } else if(worldTime > 11500 && worldTime <= 12500) {
+    } else if(worldTime2 > 11500 && worldTime2 <= 12500) {
         currentColorA = mix2(dayColorA, nightColorA, sunsetLerp);
         currentColorB = mix2(dayColorB, transitionColorB, sunsetLerp);
-    } else if((worldTime > 12500 && worldTime <= 23500)) {
+    } else if((worldTime2 > 12500 && worldTime2 <= 23500)) {
         //baseOutputColorModifier = vec3(NIGHT_I * 0.4f);
         currentColorA = nightColorA;//mix2(baseColorA, nightColorA, dayNightLerp);
         currentColorB = mix2(transitionColorB,nightColorB,dayNightLerp);//mix2(baseColorB, nightColorB, dayNightLerp);
-        //outputColor = mix2(baseOutputColor, baseOutputColor * baseOutputColorModifier,mod(worldTime/6000f,2f));
-    } else if(worldTime > 23500 || worldTime <= 500) {
+        //outputColor = mix2(baseOutputColor, baseOutputColor * baseOutputColorModifier,mod(worldTime2/6000f,2f));
+    } else if(worldTime2 > 23500 || worldTime2 <= 500) {
         //baseOutputColorModifier = vec3(SUNSET_I);
         currentColorA = mix2(nightColorA, dayColorA, sunsetLerp);
         currentColorB = mix2(nightColorB, transitionColorB, sunsetLerp);
-        //outputColor = mix2(baseOutputColor, baseOutputColor * baseOutputColorModifier, mod(worldTime/6000f,2f));
+        //outputColor = mix2(baseOutputColor, baseOutputColor * baseOutputColorModifier, mod(worldTime2/6000f,2f));
     }*/
 
     timeFunctionFrag();
@@ -442,7 +442,7 @@ void main() {
             gl_FragData[2] = outputLight;
         }
         outputSunMoon *= 1 - rainStrength;
-        if(worldTime%24000 < 12000) {
+        if(worldTime2%24000 < 12000) {
             //outputColor.rgb = mix2(outputColor.rgb, finalSunColor, sunGradient);
             gl_FragData[3] = vec4(vec3(distToSun * 5.0),1.0);
         } else {

@@ -4,8 +4,6 @@
 
 const float sunPathRotation = -40.0f;
 
-#include "lib/commonFunctions.glsl"
-
 varying vec2 TexCoords;
 varying vec3 Normal;
 

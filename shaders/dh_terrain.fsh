@@ -1,5 +1,4 @@
 #version 460 compatibility
-#include "lib/commonFunctions.glsl"
 
 #define DISTANT_HORIZONS
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]

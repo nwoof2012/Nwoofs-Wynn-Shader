@@ -72,43 +72,12 @@ void main() {
         #endif
     #endif
 
-    gl_FragData[2] = vec4(blur, 0.0);
-
-    /*#ifdef SCENE_AWARE_LIGHTING
-        vec3 lightColor = vec3(0);
-        const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
-        const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
-        const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
-        const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
-        const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
-        const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
-        if(lightSourceData.x > 0.5) {
-            lightColor = TorchColor;
-        }
-        else if(lightSourceData.y > 0.5) {
-            lightColor = GlowstoneColor;
-        }
-        else if(lightSourceData.z > 0.5) {
-            lightColor = LampColor;
-        }
-        else if(lightSourceData.x > 0.0) {
-            lightColor = LanternColor;
-        }
-        else if(lightSourceData.y > 0.0) {
-            lightColor = RedstoneColor;
-        }
-        else if(lightSourceData.z > 0.0) {
-            lightColor = RodColor;
-        }
-        gl_FragData[2] = vec4(texture2D(colortex2, TexCoords).xyz,1.0);
-    #endif*/
     gl_FragData[0] = texture2D(colortex0, TexCoords);
-    gl_FragData[1] = texture2D(colortex1, TexCoords); //vec4(texture2D(colortex1, TexCoords).xyz,1.0);
-    gl_FragData[2] = texture2D(colortex2, TexCoords); //vec4(texture2D(colortex2, TexCoords).xyz,1.0);
+    gl_FragData[1] = texture2D(colortex1, TexCoords);
+    gl_FragData[2] = texture2D(colortex2, TexCoords);
     gl_FragData[3] = texture2D(colortex3, TexCoords);
     gl_FragData[4] = texture2D(colortex4, TexCoords);
     gl_FragData[5] = texture2D(colortex5, TexCoords);
     gl_FragData[6] = texture2D(colortex6, TexCoords);
     gl_FragData[7] = texture2D(colortex10,TexCoords);
-    //gl_FragData[3] = vec4(texture2D(colortex10, TexCoords).xyz,1.0);
 }

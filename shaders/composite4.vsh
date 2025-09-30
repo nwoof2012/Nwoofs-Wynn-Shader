@@ -83,11 +83,6 @@ void main() {
     vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
     world_pos = foot_pos + cameraPosition;
-
-    /*#ifdef SCENE_AWARE_LIGHTING
-        #include "program/voxelizing.glsl"
-        //imageStore(lightData, texCoord, texture2D(lighting,texCoord));
-    #endif*/
     
     #if PATH_TRACING_GI == 1
         lightmap = GenerateLightmap(1f,1f);
@@ -95,13 +90,5 @@ void main() {
         lightmap = lightmapData();
     #endif
     timeFunctionVert();
-    /*if(mc_Entity.x == 8.0 || mc_Entity.x == 9.0) {
-        vec4 noiseMap = texture2D(noise, TexCoords + sin(gl_Position.y*32f + ((frameCounter)/90f)*0.25f));
-        vec4 noiseMap2 = texture2D(noise, TexCoords + sin(gl_Position.y*16f + ((frameCounter)/90f)*0.25f));
-        vec4 finalNoise = mix(noiseMap,noiseMap2,0.5f);
-
-        gl_Position.xy += finalNoise.xy;
-        //vec3 Normal = normalize(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f) + finalNoise.xyz;
-    }*/
     TexCoords = gl_MultiTexCoord0.st;
 }

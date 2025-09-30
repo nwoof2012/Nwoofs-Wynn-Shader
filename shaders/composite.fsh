@@ -181,17 +181,12 @@ in vec3 Tangent;
 #include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 #include "distort.glsl"
-#include "lib/commonFunctions.glsl"
 #include "lib/spaceConversion.glsl"
 #include "program/underwater.glsl"
 #include "lib/colorFunctions.glsl"
-//#include "lib/includes.glsl"
 
-//vec3 dayColor = vec3(1.0f,1.0f,1.0f);
 vec3 dayColor = vec3(DAY_R,DAY_G,DAY_B);
-//vec3 nightColor = vec3(0.9f,1.0f,1.1f);
 vec3 nightColor = vec3(NIGHT_R,NIGHT_G,NIGHT_B);
-//vec3 transitionColor = vec3(1.1f, 1.0f, 0.8f);
 vec3 transitionColor = vec3(SUNSET_R,SUNSET_G,SUNSET_B);
 
 vec3 seColor = vec3(SE_R,SE_G,SE_B);
@@ -255,19 +250,9 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
     vec3 lightColor = texture2D(colortex10, TexCoords).rgb;
     sum += lightColor;
 
-    /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
-        GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-    }*/
-
-    /*if(abs(sum.r - sum.g) > 0.25) {
-        return GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-    }*/
-
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 
     mediump float depthTolerance = 0.0125;
-
-    //mediump float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
         mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
@@ -282,25 +267,12 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
         mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
         mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
-        
-        /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
-            continue;
-        }*/
-        /*if(waterTest > 0f) {
-            sum += (specularMap + light) * sampleDepth;
-            continue;
-        }*/
+    
         vec3 lightColor2 = light;
-        /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-            continue;
-        }*/
         if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
             sum += lightColor2;
         }
         lightColor2 = light * sampleDepth;
-        /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-            continue;
-        }*/
         sum += lightColor2;
     }
 
@@ -318,58 +290,20 @@ vec3 blurLightmap(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo)
         mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
         mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
 
-        /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
-            continue;
-        }*/
-        /*if(waterTest > 0f) {
-            sum += (specularMap + light) * sampleDepth;
-            continue;
-        }*/
         vec3 lightColor2 = light;
-        /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-            continue;
-        }*/
         if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
             sum += lightColor2;
         }
         lightColor2 = light * sampleDepth;
-        /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-            continue;
-        }*/
         sum += lightColor2;
     }
 
     sum /= BLOOM_QUALITY/8;
 
-    /*sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 8.0 * blur * hstep, TexCoords.y - 8.0 * blur * hstep)).rg) * 0.0162162162;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 7.0 * blur * hstep, TexCoords.y - 7.0 * blur * hstep)).rg) * 0.0540540541;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 6.0 * blur * hstep, TexCoords.y - 6.0 * blur * hstep)).rg) * 0.1216216216;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 5.0 * blur * hstep, TexCoords.y - 5.0 * blur * hstep)).rg) * 0.1945945946;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 4.0 * blur * hstep, TexCoords.y - 4.0 * blur * hstep)).rg) * 0.389189189;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 3.0 * blur * hstep, TexCoords.y - 3.0 * blur * hstep)).rg) * 0.583783784;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 2.0 * blur * hstep, TexCoords.y - 2.0 * blur * hstep)).rg) * 0.875675676;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 1.0 * blur * hstep, TexCoords.y - 1.0 * blur * hstep)).rg) * 0.985135135;
-
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 8.0 * blur * hstep, TexCoords.y + 8.0 * blur * hstep)).rg) * 0.0162162162;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 7.0 * blur * hstep, TexCoords.y + 7.0 * blur * hstep)).rg) * 0.0540540541;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 6.0 * blur * hstep, TexCoords.y + 6.0 * blur * hstep)).rg) * 0.1216216216;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 5.0 * blur * hstep, TexCoords.y + 5.0 * blur * hstep)).rg) * 0.1945945946;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 4.0 * blur * hstep, TexCoords.y + 1.0 * blur * hstep)).rg) * 0.389189189;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 3.0 * blur * hstep, TexCoords.y + 2.0 * blur * hstep)).rg) * 0.583783784;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 2.0 * blur * hstep, TexCoords.y + 3.0 * blur * hstep)).rg) * 0.875675676;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 1.0 * blur * hstep, TexCoords.y + 4.0 * blur * hstep)).rg) * 0.985135135;*/
-
-    /*if(dot(sum, vec3(0.333)) > 2) {
-        sum *= mix2(vec3(2),vec3(0.5),clamp(dot(sum, vec3(0.333)),0,1.2));
-    }*/
-    
-
     mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
-        bloomLerp = clamp01(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)));
+        bloomLerp = clamp(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)),0,1);
     #endif
-
-    //sum *= BLOOM_INTENSITY + 0.5;
 
     return pow2(sum,vec3(GAMMA)) * vec3(0.00625);
 }
@@ -399,21 +333,6 @@ vec3 GetLightmapColor(in vec2 Lightmap){
     if(lightmap.x > 0) {
         TorchLighting = TorchColor * lightmap.x * 20.0;
     }
-    /*if(lightmap.x < 0) {
-        GlowstoneLighting = GlowstoneColor * -lightmap.x;
-    }
-    if(lightmap.y > 0) {
-        LampLighting = LampColor * lightmap.y;
-    }
-    if(lightmap.y < 0) {
-        LanternLighting = LanternColor * -lightmap.y;
-    }
-    if(lightmap.z > 0) {
-        RedstoneLighting = RedstoneColor * lightmap.z;
-    }
-    if(lightmap.z < 0) {
-        RodLighting = RodColor * -lightmap.z;
-    }*/
     vec3 LightmapLighting = TorchLighting + SkyLighting/5;
     if(isBiomeEnd) LightmapLighting = TorchLighting/2.5 + SkyLighting/10;
     return LightmapLighting;
@@ -504,19 +423,9 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         sum = blurLightmap(waterTest, specularCoord, Normal, Albedo);
     #endif
 
-    /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
-        GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-    }*/
-
-    /*if(abs(sum.r - sum.g) > 0.25) {
-        return GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-    }*/
-
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 
     mediump float depthTolerance = 0.0125;
-
-    //mediump float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
         mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
@@ -531,14 +440,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
         mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
         mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
-        
-        /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
-            continue;
-        }*/
-        /*if(waterTest > 0f) {
-            sum += (specularMap + light) * sampleDepth;
-            continue;
-        }*/
+
         #if SCENE_AWARE_LIGHTING > 0 defined BLOOM
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
@@ -548,10 +450,6 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
             Ray ray = Ray(viewSpaceFragPosition + vec3(shiftedUVs, 0.0), rayDir);
             vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a) * sampleDepth;
-            
-            /*if(dot((sum + rayColor) * vec3(10.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
 
             sum += rayColor2;
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
@@ -559,16 +457,10 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             }
         #else
             vec3 lightColor2 = vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix2(vec3(1.0), TorchColor,0.4f) * BRIGHTNESS;
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
                 sum += lightColor2;
             }
             lightColor2 = light * sampleDepth;
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             sum += lightColor2;
         #endif
     }
@@ -587,13 +479,6 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
         mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
 
-        /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
-            continue;
-        }*/
-        /*if(waterTest > 0f) {
-            sum += (specularMap + light) * sampleDepth;
-            continue;
-        }*/
         #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
@@ -603,10 +488,6 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
             Ray ray = Ray(viewSpaceFragPosition + vec3(shiftedUVs, 0.0), rayDir);
             vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a) * sampleDepth;
-            
-            /*if(dot((sum + rayColor) * vec3(10.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
 
             sum += rayColor2;
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
@@ -614,44 +495,15 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             }
         #else
             vec3 lightColor2 = vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix2(vec3(1.0), TorchColor,0.4f) * BRIGHTNESS;
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
                 sum += lightColor2;
             }
             lightColor2 = light * sampleDepth;
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             sum += lightColor2;
         #endif
     }
 
     sum /= BLOOM_QUALITY/8;
-
-    /*sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 8.0 * blur * hstep, TexCoords.y - 8.0 * blur * hstep)).rg) * 0.0162162162;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 7.0 * blur * hstep, TexCoords.y - 7.0 * blur * hstep)).rg) * 0.0540540541;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 6.0 * blur * hstep, TexCoords.y - 6.0 * blur * hstep)).rg) * 0.1216216216;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 5.0 * blur * hstep, TexCoords.y - 5.0 * blur * hstep)).rg) * 0.1945945946;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 4.0 * blur * hstep, TexCoords.y - 4.0 * blur * hstep)).rg) * 0.389189189;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 3.0 * blur * hstep, TexCoords.y - 3.0 * blur * hstep)).rg) * 0.583783784;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 2.0 * blur * hstep, TexCoords.y - 2.0 * blur * hstep)).rg) * 0.875675676;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 1.0 * blur * hstep, TexCoords.y - 1.0 * blur * hstep)).rg) * 0.985135135;
-
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 8.0 * blur * hstep, TexCoords.y + 8.0 * blur * hstep)).rg) * 0.0162162162;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 7.0 * blur * hstep, TexCoords.y + 7.0 * blur * hstep)).rg) * 0.0540540541;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 6.0 * blur * hstep, TexCoords.y + 6.0 * blur * hstep)).rg) * 0.1216216216;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 5.0 * blur * hstep, TexCoords.y + 5.0 * blur * hstep)).rg) * 0.1945945946;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 4.0 * blur * hstep, TexCoords.y + 1.0 * blur * hstep)).rg) * 0.389189189;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 3.0 * blur * hstep, TexCoords.y + 2.0 * blur * hstep)).rg) * 0.583783784;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 2.0 * blur * hstep, TexCoords.y + 3.0 * blur * hstep)).rg) * 0.875675676;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 1.0 * blur * hstep, TexCoords.y + 4.0 * blur * hstep)).rg) * 0.985135135;*/
-
-    /*if(dot(sum, vec3(0.333)) > 2) {
-        sum *= mix2(vec3(2),vec3(0.5),clamp(dot(sum, vec3(0.333)),0,1.2));
-    }*/
-    
 
     mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
@@ -694,19 +546,9 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         sum = blurLightmap(waterTest, specularCoord, Normal, Albedo);
     #endif
 
-    /*if(texture2D(colortex2, TexCoords).r < 0.85 || texture2D(colortex2, TexCoords).g < 0.85) {
-        GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-    }*/
-
-    /*if(abs(sum.r - sum.g) > 0.25) {
-        return GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-    }*/
-
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 
     mediump float depthTolerance = 0.0125;
-
-    //mediump float camDistance = distance(vec3(0.0),viewSpaceFragPosition);
 
     for(int i = 0; i < BLOOM_QUALITY/2; i++) {
         mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
@@ -721,14 +563,7 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         mediump float isEntity = texture2D(colortex15,shiftedUVs).r;
         mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
         mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
-        
-        /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
-            continue;
-        }*/
-        /*if(waterTest > 0f) {
-            sum += (specularMap + light) * sampleDepth;
-            continue;
-        }*/
+
         #if defined SCENE_AWARE_LIGHTING && defined BLOOM
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
@@ -738,10 +573,6 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
             Ray ray = Ray(viewSpaceFragPosition + vec3(shiftedUVs, 0.0), rayDir);
             vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a)/vec3(2) * sampleDepth;
-            
-            /*if(dot((sum + rayColor) * vec3(10.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
 
             sum += rayColor2;
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
@@ -749,16 +580,10 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             }
         #else
             vec3 lightColor2 = vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix2(vec3(1.0), TorchColor,0.4f);
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
                 sum += lightColor2;
             }
             lightColor2 = light * sampleDepth;
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             sum += lightColor2;
         #endif
     }
@@ -777,13 +602,6 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
         mediump float isEntity2 = texture2D(colortex15,shiftedUVs + UVsOffset).r;
         mediump float camDistance = texture2D(colortex15, shiftedUVs).g;
 
-        /*if(abs(normalA - normalB) >= depthTolerance/camDistance) {
-            continue;
-        }*/
-        /*if(waterTest > 0f) {
-            sum += (specularMap + light) * sampleDepth;
-            continue;
-        }*/
         #if defined SCENE_AWARE_LIGHTING && defined BLOOM
             light = blurLightmap(waterTest, specularCoord, Normal, Albedo);
         #endif
@@ -793,10 +611,6 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             rayDir = normalize2(lightDir + shiftedUVs.x * cameraRight + shiftedUVs.y * cameraUp);
             Ray ray = Ray(viewSpaceFragPosition + vec3(shiftedUVs, 0.0), rayDir);
             vec3 rayColor2 = traceRay(ray,vec2(length(lightmap),1f), Normal,Albedo.a)/vec3(2) * sampleDepth;
-            
-            /*if(dot((sum + rayColor) * vec3(10.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
 
             sum += rayColor2;
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
@@ -804,48 +618,19 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
             }
         #else
             vec3 lightColor2 = vec3(0.6f) * (texture2D(colortex2, shiftedUVs).r) * mix2(vec3(1.0), TorchColor,0.4f);
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             if(texture2D(colortex2, shiftedUVs).r > 0.0f) {
                 sum += lightColor2;
             }
             lightColor2 = light * sampleDepth;
-            /*if(dot((sum + lightColor) * vec3(1.5025),vec3(0.333f)) < BLOOM_THRESHOLD) {
-                continue;
-            }*/
             sum += lightColor2;
         #endif
     }
 
     sum /= BLOOM_QUALITY/8;
 
-    /*sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 8.0 * blur * hstep, TexCoords.y - 8.0 * blur * hstep)).rg) * 0.0162162162;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 7.0 * blur * hstep, TexCoords.y - 7.0 * blur * hstep)).rg) * 0.0540540541;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 6.0 * blur * hstep, TexCoords.y - 6.0 * blur * hstep)).rg) * 0.1216216216;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 5.0 * blur * hstep, TexCoords.y - 5.0 * blur * hstep)).rg) * 0.1945945946;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 4.0 * blur * hstep, TexCoords.y - 4.0 * blur * hstep)).rg) * 0.389189189;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 3.0 * blur * hstep, TexCoords.y - 3.0 * blur * hstep)).rg) * 0.583783784;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 2.0 * blur * hstep, TexCoords.y - 2.0 * blur * hstep)).rg) * 0.875675676;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x - 1.0 * blur * hstep, TexCoords.y - 1.0 * blur * hstep)).rg) * 0.985135135;
-
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 8.0 * blur * hstep, TexCoords.y + 8.0 * blur * hstep)).rg) * 0.0162162162;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 7.0 * blur * hstep, TexCoords.y + 7.0 * blur * hstep)).rg) * 0.0540540541;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 6.0 * blur * hstep, TexCoords.y + 6.0 * blur * hstep)).rg) * 0.1216216216;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 5.0 * blur * hstep, TexCoords.y + 5.0 * blur * hstep)).rg) * 0.1945945946;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 4.0 * blur * hstep, TexCoords.y + 1.0 * blur * hstep)).rg) * 0.389189189;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 3.0 * blur * hstep, TexCoords.y + 2.0 * blur * hstep)).rg) * 0.583783784;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 2.0 * blur * hstep, TexCoords.y + 3.0 * blur * hstep)).rg) * 0.875675676;
-    sum += GetLightmapColor(texture2D(colortex2, vec2(TexCoords.x + 1.0 * blur * hstep, TexCoords.y + 4.0 * blur * hstep)).rg) * 0.985135135;*/
-
-    /*if(dot(sum, vec3(0.333)) > 2) {
-        sum *= mix2(vec3(2),vec3(0.5),clamp(dot(sum, vec3(0.333)),0,1.2));
-    }*/
-    
-
     mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
-        bloomLerp = clamp01(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)));
+        bloomLerp = clamp(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)),0,1);
     #endif
 
     #if PATH_TRACING_GI == 1
@@ -858,8 +643,6 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
     return pow2(sum,vec3(GAMMA)) * vec3(0.0625);
 }
-
-//mediump float far = 1f;
 
 vec4 GetLightVolume(vec3 pos) {
     vec4 lightVolume;
@@ -949,85 +732,77 @@ mediump float fresnel(vec3 normal, vec3 viewDir, float pow2er) {
 
 void noonFunc(float time, float timeFactor) {
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
-    fogIntensity = FOG_DAY_INTENSITY; //mix2(baseFogIntensity, FOG_DAY_INTENSITY, dayNightLerp);
+    fogIntensity = FOG_DAY_INTENSITY;
     baseDiffuseModifier = vec3(DAY_I);
-    currentColor = dayColor; //mix2(baseColor,dayColor,dayNightLerp);
-    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    currentColor = dayColor;
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier;
     if(isBiomeEnd) {
-        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B);
         fogIntensity = FOG_SE_INTENSITY;
-        //fogDHTransition = far/dhFarPlane;
     } else {
-        vec3 fogAlbedoDry = vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
-        fogAlbedo = vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
+        vec3 fogAlbedoDry = vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B);
+        fogAlbedo = vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B);
         float fogRain = FOG_DAY_RAIN_INTENSITY * FOG_RAIN_MULTIPLIER;
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
-        float fogDHTransitionDry = far/DH_FOG_DAY_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
-        //fogDHTransition = far/dhFarPlane;
+        float fogDHTransitionDry = far/DH_FOG_DAY_DIST_MAX;
     }
 }
 
 void sunsetFunc(float time, float timeFactor) {
     mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
-    fogIntensity = mix3(FOG_DAY_INTENSITY, FOG_SUNSET_INTENSITY, FOG_NIGHT_INTENSITY, sunsetLerp, 0.5); //mix2(baseFogIntensity, FOG_SUNSET_INTENSITY, sunsetLerp);
+    fogIntensity = mix3(FOG_DAY_INTENSITY, FOG_SUNSET_INTENSITY, FOG_NIGHT_INTENSITY, sunsetLerp, 0.5);
     baseDiffuseModifier = mix3(vec3(DAY_I), vec3(SUNSET_I), vec3(NIGHT_I), sunsetLerp, 0.5);
-    currentColor = mix3(dayColor, transitionColor, nightColor, sunsetLerp, 0.5); //mix2(dayColor, transitionColor, sunsetLerp);
-    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    currentColor = mix3(dayColor, transitionColor, nightColor, sunsetLerp, 0.5);
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier;
     if(isBiomeEnd) {
-        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B);
         fogIntensity = FOG_SE_INTENSITY;
-        //fogDHTransition = far/dhFarPlane;
     } else {
-        vec3 fogAlbedoDry = mix3(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+        vec3 fogAlbedoDry = mix3(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), sunsetLerp, 0.5);
         vec3 fogAlbedoWet = mix3(vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), sunsetLerp, 0.5);
         fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainStrength);
         float fogRain = mix3(FOG_DAY_RAIN_INTENSITY, FOG_SUNSET_RAIN_INTENSITY, FOG_NIGHT_RAIN_INTENSITY, sunsetLerp, 0.5) * FOG_RAIN_MULTIPLIER;
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
-        float fogDHTransitionDry = far/mix3(DH_FOG_DAY_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
+        float fogDHTransitionDry = far/mix3(DH_FOG_DAY_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5);
         float fogDHTransitionWet = far/mix3(DH_FOG_DAY_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_NIGHT_RAIN_DIST_MAX, sunsetLerp, 0.5);
-        //fogDHTransition = far/dhFarPlane;
     }
 }
 
 void nightFunc(float time, float timeFactor) {
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
-    fogIntensity = FOG_NIGHT_INTENSITY; //mix2(baseFogIntensity, FOG_DAY_INTENSITY, dayNightLerp);
+    fogIntensity = FOG_NIGHT_INTENSITY;
     baseDiffuseModifier = vec3(NIGHT_I);
-    currentColor = nightColor; //mix2(baseColor,dayColor,dayNightLerp);
-    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    currentColor = nightColor;
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier;
     if(isBiomeEnd) {
-        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), dayNightLerp);
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B);
         fogIntensity = FOG_SE_INTENSITY;
-        //fogDHTransition = far/DH_FOG_SE_DIST_MAX;
     } else {
-        vec3 fogAlbedoDry = vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B); //mix2(baseFog, vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), dayNightLerp);
-        fogAlbedo = vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B); //mix2(fogAlbedoDry, vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), rainStrength);
+        vec3 fogAlbedoDry = vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B);
+        fogAlbedo = vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B);
         float fogRain = FOG_NIGHT_RAIN_INTENSITY * FOG_RAIN_MULTIPLIER;
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
-        float fogDHTransitionDry = far/DH_FOG_NIGHT_DIST_MAX; //mix2(baseFogDHTransition, far/DH_FOG_DAY_DIST_MAX,dayNightLerp);
-        //fogDHTransition = far/dhFarPlane;
+        float fogDHTransitionDry = far/DH_FOG_NIGHT_DIST_MAX;
     }
 }
 
 void dawnFunc(float time, float timeFactor) {
     mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
-    fogIntensity = mix3(FOG_NIGHT_INTENSITY, FOG_SUNSET_INTENSITY, FOG_DAY_INTENSITY, sunsetLerp, 0.5); //mix2(baseFogIntensity, FOG_SUNSET_INTENSITY, sunsetLerp);
+    fogIntensity = mix3(FOG_NIGHT_INTENSITY, FOG_SUNSET_INTENSITY, FOG_DAY_INTENSITY, sunsetLerp, 0.5);
     baseDiffuseModifier = mix3(vec3(NIGHT_I), vec3(SUNSET_I), vec3(DAY_I), sunsetLerp, 0.5);
-    currentColor = mix3(nightColor, transitionColor, dayColor, sunsetLerp, 0.5); //mix2(dayColor, transitionColor, sunsetLerp);
-    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier; //mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
+    currentColor = mix3(nightColor, transitionColor, dayColor, sunsetLerp, 0.5);
+    Diffuse = pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier;
     if(isBiomeEnd) {
-        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B); //mix2(baseFog, vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B), sunsetLerp);
+        fogAlbedo = vec3(FOG_SE_R, FOG_SE_G, FOG_SE_B);
         fogIntensity = FOG_SE_INTENSITY;
-        //fogDHTransition = far/DH_FOG_SE_DIST_MAX;
     } else {
-        vec3 fogAlbedoDry = mix3(vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), sunsetLerp, 0.5); //mix2(baseFog, vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), sunsetLerp);
+        vec3 fogAlbedoDry = mix3(vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), vec3(FOG_SUNSET_R, FOG_SUNSET_G, FOG_SUNSET_B), vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), sunsetLerp, 0.5);
         vec3 fogAlbedoWet = mix3(vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), vec3(FOG_SUNSET_RAIN_R, FOG_SUNSET_RAIN_G, FOG_SUNSET_RAIN_B), vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), sunsetLerp, 0.5);
         fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainStrength);
         float fogRain = mix3(FOG_NIGHT_RAIN_INTENSITY, FOG_SUNSET_RAIN_INTENSITY, FOG_DAY_RAIN_INTENSITY, sunsetLerp, 0.5) * FOG_RAIN_MULTIPLIER;
         fogIntensity = mix2(fogIntensity, fogRain, rainStrength);
-        float fogDHTransitionDry = far/mix3(DH_FOG_NIGHT_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_DAY_DIST_MAX, sunsetLerp, 0.5); //mix2(baseFogDHTransition, far/DH_FOG_SUNSET_DIST_MAX,sunsetLerp);
+        float fogDHTransitionDry = far/mix3(DH_FOG_NIGHT_DIST_MAX, DH_FOG_SUNSET_DIST_MAX, DH_FOG_DAY_DIST_MAX, sunsetLerp, 0.5);
         float fogDHTransitionWet = far/mix3(DH_FOG_NIGHT_RAIN_DIST_MAX, DH_FOG_SUNSET_RAIN_DIST_MAX, DH_FOG_DAY_RAIN_DIST_MAX, sunsetLerp, 0.5);
-        //fogDHTransition = far/dhFarPlane;
     }
 }
 
@@ -1109,7 +884,6 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     if(underwaterDepth >= 1.0) {
         waterColor = vec3(0.0f, 0.2f, 0.22f);
         return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.85),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85)), vec3(GAMMA));
-        //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
     }
 
     if(texture2D(depthtex0,TexCoords).x == 1.0) {
@@ -1127,7 +901,6 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     finalColor = mix2(finalColor, reflectionColor, fresnelBlend);
 
     return pow2(finalColor, vec3(GAMMA));
-    //return pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,0.5),vec3(GAMMA));
 }
 
 bool isOutOfTexture(vec2 texcoord) {
@@ -1193,7 +966,6 @@ vec4 waterReflections(vec3 color, vec2 uv, vec3 normal, vec4 noise) {
     mediump float depth = texture2D(depthtex0, uv).r;
     vec3 position = getWorldPosition(uv, depth);
     vec3 viewDir = normalize2(position);
-    //vec3 newNormal = (gbufferModelView * gbufferProjection * vec4(normal,1.0)).xyz;
     vec3 reflectedDir = normalize2(reflect(viewDir, normal));
 
     vec2 refractionFactor = vec2(0);
@@ -1208,8 +980,6 @@ vec4 waterReflections(vec3 color, vec2 uv, vec3 normal, vec4 noise) {
         vec3 reflectionColor = texture2D(colortex0, reflectionUV).rgb;
         finalColor = mix2(mix2(vec4(reflectionColor, 1.0), finalColor, 0.4), finalColor, 1 - uv.y);
     }
-
-    //finalColor = mix2(vec4(finalColor, 1.0), vec4(color, 1.0),uv.x);
     
     return finalColor;
 }
@@ -1222,7 +992,6 @@ vec4 waterReflectionsDH(vec3 color, vec2 uv, vec3 normal, vec4 noise) {
     mediump float depth = texture2D(colortex15, uv).g;
     vec3 position = getWorldPosition(uv, depth);
     vec3 viewDir = normalize2(position);
-    //vec3 newNormal = (gbufferModelView * gbufferProjection * vec4(normal,1.0)).xyz;
     vec3 reflectedDir = normalize2(reflect(viewDir, normal));
 
     vec2 refractionFactor = vec2(0);
@@ -1237,8 +1006,6 @@ vec4 waterReflectionsDH(vec3 color, vec2 uv, vec3 normal, vec4 noise) {
         vec3 reflectionColor = texture2D(colortex0, reflectionUV).rgb;
         finalColor = mix2(mix2(vec4(reflectionColor, 1.0), finalColor, 0.4), finalColor, 1 - uv.y);
     }
-
-    //finalColor = mix2(vec4(finalColor, 1.0), vec4(color, 1.0),uv.x);
     
     return finalColor;
 }
@@ -1256,8 +1023,6 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
         vec3 reflectionColor = texture2D(colortex0, reflectionUV).rgb;
         finalColor = mix2(mix2(vec4(reflectionColor, 1.0), finalColor, 0.8), finalColor, 1 - uv.y);
     }
-
-    //finalColor = mix2(vec4(finalColor, 1.0), vec4(color, 1.0),uv.x);
     
     return finalColor;
 }
@@ -1265,10 +1030,8 @@ vec4 metallicReflections(vec3 color, vec2 uv, vec3 normal) {
 float foamFactor(vec3 worldCoords, vec3 worldCoords2) {
     vec2 depthA2d = triplanarCoords(abs(worldCoords - worldCoords2), texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
     float depth = max(depthA2d.x, depthA2d.y);
-    //depth = linearizeDepth(depth, near, far);
-    vec2 depthB2d = triplanarCoords(worldCoords, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy; //textureLod(depthtex0, TexCoords, 0).r;
+    vec2 depthB2d = triplanarCoords(worldCoords, texture2D(colortex1,TexCoords).rgb * 2.0 - 1.0, 1.0).xy;
     float depth2 = max(depthB2d.x, depthB2d.y);
-    //depth2 = linearizeDepth(depth2, near, far);
     float foamScale = sqrt(dot(cameraPosition - worldCoords, cameraPosition - worldCoords));
     float distanceFactor = 1.0/(1.0 + depth * 32.0);
     depth *= distanceFactor;
@@ -1380,7 +1143,6 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
         vec3 original = texture2D(tex, UVs).rgb;
         vec3 aaColor = mix2(original, blended, blendStrength);
         finalColor = mix2(aaColor, original, step(edge, 0.0));
-        //finalColor = sharpenMask(tex, UVs, finalColor, 0.25, 0.25 * step(edge, 0.0));
     #elif AA == 1
         float u  =  floor(UVs.x * viewWidth) / viewWidth;
         float v  = (floor(UVs.y * viewHeight) / viewHeight);
@@ -1398,7 +1160,6 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
         color.g = mix2(left.g, right.g, clamp(fract(color.g),0,1));
         color.b = mix2(left.b, right.b, clamp(fract(color.b),0,1));
 
-        //color = pow2(color, vec3(2.2));
         color = clamp(color, vec3(0.0), vec3(1.0));
 
         finalColor = sharpenMask(tex, UVs, color, BAA_SHARPEN_AMOUNT, BAA_SHARPEN_BLEND);
@@ -1465,9 +1226,6 @@ void main() {
 
         mediump float lightBrightness = clamp(dot(shadowLightDirection, worldGeoNormal),0.2,1.0);
 
-        //vec4 specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f));
-        //vec4 specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f));
-
         #if AA > 0
             Albedo = pow2(antialiasing(TexCoords, colortex0), vec3(GAMMA));
         #else
@@ -1488,29 +1246,15 @@ void main() {
                     Albedo = waterFunction(TexCoords, finalNoise, lightBrightness);
                     albedoAlpha = 0.0;
                 }
-                //vec3 Albedo2 = pow2(mix2(texture2D(colortex0, TexCoords2).rgb,vec3(0.0f,0.11f,0.33f),clamp(1 - (underwaterDepth2 - underwaterDepth) * 0.125f,0,0.5)), vec3(GAMMA));
-                //Normal = normalize2(max(finalNoise.xyz * 2.0f -1.0f,Normal));
 
                 #ifdef WATER_WAVES
                     Albedo = mix3(Albedo * 0.5, Albedo, Albedo * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
                 #endif
 
                 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
-                //worldGeoNormal = mat3(gbufferModelViewInverse) * Normal;
                 worldTangent = mat3(gbufferModelViewInverse) * Tangent.xyz;
 
-                //normalNormalSpace = vec3(Normal.xy, sqrt(1.0 - dot(Normal.xy, Normal.xy))) * 2.0 - 1.0;
                 TBN = tbnNormalTangent(worldGeoNormal,worldTangent);
-
-                //normalWorldSpace = TBN * normalNormalSpace;
-
-                //specularDataA = 1 - texture2D(colortex10,worldTexCoords.xy/vec2(500f) + refractionFactor);
-                //specularDataB = 1 - texture2D(colortex11,worldTexCoords.xy/vec2(500f) + refractionFactor);
-                
-                //mediump float perceptualSmoothness = (specularDataA.r + specularDataB.r)/2;
-                //mediump float roughness = pow2(1.0 - perceptualSmoothness, 2.0);
-
-                //mediump float smoothness = 1 - roughness;
                 
                 vec3 reflectionDir = reflect(-shadowLightDirection, normalWorldSpace);
 
@@ -1520,14 +1264,8 @@ void main() {
 
                 vec3 viewDirection = normalize2(cameraPosition - fragWorldSpace);
 
-                //mediump float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorldSpace), 0.0, 1.0);
-                
-                //mediump float specularLight = smoothness * clamp(pow2(dot(shadowLightDirection, normalWorldSpace),100.0), 0.0, 1.0);
-
                 mediump float ambientLight = 0.0;
 
-                //lightBrightness = ambientLight + diffuseLight + specularLight;
-                //Albedo.xyz = mix2(Albedo.xyz, vec3(1.0), lightBrightness);
             } else {
                 underwaterDepth = texture2D(depthtex0, TexCoords).r;
                 underwaterDepth2 = texture2D(depthtex1, TexCoords).r;
@@ -1550,7 +1288,6 @@ void main() {
             #if SSR == 1 || SSR == 2
                 if(isRain == 1.0) {
                     vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2.0 - 1.0;
-                    //refNormal = tbnNormalTangent(refNormal, Tangent) * refNormal;
                     vec4 Albedo4 = waterReflections(Albedo.xyz,TexCoords,refNormal, finalNoise);
                     Albedo = Albedo4.xyz;
                     albedoAlpha = Albedo4.a;
@@ -1578,15 +1315,8 @@ void main() {
             }
         #endif
 
-        /*if(Depth != Depth2 && waterTest > 0) {
-            Albedo = mix2(Albedo,mix2(Albedo,vec3(0.0f,0.22f,0.55f),0.25), clamp((1 - (Depth - Depth2)),0,1)*0.5);
-        }*/
-
         vec3 currentColor = dayColor;
 
-        /*if(timePhase > 3) {
-            timePhase = 0;
-        }*/
         Diffuse = Albedo;
 
         vec3 baseColor = currentColor;
@@ -1641,45 +1371,15 @@ void main() {
             }
         } else {
             timeFunctionFrag();
-        }/*else if(timePhase < 1) {
-            baseDiffuseModifier = vec3(DAY_I);
-            currentColor = mix2(baseColor,dayColor,dayNightLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-            
-        } else if(timePhase < 2) {
-            baseDiffuseModifier = vec3(SUNSET_I);
-            currentColor = mix2(dayColor, transitionColor, sunsetLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-        } else if(timePhase < 3) {
-            baseDiffuseModifier = vec3(NIGHT_I * 0.4f);
-            currentColor = mix2(baseColor, nightColor, dayNightLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier,mod(worldTime/6000f,2f));
-        } else if(timePhase < 4) {
-            baseDiffuseModifier = vec3(SUNSET_I);
-            currentColor = mix2(nightColor, transitionColor, sunsetLerp);
-            Diffuse = mix2(baseDiffuse, pow2(Diffuse.rgb,vec3(GAMMA)) * baseDiffuseModifier, mod(worldTime/6000f,2f));
-        }*/
-
-        //Diffuse *= currentColor;
+        }
 
         vec3 worldSpaceSunPos = (gbufferProjectionInverse * gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
         mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.0f);
 
         mediump float maxLight = MAX_LIGHT;
 
-        if(Depth2 == 1.0f){
-            /*mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-
-            mediump float maxBlindnessDistance = 30;
-            mediump float minBlindnessDistance = 20;
-
-            mediump float blindnessBlendValue = clamp((distanceFromCamera - minBlindnessDistance) / (maxBlindnessDistance - minBlindnessDistance),0,1);*/
-        
+        if(Depth2 == 1.0f) {
             currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
-
-            /*if(worldTime%24000 > 12000 && dot(Albedo,vec3(0.333f)) < 0.5f) {
-                currentColor *= NIGHT_I * 0.5f;
-            }*/
 
             mediump float detectSky = texture2D(colortex5, TexCoords).g;
             mediump float detectEntity = texture2D(colortex12, TexCoords).r;
@@ -1690,7 +1390,6 @@ void main() {
             #endif
 
             vec3 rawLight = lightmapColor;
-            //Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
             if(detectSky < 1.0) {
                 if(isBiomeEnd) {
                     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
@@ -1701,23 +1400,15 @@ void main() {
 
                     Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
                     vec3 Diffuse2 = texture2D(colortex0, TexCoords.xy).rgb;
-                    //Diffuse = mix2(Diffuse, Diffuse/vec3(lightBrightness),0.75);
-                    //Diffuse /= lightBrightness;
-                    //Diffuse = mix2(Diffuse, Diffuse * vec3(lightBrightness),0.5);
-                    //Diffuse.xyz += lightmapColor;
-                    //Diffuse2.xyz *= vec3(3.5025);
                     vec3 Diffuse3 = mix2(Diffuse, Diffuse2, 0.5);
                     Diffuse = mix2(Diffuse, Diffuse3, length(Diffuse));
                     Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
-                    Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.5),clamp(CalcSaturation(Diffuse.xyz),0,1 - MIN_SE_SATURATION));//1.0625-clamp(vec3(dot(lightmapColor.rgb,vec3(0.333f))),0.5,1));
+                    Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.5),clamp(CalcSaturation(Diffuse.xyz),0,1 - MIN_SE_SATURATION));
                     float fogFactor = clamp(texture2D(colortex6, TexCoords).y,0,1);
                     Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, fogFactor * 0.0625 * fogIntensity + 0.0625);
 
                     Diffuse.xyz = calcTonemap(Diffuse.xyz);
                 } else {
-                    /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
-                        LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
-                    }*/
                     vec3 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
                     vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
@@ -1726,23 +1417,14 @@ void main() {
 
                     Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
 
-                    //Diffuse *= lightBrightness;
-
-                    //vec3 LightmapColor = vec3(1.0);
-
-                    //Diffuse.xyz += lightmapColor;
-
                     float aoValue = 1;
                     #ifdef AO
-                        //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
                         aoValue = DHcalcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
                     #endif
 
                     float weightDay = 0.5 + 0.5 * cos((timeNorm - 0.25) * 2.0 * PI);
                     float weightNight = 0.5 + 0.5 * cos((timeNorm - 0.75) * 2.0 * PI);
                     vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
-
-                    //lightmapColor = max(currentLightColor,lightmapColor * lightBrightness);
 
                     lightmapColor = max(lightmapColor, MIN_LIGHT)*aoValue;
 
@@ -1751,13 +1433,11 @@ void main() {
                         #ifdef WATER_WAVES
                             Albedo = mix3(Albedo * 0.5, Albedo, Albedo * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
                         #endif
-                        //Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(0.0f,0.33f,0.55f), clamp(waterTest,0,0.5));
                         #if SSR == 1 || SSR = 2
                             vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
                             vec4 Albedo4 = waterReflectionsDH(Albedo.xyz,TexCoords,refNormal, finalNoise);
                             Albedo.xyz = Albedo4.xyz;
                             albedoAlpha = Albedo4.a;
-                            //Diffuse3.xyz *= lightBrightness;
                         #endif
                         Diffuse.xyz = Albedo.xyz;
                     }
@@ -1786,17 +1466,8 @@ void main() {
 
                     Diffuse.xyz *= aoValue;
                     
-                    //Diffuse.xyz = mix2(Albedo * (lightmapColor + NdotL + Ambient),Albedo * (NdotL + Ambient),0.25);
-                    //Diffuse.xyz = mix2(Diffuse.xyz, lightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
                     Diffuse.xyz = calcTonemap(Diffuse.xyz);
                 }
-                /*if(waterTest > 0f) {
-                    Diffuse = pow2(waterFunction(TexCoords, finalNoise, lightBrightness),vec3(1/2.2));
-                }*/
-
-                //if(waterTest <= 0 && !isBiomeEnd) Diffuse.xyz *= max(ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x),max(0.2,MIN_LIGHT));
-
-                //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness)
                 Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)) * currentColor, 1.0f);
             } else {
@@ -1804,7 +1475,6 @@ void main() {
                     Albedo.xyz = mix2(Albedo.xyz, max(normalize2(lightmapColor),lightmapColor/10), clamp(length(lightmapColor), 0.0, 1.0));
                 #endif
                 Albedo.xyz = blindEffect(Albedo.xyz, TexCoords);
-                //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
                 gl_FragData[0] = vec4(currentColor * Albedo, 1.0f);
             }
             return;
@@ -1814,29 +1484,11 @@ void main() {
         mediump float seMinLight = SE_MIN_LIGHT;
         
         vec3 LightmapColor;
-        //vec3 Lightmap = bloom();
-
-        /*#ifdef PATH_TRACING
-            vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
-            vec3 lightDir = normalize2(sunPosition);
-            vec3 cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
-            vec3 cameraUp = cross(cameraRight, lightDir);
-            vec3 rayDir = normalize2(lightDir + uv.x * cameraRight + uv.y * cameraUp);
-            Ray ray = Ray(viewSpaceFragPosition, rayDir);
-
-            LightmapColor = traceRay(ray,vec2(length(lightmap),1f), Normal);
-
-            LightmapColor += GetLightmapColor(vec2(length(lightmap),0f));
-        #else*/
-            #ifdef BLOOM
-                LightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
-                /*if(dot(LightmapColor,vec3(0.333f)) < BLOOM_THRESHOLD) {
-                    LightmapColor = GetLightmapColor(texture2D(colortex2, TexCoords).rg);
-                }*/
-            #else
-                LightmapColor = GetLightmapColor(texture2D(colortex2, TexCoords2).rg);
-            #endif
-        //#endif
+        #ifdef BLOOM
+            LightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
+        #else
+            LightmapColor = GetLightmapColor(texture2D(colortex2, TexCoords2).rg);
+        #endif
         vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb + lightBrightness;
 
         if(isBiomeEnd) {
@@ -1847,39 +1499,16 @@ void main() {
             LightmapColor = vec3(minLight);
         }
 
-
-        /*if((Lightmap.r + Lightmap.g + Lightmap.b)/3 < 0) {
-            Diffuse = Albedo * LightmapColor;
-        } else {
-            Diffuse = Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor);
-        }*/
-
         mediump float isParticle = texture2D(colortex6, TexCoords).r;
-
-        /*if(isLiquidEmerald > 0.0) {
-            Diffuse = Albedo;
-        } else {
-            Diffuse = Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor);
-        }*/
-        //ivec2 texelCoord = ivec2(gl_FragCoord.xy);
-        //translucentMult = 1.0 - texelFetch(colortex4, texelCoord, 0).rgb;
-        //vec3 lightFog = GetColoredLightFog(vec3(0), translucentMult, 0, 1, 0, 0);
-        /*if(dot(LightmapColor, vec3(0.333f)) < 1.0) {
-            Diffuse.xyz = Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor);
-        } else {
-            Diffuse.xyz = mix2(Albedo * ((LightmapColor + NdotL * GetShadow(Depth) + Ambient) * currentColor),LightmapColor,Lightmap.r * vec3(0.0625));
-        }*/
 
         float aoValue = 1;
         #ifdef AO
-            //shadowLerp *= ambientOcclusion(Normal, vec3(TexCoords, 1.0), texture2D(colortex15, TexCoords).x);
             aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
         #endif
         
-        vec3 shadowLerp = GetShadow(Depth);//mix2(GetShadow(Depth), vec3(1.0), length(LightmapColor));
+        vec3 shadowLerp = GetShadow(Depth);
         if(waterTest > 0) {
             shadowLerp = vec3(1.0);
-            //lightBrightness = 1.0;
         }
         if(isBiomeEnd) {
             #if PATH_TRACING_GI == 1
@@ -1890,7 +1519,6 @@ void main() {
                 lightBrightness = max(lightBrightness, 0.5);
             #endif
             Diffuse.xyz = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75) + NdotL * shadowLerp + Ambient) * currentColor),Albedo * ((NdotL * shadowLerp + Ambient) * currentColor),0.25);
-            //Diffuse = mix2(Diffuse, seColor, 0.01);
             Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
             Diffuse.xyz = calcTonemap(Diffuse.xyz);
         } else {
@@ -1898,9 +1526,6 @@ void main() {
                 LightmapColor *= vec3(0.2525);
                 lightBrightness = max(lightBrightness, 0.5);
             #endif
-            /*if(dot(LightmapColor,vec3(0.333)) > maxLight) {
-                LightmapColor = LightmapColor/vec3(dot(LightmapColor,vec3(0.333)));
-            }*/
             if(maxLight < 4.1f) {
                 LightmapColor = clamp(LightmapColor*10,vec3(0f), vec3(maxLight*10))/5;
             }
@@ -1908,13 +1533,7 @@ void main() {
             Diffuse.xyz = calcTonemap(Diffuse.xyz);
         }
 
-        //if(waterTest <= 0) {
-            Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
-        //}
-
-        /*if(waterTest > 0) {
-            Diffuse.xyz = Albedo;
-        }*/
+        Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
 
         float fogFactor = texture2D(colortex6, TexCoords).y;
         Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, smoothstep(0.0, 1.0, fogFactor) * 0.03125 * fogIntensity);
@@ -1924,32 +1543,12 @@ void main() {
                 #if VIBRANT_MODE == 1 || VIBRANT_MODE == 2
                     Diffuse.xyz = loadLUT(Diffuse.xyz, lutse);
                 #endif
-                //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.5, 1.0, 0.995);
             } else {
                 #if VIBRANT_MODE == 1 || VIBRANT_MODE == 3
                     Diffuse.xyz = loadLUT(Diffuse.xyz, lutnormal);
                 #endif
-                //Diffuse.xyz = BrightnessContrast(Diffuse.xyz, 1.0, 1.0, 1.0125);
             }
         #endif
-        //vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
-
-        //mediump float maxBlindnessDistance = 30;
-        //mediump float minBlindnessDistance = 20;
-
-        //mediump float blindnessBlendValue = clamp((distanceFromCamera - minBlindnessDistance) / (maxBlindnessDistance - minBlindnessDistance),0,1);
-        
-        //Diffuse.xyz = mix2(Diffuse.xyz, vec3(0), blindness);
-
-        //Diffuse.xyz = mix2(Diffuse.xyz,vec3(0),blindnessBlendValue);
-        
-        /*if(isLiquidEmerald > 0.0) {
-            Diffuse *= vec3(1);
-        }*/
-
-        /*if(timePhase < 4 && timePhase > 2) {
-            Diffuse.xyz *= vec3(0.4f);
-        }*/
 
         Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
 
@@ -1966,6 +1565,5 @@ void main() {
         gl_FragData[5] = texture2D(colortex5,TexCoords);
         gl_FragData[6] = texture2D(colortex6,TexCoords);
         gl_FragData[7] = texture2D(colortex10,TexCoords);
-        //gl_FragData[8] = texture2D(colortex10,TexCoords);
     #endif
 }

@@ -157,6 +157,19 @@ vec4 minVector(vec4 a, vec4 b) {
     return mix2(b, a, 1 - step(length(b) + 1e-6,length(a)));
 }
 
+mediump float smoothstep1(float x) {
+    return x * x * (3.0 - 2.0 * x);
+}
+vec2 smoothstep1(vec2 x) {
+    return x * x * (3.0 - 2.0 * x);
+}
+vec3 smoothstep1(vec3 x) {
+    return x * x * (3.0 - 2.0 * x);
+}
+vec4 smoothstep1(vec4 x) {
+    return x * x * (3.0 - 2.0 * x);
+}
+
 float cubicBezier(float t, vec2 p1, vec2 p2) {
     // Cubic Bézier curve: P0 = (0,0), P1 = p1, P2 = p2, P3 = (1,1)
     // Solve for y given t (where t is the x-axis progress)

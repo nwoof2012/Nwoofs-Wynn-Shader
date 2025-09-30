@@ -29,7 +29,18 @@ mediump float SdotU = dot(sunVec, upVec);
 mediump float sunVisibility = clamp(SdotU + 0.0625, 0.0, 0.125) / 0.125;
 mediump float sunVisibility2 = sunVisibility * sunVisibility;
 
-#include "lib/commonFunctions.glsl"
+mediump float GetHorizonFactor(float XdotU) {
+    #ifdef SUN_MOON_HORIZON
+        mediump float horizon = clamp((XdotU + 0.1) * 10.0, 0.0, 1.0);
+        horizon *= horizon;
+        return horizon * horizon * (3.0 - 2.0 * horizon);
+    #else
+        mediump float horizon = min(XdotU + 1.0, 1.0);
+        horizon *= horizon;
+        horizon *= horizon;
+        return horizon * horizon;
+    #endif
+}
 
 void main() {
 	vec4 color = texture(gtexture, texcoord) * glcolor;
@@ -45,10 +56,10 @@ void main() {
         if (VdotS > 0.0) { // Sun
             color.rgb *= dot(color.rgb, color.rgb) * 3.2;
             color.rgb *= 0.25 + (0.75 - 0.25 * rainFactor) * sunVisibility2;
-            color.a = smoothstep1(clamp01(length(sunVec - position)));
+            color.a = smoothstep1(clamp(length(sunVec - position),0,1));
         } else { // Moon
-            color.rgb *= smoothstep1(min1(length(color.rgb))) * 1.3;
-            color.a = smoothstep1(clamp01(length(abs(sunVec - position))));
+            color.rgb *= smoothstep1(min(length(color.rgb),1)) * 1.3;
+            color.a = smoothstep1(clamp(length(abs(sunVec - position)),0,1));
         }
 
         color.rgb *= GetHorizonFactor(VdotU);

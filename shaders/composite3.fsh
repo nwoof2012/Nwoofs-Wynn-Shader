@@ -51,10 +51,6 @@ uniform vec3 cameraPosition;
 
 in vec2 texCoord;
 
-/*
-const bool colortex0MipmapEnabled = true;
-*/
-
 uniform sampler2D noiseb;
 
 uniform sampler2D cloudtex;
@@ -166,11 +162,7 @@ vec4 cloudStack(in vec2 uv) {
         finalNoise += noiseA * noiseB * attenuation;
         attenuation += 0.125;
     }
-    //finalNoise.xyz /= cloudLevels*cloudLevels;
-    //finalNoise = clamp(finalNoise, 0, 1);
-    //finalNoise = 1 - finalNoise;
     finalNoise /= attenuation;
-    //finalNoise.a = clamp(pow2(finalNoise.a, 0.9)/(cloudLevels*cloudLevels),0,1);
 
     return finalNoise;
 }
@@ -210,10 +202,6 @@ vec4 normalFromHeight(vec3 uv, float scale, float noiseType) {
     }
     return vec4(normalize(dxy * scale / moveStep),height);
 }
-
-/*mediump float remap(in float value, in float oldMin, in float oldMax, in float newMin, in float newMax) {
-    return newMin + (value - oldMin) * (newMax - newMin)/(oldMax - oldMin);
-}*/
 
 mediump float invLerp(float from, float to, float value){
   return (value - from) / (to - from);
@@ -395,12 +383,6 @@ void main() {
     float sunlightMask = dot(normalize2(mat3(gbufferModelViewInverse) * sunPosition), texture2D(colortex1,texCoord).xyz * 2 + 1);
     sunlightMask = max(sunlightMask, 0.0);
 
-    //float verticalBoost = smoothstep(0.0, 1.0, abs(Normal.y));
-    //sunlightMask *= mix2(1.0, 1.2, verticalBoost);
-
-    //sunlightMask = (max(sunlightMask, MIN_LIGHT) - MIN_LIGHT) / (1 - MIN_LIGHT);
-    //sunlightMask = pow2(sunlightMask*0.25, 2) * 4;
-    
     vec3 sunLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B) * sunlightMask;
 
     vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
@@ -430,19 +412,6 @@ void main() {
 
             mediump float detectSky = texture2D(colortex12, texCoord).g;
 
-            //uv = uv * 0.5 + 0.5;
-            //uv2 = uv2 * 0.5 + 0.5;
-            //rayDir -= normalize2(vec3(1.0));
-            //pos = fract(pos);
-
-            /*vec4 noiseA = texture2D(colortex13,rayDir.xz/rayDir.y * 0.0625f - frameTimeCounter * 0.00125);
-            vec4 noiseB = texture2D(colortex14,rayDir.xz/rayDir.y * 0.015625f + frameTimeCounter * 0.005);
-            noiseA.rgb = mix2(pow2(noiseA.rgb, vec3(CLOUD_DENSITY)),pow2(noiseA.rgb, vec3(CLOUD_DENSITY_RAIN)),rainStrength);
-            noiseB.rgb = mix2(pow2(noiseA.rgb, vec3(CLOUD_DENSITY)),pow2(noiseB.rgb, vec3(CLOUD_DENSITY_RAIN)),rainStrength);
-            vec4 finalNoise = cloudStack(rayDir.xz/rayDir.y);*/
-
-            //vec4 clouds = vec4(vec3(1.0),0.0);
-
             vec3 p = vec3(uv, 0);
             vec3 p2 = vec3(uv, 0);
 
@@ -451,8 +420,6 @@ void main() {
 
             p2.xy += cloud_time * 0.5;
             p2.xy = fract(p.xy);
-            
-            //vec4 clouds = vec4(smoothstep(0.1,1.0,pow2(get_cloud(p/rayDir.y,p2*1.2/rayDir.y),0.25)));
             
             float scaleVar = smoothstep(0.1, 1.0, get_cloud(fract(p/rayDir.y*2.2/rayDir.y)));
 
@@ -463,35 +430,8 @@ void main() {
             vec3 light = vec3(0.0);
 
             if(rayDir.y > 0.0) {
-                //finalNoise = (finalNoise + 1.0)/2.0;
-                /*if(rayDir.y > 0)
-                {
-                    /*mediump float samples = 256.0;
-                    mediump float rayScale = 1.0;
-                    vec3 playerPos = vec3(rayDir.xz/rayDir.y, 1.0);
-                    for(mediump float s = 0.0; s < samples; s++) {
-                        vec3 rayPos = playerPos + rayDir*rayScale;
-                        vec4 cloud = vec4(fractal_noise3D(rayPos) * fractal_noise3D(rayPos));
-
-                        finalNoise.rgb = mix2(finalNoise.rgb, cloud.rgb,(1 - finalNoise.a) * cloud.a);
-                        finalNoise.a += (1 - finalNoise.a) * cloud.a;
-                    }
-                    finalNoise = noiseA * noiseB;
-                } else {
-                    finalNoise = vec4(0.0);
-                }*/
-
-                /*vec4 noiseNormalA = normalFromHeight(colortex13,rayDir.xz/rayDir.y,1.0, 0.0);
-                vec4 noiseNormalB = normalFromHeight(colortex14,rayDir.xz/rayDir.y,1.0, 1.0);
-                noiseNormalA = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseA, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
-                noiseNormalB = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseB, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
-                vec4 finalNoiseNormal = normalFromHeight(colortex13,rayDir.xz/rayDir.y,1.0, 0.0);*/
-
-                //mediump float lightBrightness = clamp(dot(shadowLightDirection, finalNoiseNormal.xyz),0.75,1.0);
-
                 mediump float starting_distance = 1.0/rayDir.y;
 
-                //vec3 sky_color = color;
                 mediump float scale = 0.05;
                 mediump float cloud_shading_amount = 0.1;
                 mediump float cloud_offset = mix2(-1, 1, scaleMix);
@@ -507,7 +447,6 @@ void main() {
                         for(float s = 0.0; s < CLOUD_SAMPLES && clouds.a < 0.99; s++) {
                             vec3 ray_pos = player + rayDir*(s - cloud_time + vec3(texCoord,s))*scale;
                             vec3 ray_pos2 = player + rayDir*(s + cloud_time*0.5 + vec3(texCoord,s))*scale;
-                            //vec3 ray_pos2 = player2*0.0125 + rayDir*(s - random3D(frameTimeCounter + vec3(texCoord,s)))*scale;
                             vec4 cloud = vec4(get_cloud(fract((ray_pos.xyz - vec3(0.0, s/CLOUD_SAMPLES * scale,0.0))/rayDir.y * 0.05) * 20 + 1,fract((ray_pos2.xyz*0.5 - vec3(0.0, s/CLOUD_SAMPLES * scale,0.0))/rayDir.y * 0.05) * 40 + 1));
 
                             vec4 cloudB = remap(vec4(0.0),vec4(1.0),vec4(1.0),vec4(-1.0),cloud);
@@ -537,10 +476,6 @@ void main() {
                             cloud.a = smoothstep(0.1,1.0,pow2(cloud.a, 0.25));
                             cloud = mix2(cloudB, cloud, rainLerp);
 
-                            //clouds.a = clamp((clouds.a-(0.3*(1.0-rainStrength)))*4.0,sky_density,2.0);
-                            //cloud.rgb = mix(vec3(1.0),sky_color,min(1.0,s / CLOUD_SAMPLES) + sky_density * 1.0 - clouds.a);
-                            //cloud.rgb = vec3(1.0);
-
                             light = vec3(0.0);
 
                             cloud.a = pow2(cloud.a * abs(s/CLOUD_SAMPLES*2.0 - 0.5), 1/mix2(CLOUD_DENSITY,CLOUD_DENSITY_RAIN,rainStrength));
@@ -551,11 +486,6 @@ void main() {
                                 for(float s = 0.0; s < CLOUD_SHADING_SAMPLES && clouds.a < 0.99; s++) {
                                     vec3 ray_s_pos = ray_pos + sunDir*(s - cloud_time + vec3(texCoord,s))*scale;
                                     vec3 ray_s_pos2 = ray_pos + sunDir*(s + cloud_time*0.5 + vec3(texCoord,s))*scale;
-
-                                    /*if(ray_s_pos.y <= 0.0) {
-                                        light = vec3(0.0);
-                                        continue;
-                                    }*/
 
                                     float cloud_shading = clamp(get_cloud((ray_s_pos.xyz*0.01)/rayDir.y, (ray_s_pos2.xyz*0.005)/rayDir.y) * 2.0 - 0.5,0.5,1);
                                     light *= 1.0 - cloud_shading;
@@ -574,56 +504,29 @@ void main() {
                             
                             clouds.rgb = mix2(clouds.rgb,cloud.rgb,(1.0 - clouds.a) * cloud.a);
                             clouds.a = clamp(clouds.a +(1.0 - clouds.a) * cloud.a,0.0,1.0);
-                            //clouds.a = mix2(0.0, clouds.a, step(1.0, clouds.a));
                         }
-                        //cloudsNormal = vec4(normalFromHeight(clouds.x,rayDir.xz/rayDir.y,1.0, 1.0),1.0);
                         clouds.rgb = mix(clouds.rgb,sky_color,pow(1.0 - rayDir.y,4.0));
                     } else {
                         clouds = vec4(0.0);
                         cloudsNormal = vec4(0.0);
                     }
 
-                    //clouds.a /= 2;
 
                     mediump float cloudFog = clamp(rayDir.y,0.0,0.25) * 4.0;
                     
-                    //clouds.rgb = vec3(1.0);
-                    //clouds.rgb -= clamp(clouds.a - 0.5,0.0,0.25);
-                    //clouds.rgb *= mix2(75.5,1.0, rainStrength);
-                    //clouds.a = (clouds.a - 0.125) * 1.0;
-                    /*if(clouds.a - 3.45 > 0.0) {
-                        clouds.a = pow2(clouds.a - 3.45,4.0) + 3.45;
-                    } else if(clouds.a - 3.45 < 0.0) {
-                        clouds.a = pow2(clouds.a - 3.45,1/4.0) + 3.45;
-                    }*/
                     clouds.a = remap(0.0,1.0, -50.0, 10.0,clouds.a);
                     clouds.a = clamp(clouds.a, 0.0, 1.0);
                     clouds.rgb *= 1 - clamp((clouds.a-0.5)*0.1,0.0,0.25);
                     clouds.rgb *= clouds.a;
-                    /*if(dot(clouds, vec4(0.333)) < 0.001) {
-                        clouds.a = 0.0;
-                    }*/
-                    //clouds.a = clamp((clouds.a - (0.3*(1 - rainStrength)))*4.0, 0.0, 2.0);
-                    //clouds.rgb = vec3(1.0);
-                    //clouds.rgb = clamp(clouds.rgb, -abs(noiseA.xyz * noiseB.xyz)*8.0, abs(noiseA.xyz * noiseB.xyz)*8.0);
-                    //clouds.rgb = abs(clouds.rgb);
-                    //clouds.rgb *= lightBrightness;
                     clouds.rgb = clamp(clouds.rgb,vec3(0.0),normalize2(clouds.rgb)*1.75f);
                     imageStore(cimage9, ivec2((texCoord.x*viewWidth)/CLOUD_RESOLUTION_REDUCTION,(texCoord.y*viewHeight)/CLOUD_RESOLUTION_REDUCTION), clouds);
                     vec2 uv3 = vec2((texCoord.x*viewWidth)/CLOUD_RESOLUTION_REDUCTION,(texCoord.y*viewHeight)/CLOUD_RESOLUTION_REDUCTION);
 
-                    clouds = imageBilinear(texCoord, imageSize(cimage9)); // mix2(imageLoad(cimage9, ivec2(floor(uv3))), imageLoad(cimage9, ivec2(ceil(uv3))),0.5);
-                    //clouds = imageBilinear(texCoord, imageSize(cimage9));
-                    //light *= cloudFog;
+                    clouds = imageBilinear(texCoord, imageSize(cimage9));
                     if(rayDir.y > 0.0 || detectSky != 1.0) {
                         color.rgb = mix2(color.rgb, clouds.rgb,clouds.a*(cloudFog * CLOUD_FOG));
                     }
-                    //clouds.a = max(clouds.a, light.r);
-                    //color.rgb = vec3(clouds.a);
                     #include "lib/reprojection.glsl"
-                    /*if(detectSky != 1.0) {
-                        color = mix(color, ray_color.xyz,0.9);
-                    }*/
                 }
             }
             #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
@@ -631,7 +534,6 @@ void main() {
                     vec3 shadowLerp = GetShadow(depth2);
                     shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
                     vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
-                    //float isCave = smoothstep(MIN_LIGHT, MIN_LIGHT + 0.1, lightmap.g);
                     finalLight = vec4(texture2D(colortex2, texCoord).xyz + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,isCave),1.0);
                 } else {
                     #ifdef VOLUMETRIC_LIGHTING
@@ -668,7 +570,6 @@ void main() {
                 float scaleMix = sin((length(p/rayDir.y) + scaleVar)) * 0.5 + 0.5;
 
                 mediump float starting_distance = 1.0/rayDir.y;
-                //vec3 sky_color = color;
                 mediump float scale = 0.05;
                 mediump float cloud_shading_amount = 0.1;
                 mediump float cloud_offset = mix2(-1, 1, scaleMix);
@@ -684,11 +585,6 @@ void main() {
                 for(float s = 0.0; s < CLOUD_SHADING_SAMPLES && clouds.a < 0.99; s++) {
                     vec3 ray_s_pos = ray_pos + sunDir*(s - cloud_time + vec3(texCoord,s))*scale;
                     vec3 ray_s_pos2 = ray_pos + sunDir*(s + cloud_time*0.5 + vec3(texCoord,s))*scale;
-
-                    /*if(ray_s_pos.y <= 0.0) {
-                        light = vec3(0.0);
-                        continue;
-                    }*/
 
                     float cloud_shading = clamp(get_cloud((ray_s_pos.xyz*0.01)/rayDir.y, (ray_s_pos2.xyz*0.005)/rayDir.y) * 2.0 - 0.5,0.5,1);
                     light *= 1.0 - cloud_shading;
@@ -709,27 +605,16 @@ void main() {
     } else {
         #if SCENE_AWARE_LIGHTING > 0
             vec3 dynamicLight = texture2D(colortex2, texCoord).xyz;
-            //#if SCENE_AWARE_LIGHTING == 1
-            //if(length(dynamicLight) > MIN_LIGHT) {
             #if LIGHT_BLUR == 1
                 dynamicLight = blurLight(colortex2, depthtex1, texCoord, 3.0, 25, 3.0, 1.0);
             #endif
-            //}
-            //#endif
             vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
             float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));
-            //lightBlend = clamp(contrastBoost(vec3(lightBlend), 2.0).x,0,1);
             finalLight = vec4(dynamicLight + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);
-            //outcolor = vec4(vec3(isCave),1.0);
             lightMask *= length(shadowLerp) * isCave;
-            //finalLight.xyz = mix2(finalLight.xyz, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), lightMask);
         #endif
     }
-
-    /*if(blindness > 0.0f) {
-        color.rgb = blindEffect(color.rgb);
-    }*/
     
     color.xyz = blindEffect(color.xyz, texCoord);
     outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
@@ -739,5 +624,4 @@ void main() {
     gl_FragData[5] = texture2D(colortex5, texCoord);
     gl_FragData[6] = texture2D(colortex6, texCoord);
     gl_FragData[7] = vec4(lightMask * vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), 1.0);
-    //outnormal = cloudsNormal;
 }
