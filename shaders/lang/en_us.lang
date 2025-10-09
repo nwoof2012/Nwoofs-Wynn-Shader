@@ -96,6 +96,7 @@ option.FOG_DAY_DIST_MIN=§7Minimum Distance
 option.FOG_DAY_DIST_MAX=§7Maximum Distance
 option.DH_FOG_DAY_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_DAY_INTENSITY=§bIntensity
+option.FOG_DAY_CURVE=§eCurve
 
 option.FOG_NIGHT_R=§cRed
 option.FOG_NIGHT_G=§aGreen
@@ -104,6 +105,7 @@ option.FOG_NIGHT_DIST_MIN=§7Minimum Distance
 option.FOG_NIGHT_DIST_MAX=§7Maximum Distance
 option.DH_FOG_NIGHT_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_NIGHT_INTENSITY=§bIntensity
+option.FOG_NIGHT_CURVE=§eCurve
 
 option.FOG_SUNSET_R=§cRed
 option.FOG_SUNSET_G=§aGreen
@@ -112,6 +114,16 @@ option.FOG_SUNSET_DIST_MIN=§7Minimum Distance
 option.FOG_SUNSET_DIST_MAX=§7Maximum Distance
 option.DH_FOG_SUNSET_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_SUNSET_INTENSITY=§bIntensity
+option.FOG_SUNSET_CURVE=§eCurve
+
+option.FOG_SE_R=§cRed
+option.FOG_SE_G=§aGreen
+option.FOG_SE_B=§9Blue
+option.FOG_SE_DIST_MIN=§7Minimum Distance
+option.FOG_SE_DIST_MAX=§7Maximum Distance
+option.DH_FOG_SE_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_SE_INTENSITY=§bIntensity
+option.FOG_SE_CURVE=§eCurve
 
 option.FOG_DAY_RAIN_R=§cRed
 option.FOG_DAY_RAIN_G=§aGreen
@@ -120,6 +132,7 @@ option.FOG_DAY_RAIN_DIST_MIN=§7Minimum Distance
 option.FOG_DAY_RAIN_DIST_MAX=§7Maximum Distance
 option.DH_FOG_DAY_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_DAY_RAIN_INTENSITY=§bIntensity
+option.FOG_DAY_RAIN_CURVE=§eCurve
 
 option.FOG_NIGHT_RAIN_R=§cRed
 option.FOG_NIGHT_RAIN_G=§aGreen
@@ -128,6 +141,7 @@ option.FOG_NIGHT_RAIN_DIST_MIN=§7Minimum Distance
 option.FOG_NIGHT_RAIN_DIST_MAX=§7Maximum Distance
 option.DH_FOG_NIGHT_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_NIGHT_RAIN_INTENSITY=§bIntensity
+option.FOG_NIGHT_RAIN_CURVE=§eCurve
 
 option.FOG_SUNSET_RAIN_R=§cRed
 option.FOG_SUNSET_RAIN_G=§aGreen
@@ -136,6 +150,7 @@ option.FOG_SUNSET_RAIN_DIST_MIN=§7Minimum Distance
 option.FOG_SUNSET_RAIN_DIST_MAX=§7Maximum Distance
 option.DH_FOG_SUNSET_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_SUNSET_RAIN_INTENSITY=§bIntensity
+option.FOG_SUNSET_RAIN_CURVE=§eCurve
 
 option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
@@ -448,6 +463,8 @@ screen.FOG_NIGHT_RAIN = §9Rain
 
 screen.FOG_SUNSET = §6Sunrise§7/§6Sunset
 screen.FOG_SUNSET_RAIN = §9Rain
+
+screen.FOG_SE = §dSilent Expanse
 
 screen.LIGHTING=§eLighting
 

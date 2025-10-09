@@ -22,6 +22,7 @@ layout (r32ui) uniform uimage3D cimage1;
 layout (r32ui) uniform uimage3D cimage2;
 layout (r32ui) uniform uimage3D cimage5;
 layout (r32ui) uniform uimage3D cimage6;
+layout (r32ui) uniform uimage3D cimage13;
 
 in vec3 vaPosition;
 in vec2 vaUV0;
@@ -50,6 +51,8 @@ out vec3 block_centered_relative_pos;
 
 in vec4 mc_Entity;
 attribute vec4 mc_midTexCoord;
+
+uniform bool isBiomeEnd;
 
 in vec4 at_midBlock;
 
@@ -115,6 +118,54 @@ vec4 GenerateLightmap(LightSource source) {
             return vec4(0);
     }
 }
+
+#if FOG_STYLE == 2
+    float minFog = 0.0;
+    float maxFog = 0.0;
+    void noonFunc(float time, float timeFactor) {
+        if(isBiomeEnd) {
+            minFog = FOG_SE_DIST_MIN;
+            maxFog = FOG_SE_DIST_MAX;
+        } else {
+            mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+            minFog = mix(FOG_SUNSET_DIST_MIN, FOG_DAY_DIST_MIN, dayNightLerp);
+            maxFog = mix(FOG_SUNSET_DIST_MAX, FOG_DAY_DIST_MAX, dayNightLerp);
+        }
+    }
+
+    void sunsetFunc(float time, float timeFactor) {
+        if(isBiomeEnd) {
+            minFog = FOG_SE_DIST_MIN;
+            maxFog = FOG_SE_DIST_MAX;
+        } else {
+            mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+            minFog = mix(FOG_DAY_DIST_MIN, FOG_SUNSET_DIST_MIN, sunsetLerp);
+            maxFog = mix(FOG_DAY_DIST_MAX, FOG_SUNSET_DIST_MAX, sunsetLerp);
+        }
+    }
+
+    void nightFunc(float time, float timeFactor) {
+        if(isBiomeEnd) {
+            minFog = FOG_SE_DIST_MIN;
+            maxFog = FOG_SE_DIST_MAX;
+        } else {
+            mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+            minFog = mix(FOG_SUNSET_DIST_MIN, FOG_NIGHT_DIST_MIN, dayNightLerp);
+            maxFog = mix(FOG_SUNSET_DIST_MAX, FOG_NIGHT_DIST_MAX, dayNightLerp);
+        }
+    }
+
+    void dawnFunc(float time, float timeFactor) {
+        if(isBiomeEnd) {
+            minFog = FOG_SE_DIST_MIN;
+            maxFog = FOG_SE_DIST_MAX;
+        } else {
+            mediump float sunsetLerp = clamp((time+250f)/timeFactor,0,1);
+            minFog = mix(FOG_NIGHT_DIST_MIN, FOG_SUNSET_DIST_MIN, sunsetLerp);
+            maxFog = mix(FOG_NIGHT_DIST_MAX, FOG_SUNSET_DIST_MAX, sunsetLerp);
+        }
+    }
+#endif
 
 #include "lib/timeCycle.glsl"
 
@@ -217,5 +268,10 @@ void main() {
         source.id = int(mc_Entity.x);
         source.brightness = LightmapCoords.x;
         lightSourceData = GenerateLightmap(source);
+
+        #if FOG_STYLE == 2
+            uint intValue = uint(clamp(length(foot_pos),minFog, maxFog) * FOG_PRECISION);
+            imageAtomicMax(cimage13, voxel_pos, intValue);
+        #endif
     #endif
 }

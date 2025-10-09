@@ -26,6 +26,20 @@
             quadTime -= 23500;
         }
     }
+
+    #if FOG_STYLE == 2
+        void timeFunctionFrag() {
+            if(timePhase == 0) {
+                noonFunc(quadTime, 1000);
+            } else if(timePhase == 1) {
+                sunsetFunc(quadTime, 1000);
+            } else if(timePhase == 2) {
+                nightFunc(quadTime, 1000);
+            } else if(timePhase == 3) {
+                dawnFunc(quadTime, 1000);
+            }
+        }
+    #endif
 #endif
 #ifdef FRAGMENT_SHADER
     flat in int timePhase;
