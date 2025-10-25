@@ -40,6 +40,8 @@ out vec2 FoV;
 in vec3 at_tangent;
 in vec3 at_midBlock;
 
+out float isLeaves;
+
 #include "program/pathTracing.glsl"
 
 vec3 lightmapData() {
@@ -83,6 +85,8 @@ void main() {
     vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
     world_pos = foot_pos + cameraPosition;
+
+    isLeaves = mc_Entity.x == 10003? 1.0 : 0.0;
     
     #if PATH_TRACING_GI == 1
         lightmap = GenerateLightmap(1f,1f);

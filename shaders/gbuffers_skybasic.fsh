@@ -397,6 +397,13 @@ void main() {
     vec2 moonScreenPos = moonNDC.xy * 0.5 + 0.5;
 
     vec2 fragCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+
+    vec3 fragClip = vec3(fragCoord, depth) * 2.0f - 1.0f;
+    vec4 fragViewW = gbufferProjectionInverse * vec4(fragClip, 1.0f);
+    vec3 fragView = fragViewW.xyz / fragViewW.w;
+    vec4 fragWorld = gbufferModelViewInverse * vec4(fragView, 1.0f);
+
+    vec4 sunWorldPos = gbufferModelViewInverse * vec4(sunPosition, 1.0);
     
     //vec3 outputColor;
     if(starData.a > 0.5) {

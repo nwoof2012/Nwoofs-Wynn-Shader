@@ -122,6 +122,10 @@ uniform int dhRenderDistance;
 uniform float far;
 uniform float near;
 
+in float isLeaves;
+
+flat in uint lightData;
+
 #include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
@@ -465,6 +469,7 @@ void main() {
 
                 #if SCENE_AWARE_LIGHTING == 2
                     for (int idx = 0; idx < totalLightRadius + 1; idx++) {
+                        if(isLeaves > 0.5) continue;
                         // Explicitly cast the index to (x, y, z) coordinates
                         //int x = (idx / (2 * LIGHT_RADIUS * 2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for x
                         //int y = ((idx / (2 * LIGHT_RADIUS)) % (2 * LIGHT_RADIUS)) - LIGHT_RADIUS; // Integer division for y
@@ -546,14 +551,14 @@ void main() {
                     //coords = vec3(x, y, z);
 
                     // Compute the block-relative position
-                    lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
+                    lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + fract(cameraPosition);
 
                     ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
 
                     //if (x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
 
                     // Sample textures for light and block data
-                    uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
+                    uint bytes = lightData; //texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
                     //uint blockBytes = texture3D(cSampler2, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
 
                     // Check light-block interactions
@@ -564,7 +569,7 @@ void main() {
                             voxel_open *= step(distB, distA);
                         }*/
 
-                        lowp vec3 world_pos2 = foot_pos + vec3(x, z, y) + cameraPosition;
+                        lowp vec3 world_pos2 = foot_pos + cameraPosition;
                         lowp vec3 world_pos3 = foot_pos + cameraPosition;
 
                         lowp vec3 foot_pos3 = vec3(0.0); //foot_pos;
@@ -618,7 +623,11 @@ void main() {
             uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
             //finalLighting = mix2(finalLighting, vec4(vec3(0.0),1.0), float(any(equal(vec3(depth2), vec3(0.0)))));
             //imageStore(cimage7, ivec2(gl_FragCoord.xy/2), vec4(finalLighting.xyz, lightBrightness));
-            finalLighting.xyz /= 3;
+            #if SCENE_AWARE_LIGHTING == 2
+                finalLighting.xyz /= 3;
+            #elif SCENE_AWARE_LIGHTING == 1
+                finalLighting.xyz /= 6;
+            #endif
             gl_FragData[2] = finalLighting;
         #endif
         //gl_FragData[3] = vec4(distanceFromCamera);

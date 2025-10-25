@@ -223,6 +223,22 @@ vec2 screenReconstruct(vec3 worldPos) {
     return ndc.xy * 0.5 + 0.5;
 }
 
+float isLightVisible(vec3 P1, vec3 N1, vec3 P2, vec3 N2)
+{
+    vec3 dir12 = normalize(P2 - P1);
+    float facing1 = max(0.0, dot(N1, dir12));
+    float facing2 = max(0.0, dot(N2, -dir12));
+
+    // Smooth mutual visibility factor
+    float visibility = facing1 * facing2;
+
+    // Optional: distance attenuation
+    float dist2 = dot(P2 - P1, P2 - P1);
+    visibility /= (1.0 + dist2 * 0.2);
+
+    return visibility;
+}
+
 vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int samples, float distThreshold, float depthThreshold) {
     // Calculate UVs
     vec3 worldPos = worldReconstruct(UVs, depthTex);
@@ -230,6 +246,8 @@ vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int sa
 
     // Calculate base color
     vec3 baseColor = texture2D(tex, UVs).xyz;
+
+    vec3 baseNormal = texture2D(colortex1, UVs).xyz * 2 - 1;
     
     // Calculate sample radius
     int sampleRadius = int(sqrt(samples));
@@ -258,17 +276,22 @@ vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int sa
         // Get sample world position
         vec3 sampleWorld = worldPos + offsetWS;
 
+        vec3 diffWorld = normalize2(worldPos - sampleWorld);
+
         vec2 sampleUV = screenReconstruct(sampleWorld);
 
         float sampleDepth = texture2D(depthTex, sampleUV).r;
+        vec3 sampleNormal = texture2D(colortex1, sampleUV).xyz * 2 - 1;
 
         // Test sample distance, if within threshold add to output
         float dist = length(worldPos - sampleWorld);
 
         float depthDist = linearizeDepth(depth, near, far) - linearizeDepth(sampleDepth, near, far);
 
-        if(dist < distThreshold && depthDist < depthThreshold) {
-            vec3 sampleColor = texture2D(tex, sampleUV).rgb;
+        float visibility = isLightVisible(worldPos, baseNormal, sampleWorld, sampleNormal);
+
+        if(visibility < 0.001 && depthDist < depthThreshold && depthDist >= -1.0) {
+            vec3 sampleColor = texture2D(tex, sampleUV).rgb * 3;
             float sampleWeight = exp(-(dist * dist) / (2.0 * radius * radius));
             accum += mix2(sampleColor,baseColor, abs(dist/distThreshold)) * sampleWeight;
             weight += sampleWeight;

@@ -369,12 +369,6 @@ void main() {
 
     mediump float cloud_time = fract(CLOUD_SPEED * float(worldTime)/12000);
 
-    if(!transitionRain.firstInit) {
-        transitionRain.init = false;
-        transitionRain.activeState = false;
-        transitionRain.firstInit = true;
-    }
-
     vec4 finalLight = vec4(0.0);
 
     float lightMask = dot(normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition), texture2D(colortex1,texCoord).xyz * 2 + 1);
@@ -397,6 +391,35 @@ void main() {
     float lightBlend = (1 - timeBlendFactor) * isCave;
 
     vec3 totalSunlight = mix2(sunLight*lightMask*0.016, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend);
+
+    //rain_data rainData = transitionRain.data;
+    float rainLerp = rainStrength;
+    /*if(rainData.firstInit != true) {
+        rainData.startState = rainStrength > 0.0;
+        rainData.activeState = false;
+        rainData.firstInit = true;
+        rainData.previousRainStrength = 0;
+    }
+
+    if(rainStrength != rainData.previousRainStrength) {
+        rainData.startState = rainData.previousRainStrength > 0.0;
+        rainData.timer = 0;
+        rainData.previousRainStrength = rainStrength;
+        rainData.activeState = true;
+    }
+
+    if(rainData.activeState) {
+        rainData.timer += frameTime;
+        rainLerp = mix2(1 - rainStrength, rainStrength, clamp(rainData.timer,0,1));
+        if(rainData.timer >= 1.0) {
+            rainData.activeState = false;
+        }
+    }
+
+    transitionRain.data = rainData;
+
+    outcolor = vec4(vec3(rainData.timer),0.0);
+    return;*/
     
     vec4 cloudsNormal;
     if(depth == 1.0) {
@@ -451,28 +474,7 @@ void main() {
 
                             vec4 cloudB = remap(vec4(0.0),vec4(1.0),vec4(1.0),vec4(-1.0),cloud);
                             cloudB.a = smoothstep(0.1,1.0,pow2(cloudB.a, 0.5));
-                            
-                            if(transitionRain.previousRainStrength != rainStrength) {
-                                transitionRain.init = true;
-                                transitionRain.previousRainStrength = rainStrength;
-                            }
 
-                            if(transitionRain.init != transitionRain.activeState) {
-                                transitionRain.startColor = cloud;
-                                transitionRain.startTime = frameTimeCounter;
-                                transitionRain.timer = 0;
-                                transitionRain.activeState = transitionRain.init;
-                                transitionRain.startState = step(rainStrength, 0.5) == 1.0;
-                            }
-
-                            float rainLerp = rainStrength;
-
-                            if(transitionRain.init && transitionRain.activeState) {
-                                transitionRain.timer += frameTime;
-                                rainLerp = clamp(transitionRain.timer,0,1);
-
-                                if(transitionRain.startState) rainLerp = 1 - rainLerp;
-                            }
                             cloud.a = smoothstep(0.1,1.0,pow2(cloud.a, 0.25));
                             cloud = mix2(cloudB, cloud, rainLerp);
 
@@ -605,8 +607,10 @@ void main() {
     } else {
         #if SCENE_AWARE_LIGHTING > 0
             vec3 dynamicLight = texture2D(colortex2, texCoord).xyz;
-            #if LIGHT_BLUR == 1
-                dynamicLight = blurLight(colortex2, depthtex1, texCoord, 3.0, 25, 3.0, 1.0);
+            #if SCENE_AWARE_LIGHTING == 1
+                dynamicLight = blurLight(colortex2, depthtex1, texCoord, 3.0, 64, 3.0, 1.0);
+            #elif SCENE_AWARE_LIGHTING == 2
+                dynamicLight = blurLight(colortex2, depthtex1, texCoord, 1.0, 25, 1.0, 0.1);
             #endif
             vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);

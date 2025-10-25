@@ -117,7 +117,7 @@ void main() {
 	Normal = vec4(normalize(gl_NormalMatrix * gl_Normal), 1.0f);
 	Tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
 	LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
-	if((mc_Entity.x == 8.0 || mc_Entity.x == 9.0) && mc_Entity.x != 10002) {
+	/*if((mc_Entity.x == 8.0 || mc_Entity.x == 9.0) && mc_Entity.x != 10002) {
 		float depth = texture2D(depthtex0, TexCoords).r;
 		vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
 		vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
@@ -132,13 +132,13 @@ void main() {
 		//LightmapCoords += gl_Position.xy;
 
 		//gl_Position.y /= ViewW.y;
-	}
+	}*/
 
 	vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
 	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
 	world_pos = foot_pos + cameraPosition;
 
-	#if SCENE_AWARE_LIGHTING > 0
+	/*#if SCENE_AWARE_LIGHTING > 0
         #define VOXEL_AREA 128 //[32 64 128]
         #define VOXEL_RADIUS (VOXEL_AREA/2)
         block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
@@ -146,6 +146,8 @@ void main() {
 
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : vec4(vec3(0.0),1.0);
+
+			if(mc_Entity.x == 8.0) voxel_data = vec4(0.0);
 
 			vec4 block_data = mc_Entity.x == 1? vec4(0.0) : vec4(1.0);
 
@@ -157,7 +159,7 @@ void main() {
 
 			imageAtomicMax(cimage2, voxel_pos, integerValue2);
         }
-    #endif
+    #endif*/
 
 	//gl_Position.y += sin(((ViewW.x + worldTime/10.0f) + (ViewW.z + worldTime/5.0f) * (180.0f/PI))) * 0.25f;
 
@@ -172,7 +174,8 @@ void main() {
 			//vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
 			//worldPos.xyz += foot_pos;
 			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
-			float waveHeight = WAVE_AMPLITUDE * (waveCycle.x + waveCycle.y)/2;
+			vec2 waveCycle2 = vec2(sin((world_pos.x * WAVE_DENSITY_X * 0.5) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 0.5) + (frameTimeCounter * WAVE_SPEED_Y)));
+			float waveHeight = WAVE_AMPLITUDE * ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3;
 			//Normal *= waveHeight;
 
 			//uint integerValue4 = uint(waveHeight * 32767);
@@ -180,7 +183,7 @@ void main() {
 			//imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
 
 			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
-			waterShadingHeight = (waveCycle.x + waveCycle.y)/2 + 1;
+			waterShadingHeight = ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y)) + 1;
 		#endif
     }
 

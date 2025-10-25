@@ -78,6 +78,10 @@ out vec2 signMidCoordPos;
 flat out vec2 absMidCoordPos;
 flat out vec2 midCoord;
 
+out float isLeaves;
+
+flat out uint lightData;
+
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
 const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
@@ -240,9 +244,11 @@ void main() {
         }
     #endif
 
+    isLeaves = mc_Entity.x == 10003? 1.0 : 0.0;
+
     #if SCENE_AWARE_LIGHTING > 0
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : vec4(vec3(0.0),1.0);
+            vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : mc_Entity.x == 10003? vec4(0.0) : vec4(vec3(0.0),1.0);
 
             uint voxel_data2 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
 
@@ -258,6 +264,8 @@ void main() {
             uint integerValue = packUnorm4x8(voxel_data);
 			
 			uint integerValue2 = packUnorm4x8(block_data);
+
+            lightData = voxel_data2;
 
             imageAtomicMax(cimage1, voxel_pos, voxel_data2);
 

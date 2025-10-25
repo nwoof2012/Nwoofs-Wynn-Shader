@@ -237,6 +237,8 @@ uniform float screenBrightness;
 in vec3 foot_pos;
 in vec3 world_pos;
 
+in float isLeaves;
+
 #include "lib/buffers.glsl"
 #include "program/ambientOcclusion.glsl"
 
@@ -1375,43 +1377,7 @@ void main() {
 
         float timer = 0;
 
-        transition_data transData = transitionSE.data;
-
-        bool doTransition = transData.prevIsBiomeEnd != isBiomeEnd;
-
-        bool transitionActive = false;
-        bool transitionCompleted = false;
-
-        if(doTransition) {
-            transitionActive = false;
-            transitionCompleted = false;
-            transData.transitionCompleted = false;
-            transData.transitionActive = false;
-        }
-
-        if(!transData.transitionInit) {
-            if(isBiomeEnd)
-                transData.transitionAmount = 0;
-            else
-                transData.transitionAmount = 1;
-            
-            transData.transitionInit = true;
-            transData.transitionCompleted = false;
-            transData.transitionActive = false;
-            transitionActive = false;
-            transitionCompleted = false;
-            doTransition = true;
-        }
-
         if(isBiomeEnd) {
-            if(!transitionActive && doTransition) {
-                transData.entering = true;
-                transData.transitionStartTime = frameTimeCounter;
-                transData.transitionCompleted = false;
-                transData.transitionActive = true;
-                transitionActive = true;
-                transitionCompleted = false;
-            }
             if(seMaxLight < 4.1f) {
                 float lightMagnitude = length(LightmapColor);
                 lightMagnitude = clamp(lightMagnitude, SE_MIN_LIGHT, seMaxLight);
@@ -1423,19 +1389,8 @@ void main() {
             Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
             Diffuse3 = mix2(unreal(Diffuse3),aces(Diffuse3),0.75);
 
-            if(!transData.transitionCompleted) timer = frameTimeCounter - transData.transitionStartTime;
-            
-            transData.transitionAmount = clamp(timer, 0, 1);
             Diffuse.xyz = Diffuse3;
         } else {
-            if(!transitionActive && doTransition) {
-                transData.entering = false;
-                transData.transitionStartTime = frameTimeCounter;
-                transData.transitionCompleted = false;
-                transData.transitionActive = true;
-                transitionActive = true;
-                transitionCompleted = false;
-            }
             vec3 rawLight = LightmapColor;
             if(maxLight < 4.1f) {
                 float lightMagnitude = length(LightmapColor);
@@ -1447,26 +1402,8 @@ void main() {
             Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
             Diffuse3 = calcTonemap(Diffuse3);
 
-            if(!transData.transitionCompleted) timer = frameTimeCounter - transData.transitionStartTime;
-
-            transData.transitionAmount = clamp(timer, 0, 1);
-
             Diffuse.xyz = Diffuse3;
         }
-
-        transData.prevDiffuse = Diffuse.xyz;
-
-        if(timer >= 1) {
-            transData.transitionCompleted = true;
-            timer = 0;
-            transData.transitionTimer = 0;
-            transData.transitionAmount = 0;
-            transData.transitionActive = false;
-        }
-
-        transData.prevIsBiomeEnd = isBiomeEnd;
-
-        transitionSE.data = transData;
 
         Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
         #if FOG_STYLE > 0

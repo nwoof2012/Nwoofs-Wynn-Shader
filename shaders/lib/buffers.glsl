@@ -1,5 +1,5 @@
 //SE Transition
-struct transition_data {
+struct se_data {
     float transitionStartTime;
     float transitionTimer;
     float transitionAmount;
@@ -13,11 +13,12 @@ struct transition_data {
 };
 
 layout(std430, binding = 0) buffer seTransition {
-    transition_data data;
+    se_data data;
 } transitionSE;
 
 //Rain Transition
-layout(std430, binding = 1) buffer rainTransition {
+
+struct rain_data {
     bool firstInit;
     float previousRainStrength;
     float startTime;
@@ -26,6 +27,11 @@ layout(std430, binding = 1) buffer rainTransition {
     bool init;
     bool activeState;
     bool startState;
+    
     vec4 startColor;
     vec4 endColor;
+};
+
+layout(std430, binding = 1) buffer rainTransition {
+    rain_data data;
 } transitionRain;
