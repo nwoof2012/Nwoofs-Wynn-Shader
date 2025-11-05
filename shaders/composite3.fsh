@@ -37,8 +37,11 @@ uniform mat4 gbufferPreviousModelViewInverse;
 uniform mat4 gbufferPreviousProjectionInverse;
 
 uniform sampler2D cSampler9;
+uniform sampler2D cSampler14;
 
+layout (rgba8) uniform image2D cimage8;
 layout (rgba8) uniform image2D cimage9;
+layout (rgba8) uniform image2D cimage14;
 
 uniform float rainStrength;
 uniform vec3 sunPosition;
@@ -349,6 +352,8 @@ vec3 GetShadow(float depth) {
 
 #include "program/bloom.glsl"
 
+#include "program/clouds.glsl"
+
 /* RENDERTARGETS:0,1,2,3,4,5,6,14 */
 layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
@@ -452,7 +457,16 @@ void main() {
 
             vec3 light = vec3(0.0);
 
-            if(rayDir.y > 0.0) {
+            clouds = mix2(renderVolumetricClouds(p, rayDir, normalize2(sunPosition)), renderVolumetricClouds(p2, rayDir, normalize2(sunPosition)), 0.5);
+
+            light = lightCalc.xyz;
+            //clouds.a = 1.0;
+
+            if(detectSky < 1.0) {
+                color.rgb = mix2(color.rgb, clouds.rgb,clouds.a);
+            }
+
+            /*if(rayDir.y > 0.0) {
                 mediump float starting_distance = 1.0/rayDir.y;
 
                 mediump float scale = 0.05;
@@ -530,7 +544,7 @@ void main() {
                     }
                     #include "lib/reprojection.glsl"
                 }
-            }
+            }*/
             #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
                 if(detectSky == 1.0) {
                     vec3 shadowLerp = GetShadow(depth2);
@@ -612,6 +626,7 @@ void main() {
             #elif SCENE_AWARE_LIGHTING == 2
                 dynamicLight = blurLight(colortex2, depthtex1, texCoord, 1.0, 25, 1.0, 0.1);
             #endif
+            //imageStore(cimage8, ivec2(gl_FragCoord.xy), vec4(dynamicLight, 1.0));
             vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
             float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));

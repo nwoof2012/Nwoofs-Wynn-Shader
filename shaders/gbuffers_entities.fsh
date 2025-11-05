@@ -77,10 +77,15 @@ uniform float far;
 uniform int viewWidth;
 uniform int viewHeight;
 
+uniform int currentRenderedItemId;
+uniform int entityId;
+
 #include "lib/globalDefines.glsl"
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
+
+#include "lib/colorFunctions.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -212,6 +217,24 @@ void main() {
 
     vec3 newNormal = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
 
+    vec4 hsv = CalcHSV(albedo.xyz);
+    float glintMask = smoothstep(0.6, 0.8, hsv.y) * smoothstep(0.0, 0.4, hsv.w);
+    if(hsv.x < 0.3 || hsv.x > 0.4) {
+        glintMask = 0.0;
+    }
+    vec3 fallbackGlint = vec3(0.95, 0.8, 0.15);
+    vec3 glintColor = texture2D(texture, TexCoords).xyz * fallbackGlint;
+    vec3 glintHSV = rgb2hsv(glintColor);
+    glintHSV.x += 0.8;
+    glintHSV.z -= 0.1;
+    glintHSV.z = pow2(glintHSV.z, 2);
+    glintColor = mix2(glintColor, vec3(length(glintColor)), -glintHSV.y);
+    glintColor = hsv2rgb(glintHSV);
+    
+    if(currentRenderedItemId > 0 && entityId == 10007) {
+        albedo.xyz = mix2(albedo.xyz, (glintColor), glintMask);
+    }
+
     gl_FragData[6] = vec4(0.0, fogAmount, depth, 1.0);
 
     gl_FragData[0] = albedo;
@@ -225,6 +248,9 @@ void main() {
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
         if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
+        if(currentRenderedItemId > 0 && entityId == 10007) {
+            lighting.xyz = mix2(lighting.xyz, 1 - texture2D(texture, TexCoords).xyz, glintMask);
+        }
         gl_FragData[2] = vec4(lighting.xyz, 1.0);
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
