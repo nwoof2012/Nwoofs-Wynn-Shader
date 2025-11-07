@@ -971,6 +971,8 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
     return finalColor;
 }
 
+#include "program/fog.glsl"
+
 #include "program/blindness.glsl"
 
 #if VOXEL_AREA == 32
@@ -1265,7 +1267,7 @@ void main() {
                     Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
 
                    float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,globalDepthMask),fogCurve),0,min(fogIntensity,1.0));
-                    Diffuse = mix2(Diffuse, max(fogAlbedo, LightmapColor), fogFactor);
+                    Diffuse.xyz = calcFogColor(ScreenToView(vec3(TexCoords, Depth2)), sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
                 } else {
                     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
@@ -1314,7 +1316,7 @@ void main() {
                     Diffuse.xyz = calcTonemap(Diffuse3.xyz);
 
                     float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,globalDepthMask),fogCurve),0,min(fogIntensity,1.0));
-                    Diffuse = mix2(Diffuse, max(fogAlbedo, lightmapColor), fogFactor);
+                    Diffuse.xyz = calcFogColor(ScreenToView(vec3(TexCoords, Depth2)), sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
                 }
 
                 #if VIBRANT_MODE == 1
@@ -1408,7 +1410,8 @@ void main() {
         Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
         #if FOG_STYLE > 0
             float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,globalDepthMask),fogCurve),0,min(fogIntensity,1.0));
-            Diffuse.xyz = mix2(Diffuse.xyz, max(fogAlbedo, LightmapColor), fogFactor);
+            //Diffuse.xyz = mix2(Diffuse.xyz, max(fogAlbedo, LightmapColor), fogFactor);
+            Diffuse.xyz = calcFogColor(ScreenToView(vec3(TexCoords, Depth2)), sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
         #endif
 
         #if VIBRANT_MODE >= 1

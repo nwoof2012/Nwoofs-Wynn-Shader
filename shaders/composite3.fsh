@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define FRAGMENT_SHADER
+
 #define CLOUD_STYLE 1 // [0 1]
 #define CLOUD_FOG 0.5 // [0.0 0.25 0.5 0.75 1.0]
 #define CLOUD_DENSITY 0.5 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
@@ -11,6 +13,10 @@
 #define CLOUD_SHADING_DISTANCE 128.0 // [32.0 64.0 96.0 128.0 160.0 192.0 224.0 256.0]
 
 #define CLOUD_RESOLUTION_REDUCTION 4 // [1 2 4 10]
+
+#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+
+#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
 precision mediump float;
 
@@ -271,10 +277,6 @@ uniform sampler2D lightmap;
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
 #define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
-#define AMBIENT_LIGHT_R 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-#define AMBIENT_LIGHT_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-#define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
 #define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
 mediump float AdjustLightmapTorch(in float torch) {
@@ -350,7 +352,54 @@ vec3 GetShadow(float depth) {
     #endif
 }
 
+vec3 screenToWorld(vec2 screenPos, float depth) {
+    vec2 ndc = screenPos * 2.0 - 1.0;
+
+    vec4 clipSpace = vec4(ndc, depth, 1.0);
+    vec4 viewSpace = gbufferProjectionInverse * clipSpace;
+    viewSpace /= viewSpace.w;
+
+    vec4 worldSpace = gbufferModelViewInverse * viewSpace;
+    worldSpace /= worldSpace.w;
+    worldSpace.xyz += cameraPosition * 2.0;
+
+    return worldSpace.xyz;
+}
+
+vec3 cloudLight;
+vec3 cloudAmbience;
+
+void noonFunc(float time, float timeFactor) {
+    mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+    cloudLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
+    cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
+}
+
+void sunsetFunc(float time, float timeFactor) {
+    mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
+    cloudLight = mix3(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp, 0.5);
+    cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
+}
+
+void nightFunc(float time, float timeFactor) {
+    mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
+    cloudLight = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT;
+    cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
+}
+
+void dawnFunc(float time, float timeFactor) {
+    mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
+    cloudLight = mix3(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), sunsetLerp, 0.5);
+    cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
+}
+
+out vec3 VertNormal;
+
+#include "lib/timeCycle.glsl"
+
 #include "program/bloom.glsl"
+
+uniform sampler2D cloudnormal;
 
 #include "program/clouds.glsl"
 
@@ -425,6 +474,8 @@ void main() {
 
     outcolor = vec4(vec3(rainData.timer),0.0);
     return;*/
+
+    timeFunctionFrag();
     
     vec4 cloudsNormal;
     if(depth == 1.0) {
