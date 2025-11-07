@@ -301,6 +301,44 @@ vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int sa
     return accum/max(weight,1.0);
 }
 
+#ifdef AUTO_EXPOSURE
+    vec3 autoExposure(vec3 color, float targetLum, float speed) {
+        vec4 prevColor = imageLoad(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)));
+        float sceneLum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        float prevAvgLum = dot(prevColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        //thisExposure = prevAvgLum;
+        thisLum = sceneLum;
+        float smoothedFrame = mix2(timeExposure.delta, frameTime, 0.1);
+        float avgLum = sceneLum; //mix2(prevAvgLum, sceneLum, 1.0 - exp(-timeExposure.time * speed));
+        float exposure = targetLum * (avgLum + 1e-4);
+        thisExposure = exposure;
+        imageStore(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)), vec4(color * exposure,1.0));
+        return color * exposure;
+    }
+
+    float calcExposure(vec3 color, float targetLum, float speed) {
+        vec4 prevColor = imageLoad(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)));
+        float sceneLum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        float prevAvgLum = dot(prevColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        return distance(prevAvgLum, sceneLum);
+    }
+
+    float currentExposure(vec3 color, float targetLum, float speed) {
+        vec4 prevColor = imageLoad(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)));
+        float sceneLum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        float prevAvgLum = dot(prevColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        float avgLum = mix2(prevAvgLum, sceneLum, 1.0 - exp(-timeExposure.time * speed));
+        float exposure = targetLum * (avgLum + 1e-4);
+        return exposure;
+    }
+
+    float calcTargetExposure(vec3 color, float targetLum, float speed) {
+        vec4 prevColor = imageLoad(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)));
+        float sceneLum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        return sceneLum;
+    }
+#endif
+
 vec3 contrastBoost(vec3 color, float contrast) {
     return ((color - 0.5) * contrast + 0.5);
 }

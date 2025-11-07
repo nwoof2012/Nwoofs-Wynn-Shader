@@ -35,3 +35,13 @@ struct rain_data {
 layout(std430, binding = 1) buffer rainTransition {
     rain_data data;
 } transitionRain;
+
+layout(std430, binding = 2) buffer exposureTime {
+    float startTime;
+    float time;
+    float prevExposure;
+    float prevLum;
+    float delta;
+    bool init;
+    bool isActive;
+} timeExposure;

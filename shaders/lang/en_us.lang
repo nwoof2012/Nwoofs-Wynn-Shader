@@ -438,6 +438,12 @@ option.TONEMAP_NORM.comment=§6Changes the screen's tonemapping curve
 option.BRIGHTNESS=§eBrightness
 option.BRIGHTNESS.comment=§9Adjusts the brightness of the scene's lighting
 
+option.NORM_EXP=§eExposure
+option.NORM_EXP.comment=§9Adjusts how strongly the light reaches you
+
+option.SE_EXP=§eExposure
+option.SE_EXP.comment=§9Adjusts how strongly the light reaches you
+
 screen.PERFORMANCE=§cPerformance
 
 screen.SKY = §bSky

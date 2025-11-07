@@ -44,9 +44,9 @@
 #define LUT_NORM 1 // [0 1]
 #define LUT_SE 0 // [0 1]
 
-#define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+#define MIN_LIGHT 0.25f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
-#define SE_MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+#define SE_MIN_LIGHT 0.5f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
 #define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
@@ -181,6 +181,12 @@ in vec2 FoV;
 
 in vec3 Tangent;
 
+layout (rgba8) uniform image2D cimage14;
+
+float thisExposure;
+float thisLum;
+
+#include "lib/buffers.glsl"
 #include "lib/optimizationFunctions.glsl"
 #include "distort.glsl"
 #include "lib/spaceConversion.glsl"
@@ -239,7 +245,6 @@ in vec3 world_pos;
 
 in float isLeaves;
 
-#include "lib/buffers.glsl"
 #include "program/ambientOcclusion.glsl"
 
 float getDepthMask(sampler2D local, sampler2D distant) {
@@ -1262,6 +1267,10 @@ void main() {
                     Diffuse3 = mix2(Diffuse3,mix2(vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.175f),seColor * 0.125f, 0.01),1.0625-clamp(vec3(dot(lightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
                     Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
 
+                    #ifdef AUTO_EXPOSURE
+                        Diffuse3.xyz = autoExposure(Diffuse3.xyz, SE_EXP, 5.0);
+                    #endif
+
                     Diffuse.xyz = calcTonemap(Diffuse3.xyz);
 
                     Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
@@ -1312,6 +1321,10 @@ void main() {
                     Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
 
                     Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), texture2D(colortex14,TexCoords).x * brightnessMask);
+                    
+                    #ifdef AUTO_EXPOSURE
+                        Diffuse3.xyz = autoExposure(Diffuse3.xyz, NORM_EXP, 5.0);
+                    #endif
 
                     Diffuse.xyz = calcTonemap(Diffuse3.xyz);
 
@@ -1331,6 +1344,9 @@ void main() {
             } else {
                 #ifdef BLOOM
                     Albedo.xyz = mix2(Albedo.xyz, lightmapColor, clamp(length(lightmapColor), 0.0, 1.0));
+                #endif
+                #ifdef AUTO_EXPOSURE
+                    if(isBiomeEnd) Albedo.xyz = autoExposure(Albedo.xyz, 1.2, 5.0);
                 #endif
                 #if VIBRANT_MODE == 1
                     if(isBiomeEnd) {
@@ -1389,7 +1405,10 @@ void main() {
             vec3 Diffuse3 = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor) * aoValue,Albedo * ((NdotL * shadowLerp + Ambient) * currentColor) * aoValue,0.25);
             Diffuse3 = mix2(Diffuse3,vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
             Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
-            Diffuse3 = mix2(unreal(Diffuse3),aces(Diffuse3),0.75);
+            #ifdef AUTO_EXPOSURE
+                Diffuse3.xyz = autoExposure(Diffuse3.xyz, SE_EXP, 5.0);
+            #endif
+            Diffuse3 = calcTonemap(Diffuse3);
 
             Diffuse.xyz = Diffuse3;
         } else {
@@ -1402,6 +1421,22 @@ void main() {
             LightmapColor = max(currentLightColor,LightmapColor * lightBrightness2 * 8)/128;
             vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
             Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
+            #ifdef AUTO_EXPOSURE
+                /*float targetExposure = calcTargetExposure(Diffuse.xyz, 7.0, 5.0);
+                if(abs(thisExposure - timeExposure.prevExposure) > 0.0 && timeExposure.isActive != true) {
+                    timeExposure.startTime = frameTimeCounter;
+                    timeExposure.time = 0;
+                    timeExposure.isActive = true;
+                    //gl_FragData[0] = vec4(1.0);
+                } else if(abs(thisExposure - targetExposure) <= 0.0) {
+                    timeExposure.isActive = false;
+                }
+                timeExposure.time += frameTime;
+                //timeExposure.delta = frameTime;*/
+                Diffuse3.xyz = autoExposure(Diffuse3.xyz, NORM_EXP, 5.0);
+                //timeExposure.prevExposure = thisExposure;
+                //timeExposure.prevLum = thisLum;
+            #endif
             Diffuse3 = calcTonemap(Diffuse3);
 
             Diffuse.xyz = Diffuse3;
