@@ -1,5 +1,5 @@
 #define TONEMAP_NORM 6 // [0 1 2 3 4 5 6 7]
-#define TONEMAP_SAL 7 // [0 1 2 3 4 5 6 7]
+#define TONEMAP_SAL 5 // [0 1 2 3 4 5 6 7]
 
 vec3 aces(vec3 x) {
   mediump float a = 2.51;

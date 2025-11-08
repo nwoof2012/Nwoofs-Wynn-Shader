@@ -194,6 +194,8 @@ float thisLum;
 #include "program/gaussianBlur.glsl"
 #include "lib/colorFunctions.glsl"
 
+#include "program/hdr.glsl"
+
 vec3 dayColor = vec3(DAY_R,DAY_G,DAY_B);
 vec3 nightColor = vec3(NIGHT_R,NIGHT_G,NIGHT_B);
 vec3 transitionColor = vec3(SUNSET_R,SUNSET_G,SUNSET_B);
@@ -1008,6 +1010,13 @@ void main() {
         vec3 worldTexCoords = screenToWorld(TexCoords, clamp(Depth,0.0,1.0));
         vec3 worldTexCoords2 = screenToWorld(TexCoords, clamp(Depth2,0.0,1.0));
 
+        vec3 clipCoords = vec3(TexCoords * 2 - 1, Depth);
+        vec4 viewCoords = gbufferProjectionInverse * vec4(clipCoords, 1.0);
+        viewCoords /= viewCoords.w;
+        vec4 footCoords = gbufferModelViewInverse * viewCoords;
+        footCoords /= footCoords.w;
+        vec3 worldCoords = footCoords.xyz + cameraPosition;
+
         mediump float underwaterDepth = texture2D(depthtex0, TexCoords2).r;
         mediump float underwaterDepth2 = texture2D(depthtex1, TexCoords2).r;
         
@@ -1023,8 +1032,8 @@ void main() {
 
         vec3 worldGeoNormal = normalize2(texture2D(colortex1,TexCoords).xyz * 2.0 - 1.0);
 
-        vec4 noiseMapA = triplanarTexture(fract((worldTexCoords + ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
-        vec4 noiseMapB = triplanarTexture(fract((worldTexCoords - ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
+        vec4 noiseMapA = triplanarTexture(fract((worldCoords + ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
+        vec4 noiseMapB = triplanarTexture(fract((worldCoords - ((frameCounter)/90f)*0.5f) * 0.035f), texture2D(colortex1, TexCoords).xyz, water, 1.0);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
@@ -1034,7 +1043,7 @@ void main() {
 
         vec4 noiseMap3 = texture2D(water, fract(TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f));
 
-        vec3 normalWorldSpace = normalize2(texture2D(colortex1,TexCoords).xyz);
+        vec3 normalWorldSpace = normalize2(texture2D(colortex1,TexCoords).xyz * 2 - 1);
 
         vec3 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
@@ -1268,14 +1277,14 @@ void main() {
                     Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
 
                     #ifdef AUTO_EXPOSURE
-                        Diffuse3.xyz = autoExposure(Diffuse3.xyz, SE_EXP, 5.0);
+                        Diffuse3.xyz = calcHDR(Diffuse3.xyz, SE_EXP, 5.0, 16, 8);
                     #endif
 
                     Diffuse.xyz = calcTonemap(Diffuse3.xyz);
 
                     Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(Diffuse.xyz, vec3(0.333)));
 
-                   float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,globalDepthMask),fogCurve),0,min(fogIntensity,1.0));
+                    float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,globalDepthMask),fogCurve),0,min(fogIntensity,1.0));
                     Diffuse.xyz = calcFogColor(ScreenToView(vec3(TexCoords, Depth2)), sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
                 } else {
                     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
@@ -1323,7 +1332,7 @@ void main() {
                     Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), texture2D(colortex14,TexCoords).x * brightnessMask);
                     
                     #ifdef AUTO_EXPOSURE
-                        Diffuse3.xyz = autoExposure(Diffuse3.xyz, NORM_EXP, 5.0);
+                        Diffuse3.xyz = calcHDR(Diffuse3.xyz, NORM_EXP, 5.0, 16, 8);
                     #endif
 
                     Diffuse.xyz = calcTonemap(Diffuse3.xyz);
@@ -1406,7 +1415,7 @@ void main() {
             Diffuse3 = mix2(Diffuse3,vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
             Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
             #ifdef AUTO_EXPOSURE
-                Diffuse3.xyz = autoExposure(Diffuse3.xyz, SE_EXP, 5.0);
+                Diffuse3.xyz = calcHDR(Diffuse3.xyz, SE_EXP, 5.0, 16, 8);
             #endif
             Diffuse3 = calcTonemap(Diffuse3);
 
@@ -1433,7 +1442,7 @@ void main() {
                 }
                 timeExposure.time += frameTime;
                 //timeExposure.delta = frameTime;*/
-                Diffuse3.xyz = autoExposure(Diffuse3.xyz, NORM_EXP, 5.0);
+                Diffuse3.xyz = calcHDR(Diffuse3.xyz, NORM_EXP, 5.0, 16, 8);
                 //timeExposure.prevExposure = thisExposure;
                 //timeExposure.prevLum = thisLum;
             #endif
