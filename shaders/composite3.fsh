@@ -31,6 +31,7 @@ uniform sampler2D colortex3;
 uniform sampler2D colortex4;
 uniform sampler2D colortex5;
 uniform sampler2D colortex6;
+uniform sampler2D colortex7;
 uniform sampler2D colortex10;
 uniform sampler2D colortex12;
 uniform sampler2D colortex13;
@@ -63,6 +64,7 @@ in vec2 texCoord;
 uniform sampler2D noiseb;
 
 uniform sampler2D cloudtex;
+uniform sampler2D clouddis;
 
 uniform float near;
 uniform float far;
@@ -77,6 +79,10 @@ uniform float dhFarPlane;
 #include "lib/buffers.glsl"
 
 #include "program/gaussianBlur.glsl"
+
+float getDepthMask(sampler2D local, sampler2D distant) {
+    return mix2(linearizeDepth(texture2D(depthtex0, texCoord).x,near,far) / dhFarPlane, texture2D(colortex13, texCoord).z * 0.475, step(1.0, texture2D(depthtex0, texCoord).x)) * 32;
+}
 
 vec3 projectAndDivide(mat4 pm, vec3 p) {
     vec4 hp = pm * vec4(p, 1.0);
@@ -277,8 +283,6 @@ uniform sampler2D lightmap;
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
 #define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
-#define MIN_LIGHT 0.05f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
-
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
     const mediump float P = 5.06f;
@@ -366,31 +370,60 @@ vec3 screenToWorld(vec2 screenPos, float depth) {
     return worldSpace.xyz;
 }
 
+uniform bool isBiomeEnd;
+
 vec3 cloudLight;
 vec3 cloudAmbience;
 
+vec3 sunlightAlbedo;
+
+vec3 skyInfluenceColor;
+
 void noonFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+    } else {
+        sunlightAlbedo = vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B);
+    }
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
     cloudLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
     cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
+    skyInfluenceColor = vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B);
 }
 
 void sunsetFunc(float time, float timeFactor) {
     mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
+    if(isBiomeEnd) {
+        sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+    } else { sunlightAlbedo = mix3(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunsetLerp, 0.5);
+    }
     cloudLight = mix3(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp, 0.5);
     cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
+    skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
+    skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
 }
 
 void nightFunc(float time, float timeFactor) {
+    if(isBiomeEnd) {
+        sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+    } else { 
+        sunlightAlbedo = vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B);
+    }
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
-    cloudLight = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT;
+    cloudLight = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
     cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
 }
 
 void dawnFunc(float time, float timeFactor) {
     mediump float sunsetLerp = clamp((time)/timeFactor,0,1);
+    if(isBiomeEnd) {
+        sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+    } else {
+        sunlightAlbedo = mix3(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunsetLerp, 0.5);
+    }
     cloudLight = mix3(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), sunsetLerp, 0.5);
     cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
+    skyInfluenceColor = mix3(vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
 }
 
 out vec3 VertNormal;
@@ -408,10 +441,12 @@ layout(location = 0) out vec4 outcolor;
 layout(location = 1) out vec4 outnormal;
 
 void main() {
+    timeFunctionFrag();
     vec3 color = pow2(texture2D(colortex0, texCoord).rgb,vec3(2.2));
     vec3 sky_color = textureLod(colortex0, texCoord,6).rgb;
     mediump float depth = texture2D(depthtex0, texCoord).r;
     mediump float depth2 = texture2D(depthtex1, texCoord).r;
+    mediump float depth3 = getDepthMask(depthtex1, colortex13);
 
     vec3 Normal = normalize2(texture2D(colortex1, texCoord).rgb * 2.0f -1.0f);
 
@@ -431,7 +466,7 @@ void main() {
     float sunlightMask = dot(normalize2(mat3(gbufferModelViewInverse) * sunPosition), texture2D(colortex1,texCoord).xyz * 2 + 1);
     sunlightMask = max(sunlightMask, 0.0);
 
-    vec3 sunLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B) * sunlightMask;
+    vec3 sunLight = sunlightAlbedo * sunlightMask;
 
     vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
     float isCave = smoothstep(0.0, 0.9, lightmap.g);
@@ -448,6 +483,7 @@ void main() {
 
     //rain_data rainData = transitionRain.data;
     float rainLerp = rainStrength;
+    mediump float detectEntity = texture2D(colortex12, texCoord).g;
     /*if(rainData.firstInit != true) {
         rainData.startState = rainStrength > 0.0;
         rainData.activeState = false;
@@ -474,8 +510,6 @@ void main() {
 
     outcolor = vec4(vec3(rainData.timer),0.0);
     return;*/
-
-    timeFunctionFrag();
     
     vec4 cloudsNormal;
     if(depth == 1.0) {
@@ -508,7 +542,7 @@ void main() {
 
             vec3 light = vec3(0.0);
 
-            clouds = mix2(renderVolumetricClouds(p, rayDir, normalize2(sunPosition)), renderVolumetricClouds(p2, rayDir, normalize2(sunPosition)), 0.5);
+            clouds = renderVolumetricClouds(p, rayDir, normalize2(sunPosition));
 
             light = lightCalc.xyz;
             //clouds.a = 1.0;
@@ -681,13 +715,17 @@ void main() {
             vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
             float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));
-            finalLight = vec4(dynamicLight + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);
+            //if(detectEntity >= 1.0) totalSunlight *= 0.0025;
+            finalLight = vec4(mix2(totalSunlight*2, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);
+            finalLight.xyz = max(finalLight.xyz, mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT, smoothstep(0.0, 0.4, pow2(lightmap.g,1/2.2))));
+            finalLight.a = 1.0;
+            finalLight.xyz += dynamicLight;
             lightMask *= length(shadowLerp) * isCave;
         #endif
     }
     
     color.xyz = blindEffect(color.xyz, texCoord);
-    outcolor = vec4(pow2(color,vec3(1/2.2)), 1.0);
+    outcolor = vec4(pow2(color.xyz, vec3(1/2.2)), 1.0);
     gl_FragData[2] = finalLight;
     gl_FragData[3] = texture2D(colortex3, texCoord);
     gl_FragData[4] = texture2D(colortex4, texCoord);

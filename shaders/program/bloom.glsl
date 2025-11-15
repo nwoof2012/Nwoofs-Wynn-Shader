@@ -224,7 +224,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     mediump float bloomLerp = 1.0f;
     #if BLOOM_INTENSITY + 0.5 > 0.0
         //bloomLerp = clamp(length((sum * vec3(0.0625))/(BLOOM_THRESHOLD - 0.25)),0,1);
-        bloomLerp = clamp(1 - smoothstep(BLOOM_THRESHOLD, 1, 1 - length(sum * vec3(0.0625))), 0, 1);
+        bloomLerp = 1 - smoothstep(BLOOM_THRESHOLD, 1, 1 - length(sum));
     #endif
 
     /*if(bloomLerp - 0.25 > 1.0f) {

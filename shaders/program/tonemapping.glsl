@@ -73,6 +73,17 @@ vec3 uncharted2(vec3 x) {
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
+vec3 Uncharted2TonemapSoft(vec3 x)
+{
+    float A = 0.18;
+    float B = 0.09;
+    float C = 0.10;
+    float D = 0.20;
+    float E = 0.02;
+    float F = 0.30;
+    return ((x*(A*x + C*B) + D*E) / (x*(A*x + B) + D*F)) - E/F;
+}
+
 vec3 calcTonemap(vec3 x) {
     int tonemap = 0;
     #ifdef SCENE_AWARE_LIGHTING

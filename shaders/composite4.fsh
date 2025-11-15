@@ -41,10 +41,8 @@
 
 #define VIBRANT_MODE 1 //[0 1 2 3]
 
-#define LUT_NORM 1 // [0 1]
+#define LUT_NORM 1 // [0 1 2]
 #define LUT_SE 0 // [0 1]
-
-#define MIN_LIGHT 0.25f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
 #define SE_MIN_LIGHT 0.5f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
@@ -1229,7 +1227,7 @@ void main() {
             currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
 
             mediump float detectSky = texture2D(colortex5, TexCoords).g;
-            mediump float detectEntity = texture2D(colortex12, TexCoords).r;
+            mediump float detectEntity = texture2D(colortex12, TexCoords).g;
             #ifdef BLOOM
                 vec4 bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
                 vec3 lightmapColor = bloomAmount.xyz;
