@@ -387,7 +387,7 @@ void main() {
         outColor0 = vec4(pow2(outputColor.xyz,vec3(1/GAMMA)), alpha);
 
         normal = vec4(worldNormal * 0.5 + 0.5, 1.0);
-        dataTex0 = vec4(1.0);
+        dataTex0 = vec4(1 - lightmapCoords.g, 1.0, 1.0, 1.0);
         camDist = vec4(distanceFromCamera, dhDepth, far/dhFarPlane, 1.0);
 
         outColor2 = vec4(vec3(0.0), 1.0f);
@@ -412,5 +412,5 @@ void main() {
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(vec3(0.0),1.0));
     }
 
-    gl_FragData[7] = vec4(lightmapCoords, remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
+    gl_FragData[7] = vec4(pow2(lightmapCoords,vec2(2.2)), remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
 }

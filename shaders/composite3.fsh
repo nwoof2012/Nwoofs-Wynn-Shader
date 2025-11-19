@@ -400,7 +400,6 @@ void sunsetFunc(float time, float timeFactor) {
     cloudLight = mix3(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp, 0.5);
     cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
     skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
-    skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
 }
 
 void nightFunc(float time, float timeFactor) {
@@ -412,6 +411,7 @@ void nightFunc(float time, float timeFactor) {
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
     cloudLight = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
     cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
+    skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
 }
 
 void dawnFunc(float time, float timeFactor) {
@@ -632,10 +632,13 @@ void main() {
             }*/
             #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
                 if(detectSky == 1.0) {
+                    if(isBiomeEnd) skyInfluenceColor = vec3(0.0);
                     vec3 shadowLerp = GetShadow(depth2);
                     shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
                     vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
-                    finalLight = vec4(texture2D(colortex2, texCoord).xyz + mix2(totalSunlight, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,isCave),1.0);
+                    float lightBlend2 = lightmap.g;
+                    finalLight = vec4(skyInfluenceColor + mix2(totalSunlight*4, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);
+                    finalLight.xyz = max(finalLight.xyz, mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT, smoothstep(0.0, 0.4, pow2(lightmap.g,1/2.2))));
                 } else {
                     #ifdef VOLUMETRIC_LIGHTING
                         finalLight = vec4(mix2(light, texture2D(colortex2, texCoord).xyz + light, 1 - clouds.a),1.0);

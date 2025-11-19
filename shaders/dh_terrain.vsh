@@ -68,6 +68,7 @@ void main() {
             lightmap2 = GenerateLightmap(0f,1f);
     #endif
     lightmapCoords = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
+    //lightmapCoords = (lightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
 
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
 

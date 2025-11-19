@@ -78,12 +78,23 @@ uniform float dhFarPlane;
 
 layout (rgba8) uniform image2D cimage12;
 
-/* RENDERTARGETS:0,1,2,3,5,12,15,14 */
+/* RENDERTARGETS:0,1,2,3,5,13,15,14 */
 
 mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
     vec3 bitangent = cross(tangent, normal);
     return mat3(tangent, bitangent, normal);
 }
+
+float remapDHDepth(float depth, float nearPlane, float farPlaneChunks, float farPlaneDH) {
+    float z_dh = linearizeDepth(depth, dhNearPlane, farPlaneDH);
+
+    z_dh = clamp(z_dh, farPlaneChunks, farPlaneDH);
+
+    float d_far_chunks = (farPlaneChunks - nearPlane) / (farPlaneDH - nearPlane);
+    float t = (z_dh - farPlaneChunks) / (farPlaneDH - farPlaneChunks);
+    return mix(d_far_chunks, 1.0, t);
+}
+
 
 vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
     normal = abs(normal);
@@ -188,6 +199,8 @@ void main() {
         }
 
         gl_FragData[0] = vec4(pow2(Albedo,vec3(1/GAMMA)), albedo.a);
+
+        gl_FragData[5] = vec4(pow2(LightmapCoords,vec2(2.2)), remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
         /*#ifndef SCENE_AWARE_LIGHTING
             gl_FragData[2] = vec4(LightmapCoords.x, LightmapCoords.x, LightmapCoords.y, 1.0f);
         #else

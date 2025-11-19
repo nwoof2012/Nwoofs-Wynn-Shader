@@ -497,6 +497,8 @@ mediump float fresnel(vec3 normal, vec3 viewDir, float pow2er) {
     return pow2(1.0 - dot(normalize2(normal), normalize2(viewDir)), pow2er);
 }
 
+vec3 skyInfluenceColor;
+
 void noonFunc(float time, float timeFactor) {
     mediump float dayNightLerp = clamp((time+250f)/timeFactor,0,1);
     fogIntensity = FOG_DAY_INTENSITY;
@@ -522,6 +524,7 @@ void noonFunc(float time, float timeFactor) {
         fogDHTransition = far/dhFarPlane;
         fogDistMin = FOG_DAY_DIST_MIN;
         fogDistMax = FOG_DAY_DIST_MAX;
+        skyInfluenceColor = vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B);
     }
 }
 
@@ -552,6 +555,7 @@ void sunsetFunc(float time, float timeFactor) {
         fogDHTransition = far/dhFarPlane;
         fogDistMin = mix3(FOG_DAY_DIST_MIN, FOG_SUNSET_DIST_MIN, FOG_NIGHT_DIST_MIN, sunsetLerp, 0.5);
         fogDistMax = mix3(FOG_DAY_DIST_MAX, FOG_SUNSET_DIST_MAX, FOG_NIGHT_DIST_MAX, sunsetLerp, 0.5);
+        skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
     }
 }
 
@@ -580,6 +584,7 @@ void nightFunc(float time, float timeFactor) {
         fogDHTransition = far/dhFarPlane;
         fogDistMin = FOG_NIGHT_DIST_MIN;
         fogDistMax = FOG_NIGHT_DIST_MAX;
+        skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
     }
 }
 
@@ -610,6 +615,7 @@ void dawnFunc(float time, float timeFactor) {
         fogDHTransition = far/dhFarPlane;
         fogDistMin = mix3(FOG_NIGHT_DIST_MIN, FOG_SUNSET_DIST_MIN, FOG_DAY_DIST_MIN, sunsetLerp, 0.5);
         fogDistMax = mix3(FOG_NIGHT_DIST_MAX, FOG_SUNSET_DIST_MAX, FOG_DAY_DIST_MAX, sunsetLerp, 0.5);
+        skyInfluenceColor = mix3(vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
     }
 }
 
@@ -1270,7 +1276,8 @@ void main() {
 
                     vec3 rawLight = lightmapColor;
 
-                    vec3 Diffuse3 = mix2(Diffuse * ((mix2(lightmapColor,vec3(dot(lightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient)) * aoValue,Diffuse * ((NdotL * shadowLerp + Ambient)) * aoValue,0.25);
+                    vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
+                    vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),SE_MIN_LIGHT, MAX_LIGHT),mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * SE_MIN_LIGHT,1 - texture2D(colortex13,TexCoords).g), clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue;
                     Diffuse3 = mix2(Diffuse3,mix2(vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.175f),seColor * 0.125f, 0.01),1.0625-clamp(vec3(dot(lightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
                     Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
 
@@ -1311,7 +1318,7 @@ void main() {
                     #ifdef AO
                         aoValue = DHcalcAO(TexCoords, foot_pos, 100, colortex6, colortex1);
                     #endif
-                    vec3 shadowLerp = GetShadow(Depth2);
+                    vec3 shadowLerp = GetShadow(texture2D(colortex15, TexCoords).g);
 
                     Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));   
                     if(waterTest > 0) {
@@ -1323,7 +1330,7 @@ void main() {
                     }
 
                     vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
-                    vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),MIN_LIGHT, MAX_LIGHT), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT, clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue;
+                    vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),MIN_LIGHT, MAX_LIGHT),mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT,1 - texture2D(colortex13,TexCoords).g), clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue;
 
                     Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
 
