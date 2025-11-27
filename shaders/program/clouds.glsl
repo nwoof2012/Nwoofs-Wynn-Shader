@@ -192,18 +192,23 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
 
         pos += rayDir * STEP_SIZE;
 
-        normalMap += normalize2((gbufferProjectionInverse * vec4(calcCloudNormals(movePos) * 2 - 1,1.0)).xyz);
+        //normalMap += normalize2((gbufferProjectionInverse * vec4(calcCloudNormals(movePos) * 2 - 1,1.0)).xyz);
+        normalMap += normalize2(vec3(
+            calcDensity(movePos + vec3(STEP_SIZE, 0, 0)) - calcDensity(movePos - vec3(STEP_SIZE, 0, 0)),
+            calcDensity(movePos + vec3( 0, 0, STEP_SIZE)) - calcDensity(movePos - vec3( 0, 0, STEP_SIZE)),
+            calcDensity(movePos + vec3(0, STEP_SIZE, 0)) - calcDensity(movePos - vec3(0, STEP_SIZE, 0))
+        )) / float(CLOUD_STEPS);
     }
 
     mat3 tbn = tbnNormalTangent((gbufferProjection * vec4(VertNormal * 2 - 1, 1.0)).xyz, (gbufferProjection * vec4(Tangent,1.0)).xyz);
-    normalMap /= CLOUD_STEPS;
+    //normalMap /= CLOUD_STEPS;
     
     //normalMap = tbn * normalMap;
     normalMap = normalize2(normalMap);
 
     normalMap = normalMap.xzy;
 
-    normalMap.xy *= -1;
+    normalMap.xyz *= -1;
 
     #ifdef VOLUMETRIC_LIGHTING
         lighting = mix2(cloudAmbience, cloudLight, clamp(dot((gbufferModelViewInverse * vec4(sunDir,1.0)).xyz, normalize2(normalMap)),0,1));
@@ -211,7 +216,7 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
 
     colorAcc = pow2(colorAcc/CLOUD_STEPS,vec3(1/8.0));
 
-    colorAcc *= mix2(2.0, 1.0, rainStrength);
+    colorAcc *= mix2(1.0, 0.5, rainStrength);
 
     alphaAcc *= 0.25;
 

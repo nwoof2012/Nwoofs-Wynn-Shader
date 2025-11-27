@@ -998,6 +998,8 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 
 #include "lib/timeCycle.glsl"
 
+#include "program/lighting.glsl"
+
 void main() {
     #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
         mediump float aspect = float(viewWidth)/float(viewHeight);
@@ -1300,23 +1302,23 @@ void main() {
 
                     mediump float minLight = MIN_LIGHT;
 
-                    lightmapColor = mix2(lightmapColor, normalize2(lightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(lightmapColor, lightmapColor)));
+                    //lightmapColor = mix2(lightmapColor, normalize2(lightmapColor) * vec3(minLight), 1 - step(minLight * minLight,dot(lightmapColor, lightmapColor)));
 
-                    vec3 rawLight = lightmapColor;
+                    /*vec3 rawLight = lightmapColor;
                     if(maxLight < 4.1f) {
                         float lightMagnitude = length(lightmapColor);
                         lightMagnitude = clamp(lightMagnitude, MIN_LIGHT, maxLight);
                         lightmapColor = clamp(lightmapColor, vec3(0.0),normalize2(lightmapColor) * lightMagnitude);
-                    }
+                    }*/
 
-                    lightmapColor = max(lightmapColor, vec3(minLight));
+                    //lightmapColor = max(lightmapColor, vec3(minLight));
 
                     vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
                     mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
 
                     float aoValue = 1;
                     #ifdef AO
-                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, colortex6, colortex1);
+                        aoValue = DHcalcAO(TexCoords, foot_pos, 10, colortex6, colortex1);
                     #endif
                     vec3 shadowLerp = GetShadow(texture2D(colortex15, TexCoords).g);
 
@@ -1330,11 +1332,14 @@ void main() {
                     }
 
                     vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
-                    vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),MIN_LIGHT, MAX_LIGHT),mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT,1 - texture2D(colortex13,TexCoords).g), clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue;
+                    //vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),MIN_LIGHT, MAX_LIGHT),mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * MIN_LIGHT,1 - texture2D(colortex13,TexCoords).g), clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue;
 
-                    Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
+                    vec3 Diffuse3 = calcLighting(Diffuse.xyz, lightmapColor, 1, MIN_LIGHT, MAX_LIGHT, foot_pos, shadowLerp) * max(vec3(aoValue),MIN_LIGHT * skyInfluenceColor);
+                    Diffuse3 *= mix2(skyInfluenceColor, vec3(1.0), clamp(1 - dot(sunDir, Normal),0,1));
 
-                    Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), texture2D(colortex14,TexCoords).x * brightnessMask);
+                    //Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
+
+                    //Diffuse3.xyz = mix2(Diffuse3.xyz, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), texture2D(colortex14,TexCoords).x * brightnessMask);
                     
                     #ifdef AUTO_EXPOSURE
                         Diffuse3.xyz = calcHDR(Diffuse3.xyz, NORM_EXP, 5.0, 16, 8);
@@ -1435,6 +1440,8 @@ void main() {
             LightmapColor = max(currentLightColor,LightmapColor * lightBrightness2 * 8)/128;
             vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
             Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
+
+            Diffuse3 = calcLighting(Albedo, LightmapColor, 0, MIN_LIGHT, MAX_LIGHT, foot_pos, shadowLerp);
             #ifdef AUTO_EXPOSURE
                 /*float targetExposure = calcTargetExposure(Diffuse.xyz, 7.0, 5.0);
                 if(abs(thisExposure - timeExposure.prevExposure) > 0.0 && timeExposure.isActive != true) {
