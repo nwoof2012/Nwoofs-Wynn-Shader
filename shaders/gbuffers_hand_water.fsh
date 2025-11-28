@@ -154,8 +154,6 @@ uniform int dhRenderDistance;
 void main() {
     vec4 noiseMap3 = texture2D(noise, TexCoords - sin(TexCoords.y*64f + ((frameCounter)/90f)) * 0.005f);
     
-    //vec4 albedo = vec4(isInWater(texture, Color.xyz, TexCoords, noiseMap3.xy, 0.125), texture2D(texture, TexCoords + noiseMap3.xy).a);
-    
     vec4 albedo = texture2D(texture, TexCoords) * Color;
     mediump float depth = texture2D(depthtex0, TexCoords).r;
 

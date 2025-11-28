@@ -22,7 +22,7 @@
 #define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
-#define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+#define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
 
 #define NATURAL_LIGHT_DAY_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
@@ -50,7 +50,7 @@
 
 #define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
-#define LIGHTMAP_QUALITY 16 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
+#define LIGHTMAP_QUALITY 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
 
 #define FRAGMENT_SHADER
 
@@ -986,16 +986,6 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 
 #include "program/blindness.glsl"
 
-#if VOXEL_AREA == 32
-    const mediump float voxelDistance = 32.0;
-#endif
-#if VOXEL_AREA == 64
-    const mediump float voxelDistance = 64.0;
-#endif
-#if VOXEL_AREA == 128
-    const mediump float voxelDistance = 128.0;
-#endif
-
 #include "lib/timeCycle.glsl"
 
 #include "program/lighting.glsl"
@@ -1174,25 +1164,8 @@ void main() {
             fogDistMin = baseFogDistMin;
             fogDistMax = baseFogDistMax;
         }
-        
-        mediump float dayNightLerp = clamp(quadTime/11500,0,1);
-        mediump float sunsetLerp = clamp(quadTime/500,0,1);
-        
-        vec4 cloudViewPos = gbufferProjection * vec4(TexCoords, 0.0, 1.0);
-        vec4 cloudClipPos = cloudViewPos;
-        
-        vec3 cloudNDC = cloudClipPos.xyz / cloudClipPos.w;
 
-        vec2 cloudScreenPos = cloudNDC.xy * 0.5 + 0.5;
-
-        vec4 cloudNoiseMap = texture2D(noisetex, cloudScreenPos - vec2(worldTime * 550.0, 0.0));
-        vec4 cloudNoiseMap2 = texture2D(noisetex, cloudScreenPos + vec2(0.0, worldTime * 550.0));
-        vec4 cloudFinalNoise = mix2(cloudNoiseMap,vec4(0.0),cloudNoiseMap2);
-
-        vec3 cloudRayDir = normalize2(viewSpaceFragPosition);
-        vec4 cloudColor = rayMarch(cameraPosition, cloudRayDir, cloudFinalNoise.y);
-
-        Diffuse = mix2(Diffuse, cloudColor.xyz, cloudColor.a);
+        //Diffuse = mix2(Diffuse, cloudColor.xyz, cloudColor.a);
 
         vec3 lightColorDay = vec3(NATURAL_LIGHT_DAY_R, NATURAL_LIGHT_DAY_G, NATURAL_LIGHT_DAY_B) * NATURAL_LIGHT_DAY_I;
         vec3 lightColorNight = vec3(NATURAL_LIGHT_NIGHT_R, NATURAL_LIGHT_NIGHT_G, NATURAL_LIGHT_NIGHT_B) * NATURAL_LIGHT_NIGHT_I;
@@ -1203,15 +1176,13 @@ void main() {
         float weightNight = 0.5 + 0.5 * cos((timeNorm - 0.75) * 2.0 * PI);
         vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
 
+        timeFunctionFrag();
         if(isBiomeEnd) {
-            timeFunctionFrag();
             if(dhTest <= 0) {
                 currentColor = vec3(0.3f);
             } else {
                 currentColor = seColor;
             }
-        } else {
-            timeFunctionFrag();
         }
 
         float occlusion = step(1.0, Depth2);
@@ -1232,7 +1203,7 @@ void main() {
         float globalDepthMask2 = getDepthMask(depthtex1, colortex13) * dhFarPlane;
 
         if(Depth == 1.0f){
-            currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
+            //currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
 
             mediump float detectSky = texture2D(colortex5, TexCoords).g;
             mediump float detectEntity = texture2D(colortex12, TexCoords).g;
@@ -1412,8 +1383,6 @@ void main() {
             aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
         #endif
 
-        float timer = 0;
-
         if(isBiomeEnd) {
             if(seMaxLight < 4.1f) {
                 float lightMagnitude = length(LightmapColor);
@@ -1438,10 +1407,8 @@ void main() {
                 LightmapColor = clamp(LightmapColor, vec3(0.0),normalize2(LightmapColor) * lightMagnitude);
             }
             LightmapColor = max(currentLightColor,LightmapColor * lightBrightness2 * 8)/128;
-            vec3 Diffuse3 = mix2(Albedo * (LightmapColor + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
-            Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(rawLight)) * 0.5,1.75),0,0.125));
 
-            Diffuse3 = calcLighting(Albedo, LightmapColor, 0, MIN_LIGHT, MAX_LIGHT, foot_pos, shadowLerp);
+            vec3 Diffuse3 = calcLighting(Albedo, LightmapColor, 0, MIN_LIGHT, MAX_LIGHT, foot_pos, shadowLerp);
             #ifdef AUTO_EXPOSURE
                 /*float targetExposure = calcTargetExposure(Diffuse.xyz, 7.0, 5.0);
                 if(abs(thisExposure - timeExposure.prevExposure) > 0.0 && timeExposure.isActive != true) {

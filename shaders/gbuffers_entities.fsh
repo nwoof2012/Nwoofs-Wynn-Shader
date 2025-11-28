@@ -189,12 +189,6 @@ void main() {
 
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-    vec3 worldPosition = cameraPosition + (gbufferModelViewInverse * vec4(viewSpaceFragPosition, depth)).xyz;
-
-    /*if(blindness > 0f) {
-        albedo.xyz = blindEffect(albedo.xyz);
-    }*/
-
     fogMin = FOG_DAY_DIST_MIN;
     fogMax = FOG_DAY_DIST_MAX;
 
@@ -249,17 +243,11 @@ void main() {
         if(currentRenderedItemId > 0 && entityId == 10007) {
             lighting.xyz = mix2(lighting.xyz, 1 - texture2D(texture, TexCoords).xyz, glintMask);
         }
-        gl_FragData[2] = vec4(lighting.xyz * 0.275, 1.0);
+        gl_FragData[2] = vec4(vec3(0.0), 1.0);
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
     gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
-    /*#ifdef ENTITY_SHADOWS
-        gl_FragData[5] = vec4(worldPosition, 1.0);
-    #else
-        gl_FragData[5] = vec4(0.0);
-    #endif*/
-    //gl_FragData[3] = vec4(a);
     gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }

@@ -48,9 +48,9 @@ vec3 BloomTile(float lod, vec2 offset, vec2 scaledCoord) {
 /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 
 void main() {
-    vec3 blur = vec3(0.0);
+    //vec3 blur = vec3(0.0);
 
-    #ifdef BLOOM
+    /*#ifdef BLOOM
         vec2 scaledCoord = TexCoords * max(vec2(viewWidth, viewHeight) / vec2(1920.0, 1080.0), vec2(1.0));
 
         #if defined OVERWORLD || defined END
@@ -70,7 +70,7 @@ void main() {
             blur += BloomTile(7.0, vec2(0.160625 , 0.3325), scaledCoord);
             blur += BloomTile(8.0, vec2(0.1784375, 0.3325), scaledCoord) * 0.6;
         #endif
-    #endif
+    #endif*/
 
     gl_FragData[0] = texture2D(colortex0, TexCoords);
     gl_FragData[1] = texture2D(colortex1, TexCoords);

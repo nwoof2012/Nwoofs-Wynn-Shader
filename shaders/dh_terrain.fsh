@@ -394,8 +394,6 @@ void main() {
         #if !defined SCENE_AWARE_LIGHTING
             outColor2 = vec4(lightmapCoords.x, lightmapCoords.x, lightmapCoords.y, 1.0f);
         #else
-            #define VOXEL_AREA 128 //[32 64 128]
-            #define VOXEL_RADIUS (VOXEL_AREA/2)
             ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
             vec3 light_color = vec3(0.0);// = texture3D(cSampler1, vec3(foot_pos+2.0*normals_face_world+fract(cameraPosition) + VOXEL_RADIUS)).rgb;
             if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {

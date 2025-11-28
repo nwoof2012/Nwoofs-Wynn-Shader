@@ -224,7 +224,7 @@ void main() {
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0.5,1));
         if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
-        gl_FragData[2] = vec4(lighting.xyz, 1.0);
+        gl_FragData[2] = vec4(vec3(0.0), 1.0);
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif

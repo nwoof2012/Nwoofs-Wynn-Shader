@@ -54,20 +54,8 @@ vec4 vanillaLight(in vec2 Lightmap) {
 
 void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
-    
-    mediump float a;
-
-    /*if(albedo.a > 0 && heldItemId == 1) {
-        a = 1;
-    } else {
-        a = 0;
-    }*/
 
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-
-    /*if(blindness > 0f) {
-        albedo.xyz = blindEffect(albedo.xyz);
-    }*/
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, 1.0f);
@@ -78,6 +66,6 @@ void main() {
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
-    gl_FragData[3] = vec4(a,0.0,0.0,1.0);
+    gl_FragData[3] = vec4(0.0,0.0,0.0,1.0);
     gl_FragData[4] = vec4(0.0,1.0,1.0,1.0);
 }

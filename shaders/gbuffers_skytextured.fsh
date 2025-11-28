@@ -43,28 +43,5 @@ mediump float GetHorizonFactor(float XdotU) {
 }
 
 void main() {
-	vec4 color = texture(gtexture, texcoord) * glcolor;
-	if (color.a >= 0.1) {
-		vec4 screenPos = vec4(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z, 1.0);
-        vec4 viewPos = gbufferProjectionInverse * (screenPos * 2.0 - 1.0);
-        viewPos /= viewPos.w;
-        vec3 nViewPos = normalize2(viewPos.xyz);
-
-        mediump float VdotS = dot(nViewPos, sunVec);
-        mediump float VdotU = dot(nViewPos, upVec);
-
-        if (VdotS > 0.0) { // Sun
-            color.rgb *= dot(color.rgb, color.rgb) * 3.2;
-            color.rgb *= 0.25 + (0.75 - 0.25 * rainFactor) * sunVisibility2;
-            color.a = smoothstep1(clamp(length(sunVec - position),0,1));
-        } else { // Moon
-            color.rgb *= smoothstep1(min(length(color.rgb),1)) * 1.3;
-            color.a = smoothstep1(clamp(length(abs(sunVec - position)),0,1));
-        }
-
-        color.rgb *= GetHorizonFactor(VdotU);
-        color.a = 0;
-
-        gl_FragData[0] = color;
-	}
+    gl_FragData[0] = vec4(0.0);
 }

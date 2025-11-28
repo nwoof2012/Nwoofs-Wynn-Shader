@@ -29,21 +29,9 @@ uniform vec3 cameraPosition;
 void main() {
     vec4 color = texture2D(texture, TexCoords) * Color;
 
-    //Color = vec3(dot(Color, vec3(0.333f)));
-
     mediump float a;
 
-    /*if(color.a > 0) {
-        a = 1;
-    } else {
-        a = 0;
-    }*/
-
     mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-
-    /*if(blindness > 0f) {
-        color.xyz = blindEffect(color.xyz);
-    }*/
     
     gl_FragData[0] = color;
     gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5, 1.0);

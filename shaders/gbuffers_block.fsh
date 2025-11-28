@@ -213,17 +213,11 @@ void main() {
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
         if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
-        gl_FragData[2] = vec4(lighting.xyz, 1.0);
+        gl_FragData[2] = vec4(vec3(0.0), 1.0);
     #else
         gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(1.0, distanceFromCamera, 0.0, 1.0);
     gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
-    /*#ifdef ENTITY_SHADOWS
-        gl_FragData[5] = vec4(worldPosition, 1.0);
-    #else
-        gl_FragData[5] = vec4(0.0);
-    #endif*/
-    //gl_FragData[3] = vec4(a);
     gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }

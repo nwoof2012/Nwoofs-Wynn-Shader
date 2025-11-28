@@ -26,33 +26,6 @@ void main() {
     TexCoords = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
     glColor = gl_Color;
-
-    /*float timeOfDay = mod(worldTime,24000);
-    quadTime = timeOfDay;
-    if(timeOfDay < 250) {
-        timePhase = 3;
-        quadTime += 250;
-    } else if(timeOfDay < 11750) {
-        timePhase = 0;
-        quadTime -= 250;
-    } else if(timeOfDay < 12250) {
-        timePhase = 1;
-        quadTime -= 11750;
-    } else if(timeOfDay < 23750) {
-        timePhase = 2;
-        quadTime -= 12250;
-    } else if(timeOfDay < 24000) {
-        timePhase = 3;
-        quadTime -= 23250;
-    }
-
-    sunVisibility2 = timeOfDay/24000;*/
-
-    //upVec = normalize(gbufferModelView[1].xyz);
-    //sunVec = GetSunVector();
-
-    vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
-    position.xz -= vec2(88.0);
-    gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
+    gl_Position = gl_ProjectionMatrix * gbufferModelView * gl_Vertex;
     Normal = gl_Normal;
 }

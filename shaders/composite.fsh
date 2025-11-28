@@ -32,7 +32,7 @@
 #define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
 
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
-#define SHADOW_DIST 16 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+#define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
 #define BLOOM
 
@@ -68,8 +68,6 @@ float thisExposure;
 float thisLum;
 
 #include "lib/buffers.glsl"
-
-precision mediump float;
 
 varying vec2 TexCoords;
 

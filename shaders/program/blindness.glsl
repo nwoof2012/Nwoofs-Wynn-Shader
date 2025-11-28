@@ -14,7 +14,6 @@ vec3 blindEffect(vec3 color) {
 
 vec3 blindEffect(vec3 color, vec2 uv) {
     if(blindness > 0f) {
-        //mediump float depth = mix2(linearizeDepth(texture2D(depthtex0, uv).x,near,far) / dhFarPlane, texture2D(colortex13, uv).z * 0.475, step(1.0, texture2D(depthtex0, uv).x)) * 32 * dhFarPlane;
         float depth = texture2D(depthtex0, uv).r;
         vec2 ndc = uv * 2.0 - 1.0;
 
@@ -26,7 +25,6 @@ vec3 blindEffect(vec3 color, vec2 uv) {
         worldSpace /= worldSpace.w;
 
         float dist = distance(vec3(0.0), worldSpace.xyz);
-        //if(texture2D(depthtex0, uv).x >= 1.0) depth = dhFarPlane;
         return mix2(color,vec3(0),smoothstep(minBlindnessDistance, maxBlindDistance, dist));
     } else {
         return color;

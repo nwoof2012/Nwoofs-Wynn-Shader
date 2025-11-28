@@ -24,38 +24,17 @@ float calcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sample
         float offsetDepth = calcLinearDepth(texture2D(depthMask, UVs + offset).r, near, far);
 
         vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2 - 1;
-        //float depthDist = abs(centerDepth - offsetDepth) * distance(vec3(0.0), footPos) * 50;
-        //if(abs(centerDepth - offsetDepth) > AO_THRESHOLD /*|| dot(centerNormal, offsetNormal) < 0.5*/) continue;
         float depthDiff = abs(centerDepth - offsetDepth);
         float weight = smoothstep(AO_THRESHOLD, 0.0, depthDiff);
         float normalFactor = smoothstep(1.0,0.1,abs(dot(centerNormal, offsetNormal)));
         depthDifference += weight * depthDiff * normalFactor;
-        //depthDifference += mix2(depthDist * (1 - smoothstep(0.0, AO_THRESHOLD, depthDist)),0.0, step(offsetDepth, 0.999));
     }
 
     return clamp(1 - pow2((depthDifference/kernel),0.5)*AO_STRENGTH, MIN_LIGHT, 1);
 }
 
-/*float DHcalcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {
-    float centerDepth = calcLinearDepth(texture2D(depthMask, UVs).g, near, far);
-    float depthDifference = 0f;
-    float kernel = kernelSize;
-    for(int i = 0; i < kernelSize; i++) {
-        float x = (i / sqrt(kernel)) - sqrt(kernel)/2; // Integer division for x
-        float y = mod((i / sqrt(kernel)), sqrt(kernel)) - sqrt(kernel)/2; // Integer division for y
-        vec2 offset = vec2(x,y)/1080;
-        float offsetDepth = calcLinearDepth(texture2D(depthMask, UVs + offset).g, near, far);
-        //float depthDist = abs(centerDepth - offsetDepth) * distance(vec3(0.0), footPos) * 50;
-        if(abs(centerDepth - offsetDepth) > 1) continue;
-        depthDifference += abs(centerDepth - offsetDepth);
-        //depthDifference += mix2(depthDist * (1 - smoothstep(0.0, AO_THRESHOLD, depthDist)),0.0, step(offsetDepth, 0.999));
-    }
-
-    return clamp(1 - pow2((depthDifference/kernel),0.5)*AO_STRENGTH, MIN_LIGHT, 1);
-}*/
-
 float DHcalcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {
-    float centerDepth = texture2D(depthMask, UVs).b; //calcLinearDepth(texture2D(depthMask, UVs).b, near, far);
+    float centerDepth = texture2D(depthMask, UVs).b;
     float depthDifference = 0f;
     float kernel = kernelSize;
 
@@ -73,7 +52,6 @@ float DHcalcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
         float weight = smoothstep(AO_THRESHOLD, 0.0, depthDiff);
         float normalFactor = smoothstep(1.0,0.1,abs(dot(centerNormal, offsetNormal)));
         depthDifference += weight * depthDiff * normalFactor;
-        //depthDifference += mix2(depthDist * (1 - smoothstep(0.0, AO_THRESHOLD, depthDist)),0.0, step(offsetDepth, 0.999));
     }
 
     return clamp(1 - pow2((depthDifference/kernel),0.5)*AO_STRENGTH*2, MIN_LIGHT, 1);

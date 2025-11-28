@@ -36,7 +36,6 @@ varying vec4 Color;
 
 varying vec2 LightmapCoords;
 
-//uniform float worldTime;
 uniform float frameTimeCounter;
 
 uniform vec3 cameraPosition;
@@ -175,7 +174,7 @@ vec4 GenerateLightmap(LightSource source) {
 
 void main() {
     gl_Position = ftransform();
-        
+
     TexCoords = gl_MultiTexCoord0.st;
 
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
@@ -196,8 +195,6 @@ void main() {
     Normal = normalize(gl_NormalMatrix * gl_Normal);
     Tangent = (gl_NormalMatrix * at_tangent.xyz);
     Color = gl_Color;
-
-    normals_face_world = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
 
     mediump float bottomY = at_midBlock.y - 0.5;
 
@@ -224,8 +221,6 @@ void main() {
     view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
     foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
     vec3 world_pos = foot_pos + cameraPosition;
-    #define VOXEL_AREA 128 //[32 64 128]
-    #define VOXEL_RADIUS (VOXEL_AREA/2)
     block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
     ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
 
@@ -262,14 +257,10 @@ void main() {
             if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
 
             uint integerValue = packUnorm4x8(voxel_data);
-			
-			uint integerValue2 = packUnorm4x8(block_data);
 
             lightData = voxel_data2;
 
             imageAtomicMax(cimage1, voxel_pos, voxel_data2);
-
-			imageAtomicMax(cimage2, voxel_pos, voxel_data2);
         }
 
         LightSource source;
