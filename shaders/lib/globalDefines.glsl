@@ -10,6 +10,7 @@
 #define TAA_BLEND 0.1 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
 
 #define LIGHT_RADIUS 2
+#define LIGHT_SAMPLE_COUNT 64
 #define VOXEL_AREA 128 //[32 64 128]
 #define VOXEL_RADIUS (VOXEL_AREA/2)
 

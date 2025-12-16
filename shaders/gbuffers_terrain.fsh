@@ -438,6 +438,8 @@ void main() {
             if(lighting.w <= 0.0 && distance(vec3(0.0), foot_pos) <= VOXEL_RADIUS) {
                 lowp vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
 
+                ivec3 voxel_pos3 = ivec3(block_centered_relative_pos3 + VOXEL_RADIUS);
+
                 int side = 2 * LIGHT_RADIUS;
                 int totalLightRadius = int(pow2(side, 3));
 
@@ -500,6 +502,29 @@ void main() {
                         }
                     }
                     lighting /= max(weight,1.0);
+
+                    /*float lightWeight = 0.0;
+                    lighting = decodeLightmap(texture3D(cSampler1, vec3(voxel_pos3) / vec3(VOXEL_AREA)).r);
+
+                    float lightSampleRoot = pow2(LIGHT_SAMPLE_COUNT,1/3);
+                    for(int i = 0; i < LIGHT_SAMPLE_COUNT; i++) {
+                        int x = int(i / (lightSampleRoot * lightSampleRoot) - LIGHT_RADIUS);
+                        int y = int(mod(i/lightSampleRoot, lightSampleRoot) - LIGHT_RADIUS);
+                        int z = int(mod(i, lightSampleRoot) - LIGHT_RADIUS);
+
+                        lowp vec3 offset = vec3(x, z, y)*(LIGHT_RADIUS/lightSampleRoot);
+                        if(length(offset) * length(offset) > LIGHT_RADIUS * LIGHT_RADIUS) continue;
+
+                        lowp vec3 block_centered_relative_pos4 = foot_pos + at_midBlock2.xyz / 64.0 + offset + fract(cameraPosition);
+
+                        if (distance(vec3(0.0), block_centered_relative_pos4) > VOXEL_RADIUS) continue;
+
+                        ivec3 voxel_pos4 = ivec3(block_centered_relative_pos4 + VOXEL_RADIUS);
+                        float sampleWeight = 1 - distance(block_centered_relative_pos3, block_centered_relative_pos4)/LIGHT_RADIUS;
+                        lighting += decodeLightmap(texture3D(cSampler1, vec3(voxel_pos4) / vec3(VOXEL_AREA)).r) * sampleWeight;
+                        lightWeight += sampleWeight;
+                    }
+                    lighting /= max(lightWeight + 1, 1.0);*/
                 #elif SCENE_AWARE_LIGHTING == 1
                     //if(isLeaves > 0.5) continue;
                     

@@ -46,6 +46,13 @@ uniform vec3 fogColor;
 uniform sampler2D noises;
 
 uniform sampler2D colortex0;
+uniform sampler2D colortex2;
+uniform sampler2D colortex6;
+uniform sampler2D colortex5;
+uniform sampler2D colortex1;
+uniform sampler2D colortex12;
+uniform sampler2D colortex15;
+uniform sampler2D colortex13;
 
 uniform int dhRenderDistance;
 
@@ -373,6 +380,10 @@ void main() {
 
     if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
         mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
+
+        if(clamp(1.0-length(viewSpaceFragPosition)/clamp(far - 32.0,32.0,far),0.0,1.0) > 0) {
+            discard;
+        }
 
         //outputColor *= lightBrightness;
 

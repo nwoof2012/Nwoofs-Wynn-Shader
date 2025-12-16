@@ -111,6 +111,10 @@ vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
     return texXZ + texXY + texZY;
 }
 
+mediump float calcDepth(float depth, float near, float far) {
+    return (near * far) / (depth * (near - far) + far);
+}
+
 void main() {
     //vec4 albedo = texture2D(texture, TexCoords) * Color;
 
@@ -146,7 +150,11 @@ void main() {
         mediump float depth = texture2D(depthtex0, texCoord).r;
         mediump float dhDepth = gl_FragCoord.z;
         //mediump float depthLinear = calcDepth(depth, near, far*4);
-        //mediump float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
+        float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
+
+        if(clamp(1.0-length(viewSpaceFragPosition)/clamp(far - 32.0,32.0,far),0.0,1.0) > 0) {
+            discard;
+        }
         
         //vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
         

@@ -248,6 +248,8 @@ void main() {
             uint voxel_data2 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
 
             uint voxel_data3 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
+            
+            //imageStore(cimage1, ivec3(voxel_pos), voxel_data);
 
             /*if(length(voxel_data.xyz) <= 0.0) {
                 voxel_data = vec4(at_midBlock.w);

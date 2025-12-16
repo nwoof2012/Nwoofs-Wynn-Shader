@@ -13,6 +13,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     vec3 lightColor = texture2D(colortex2,uv).rgb * BRIGHTNESS;
     lightColor = mix2(pow2(lightColor,vec3(0.7)), lightColor * 2,1 - step(1.0, texture2D(depthtex0, uv).r));
     float illumination = clamp(texture2D(colortex2,uv).a * BRIGHTNESS, 0.0, MAX_LIGHT * 0.5);
+    //return vec4(pow2(max(lightColor,vec3(MIN_LIGHT)),vec3(GAMMA)), illumination);
 
     #ifdef SCENE_AWARE_LIGHTING
         sum += lightColor;

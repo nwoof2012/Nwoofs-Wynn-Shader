@@ -132,7 +132,7 @@ void main() {
 			float waveHeight = WAVE_AMPLITUDE * ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3;
 
 			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
-			waterShadingHeight = ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y)) + 1;
+			waterShadingHeight = ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3 + 1;
 		#endif
     }
 

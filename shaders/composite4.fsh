@@ -1249,10 +1249,12 @@ void main() {
 
                     vec3 rawLight = lightmapColor;
 
-                    vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
+                    /*vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
                     vec3 Diffuse3 = Diffuse.xyz * mix2(clamp(lightmapColor * lightBrightness2 * smoothstep(0.0, 0.1, 1 - sunDir.z),SE_MIN_LIGHT, MAX_LIGHT),mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B) * SE_MIN_LIGHT,1 - texture2D(colortex13,TexCoords).g), clamp(1 - dot(sunDir, texture2D(colortex1, TexCoords).xyz * 2 - 1),0,1)) * aoValue;
                     Diffuse3 = mix2(Diffuse3,mix2(vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.175f),seColor * 0.125f, 0.01),1.0625-clamp(vec3(dot(lightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
-                    Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));
+                    Diffuse3 = mix2(Diffuse3, lightmapColor, clamp(pow2(length(lightmapColor * 0.0025),1.75),0,0.025));*/
+
+                    vec3 Diffuse3 = calcLighting(Diffuse.xyz, lightmapColor, 1, MIN_LIGHT, MAX_LIGHT, foot_pos, shadowLerp) * max(vec3(aoValue),MIN_LIGHT * skyInfluenceColor) * 0.125;
 
                     #ifdef AUTO_EXPOSURE
                         Diffuse3.xyz = calcHDR(Diffuse3.xyz, SE_EXP, 5.0, 16, 8);
@@ -1390,9 +1392,10 @@ void main() {
                 LightmapColor = clamp(LightmapColor, vec3(0.0),normalize2(LightmapColor) * lightMagnitude);
             }
             LightmapColor *= vec3(3.5025) * smoothstep(0.0, 0.1, LightmapColor);
-            vec3 Diffuse3 = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor) * aoValue,Albedo * ((NdotL * shadowLerp + Ambient) * currentColor) * aoValue,0.25);
-            Diffuse3 = mix2(Diffuse3,vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
-            Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
+            //vec3 Diffuse3 = mix2(Albedo * ((mix2(LightmapColor,vec3(dot(LightmapColor,vec3(0.333f))),0.75)*0.125 + NdotL * shadowLerp + Ambient) * currentColor) * aoValue,Albedo * ((NdotL * shadowLerp + Ambient) * currentColor) * aoValue,0.25);
+            //Diffuse3 = mix2(Diffuse3,vec3(pow2(dot(Diffuse3,vec3(0.333f)),1/2.55) * 0.125f),1.0625-clamp(vec3(dot(LightmapColor.rg,vec2(0.333f))),MIN_SE_SATURATION,1));
+            //Diffuse3 = mix2(Diffuse3, LightmapColor, clamp(pow2(length(LightmapColor * 0.0025),1.75),0,0.025));
+            vec3 Diffuse3 = calcLighting(Albedo, LightmapColor, 0, SE_MIN_LIGHT, SE_MAX_LIGHT, foot_pos, shadowLerp) * 0.125;
             #ifdef AUTO_EXPOSURE
                 Diffuse3.xyz = calcHDR(Diffuse3.xyz, SE_EXP, 5.0, 16, 8);
             #endif
@@ -1410,20 +1413,7 @@ void main() {
 
             vec3 Diffuse3 = calcLighting(Albedo, LightmapColor, 0, MIN_LIGHT, MAX_LIGHT, foot_pos, shadowLerp);
             #ifdef AUTO_EXPOSURE
-                /*float targetExposure = calcTargetExposure(Diffuse.xyz, 7.0, 5.0);
-                if(abs(thisExposure - timeExposure.prevExposure) > 0.0 && timeExposure.isActive != true) {
-                    timeExposure.startTime = frameTimeCounter;
-                    timeExposure.time = 0;
-                    timeExposure.isActive = true;
-                    //gl_FragData[0] = vec4(1.0);
-                } else if(abs(thisExposure - targetExposure) <= 0.0) {
-                    timeExposure.isActive = false;
-                }
-                timeExposure.time += frameTime;
-                //timeExposure.delta = frameTime;*/
                 Diffuse3.xyz = calcHDR(Diffuse3.xyz, NORM_EXP, 5.0, 16, 8);
-                //timeExposure.prevExposure = thisExposure;
-                //timeExposure.prevLum = thisLum;
             #endif
             Diffuse3 = calcTonemap(Diffuse3);
 

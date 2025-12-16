@@ -233,7 +233,9 @@ void main() {
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
 
     float isCave = LightmapCoords.g;
-    gl_FragData[5] = vec4(LightmapCoords, 0.0, 1.0);
+    vec2 LightmapCoords2 = LightmapCoords;
+    if(isBiomeEnd) LightmapCoords2 *= 0.25;
+    gl_FragData[5] = vec4(LightmapCoords2, 0.0, 1.0);
     gl_FragData[7] = vec4(isCave, 1.0, 0.0, 1.0);
 
     #if SCENE_AWARE_LIGHTING > 0

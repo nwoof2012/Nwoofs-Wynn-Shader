@@ -45,3 +45,8 @@ layout(std430, binding = 2) buffer exposureTime {
     bool init;
     bool isActive;
 } timeExposure;
+
+struct voxel {
+    vec3 position;
+    vec3 emissive;
+};
