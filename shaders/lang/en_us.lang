@@ -152,6 +152,15 @@ option.DH_FOG_SUNSET_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_SUNSET_RAIN_INTENSITY=§bIntensity
 option.FOG_SUNSET_RAIN_CURVE=§eCurve
 
+option.FOG_CAVE_R=§cRed
+option.FOG_CAVE_G=§aGreen
+option.FOG_CAVE_B=§9Blue
+option.FOG_CAVE_DIST_MIN=§7Minimum Distance
+option.FOG_CAVE_DIST_MAX=§7Maximum Distance
+option.DH_FOG_CAVE_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_CAVE_INTENSITY=§bIntensity
+option.FOG_CAVE_CURVE=§eCurve
+
 option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
 
@@ -167,6 +176,9 @@ option.MIN_SE_SATURATION.comment=§9Clamps Silent Expanse desaturation in low li
 
 option.MAX_LIGHT=§bMaximum Light
 value.MAX_LIGHT.4.1f=Unlimited
+
+option.SHADOW_BRIGHTNESS=§bShadow Brightness
+value.SHADOW_BRIGHTNESS.0.0f=Dark
 
 option.BLOOM=§eBloom
 option.BLOOM.comment=§9Makes light sources leak into surrounding objects. §2Low-moderate GPU performance impact
@@ -193,6 +205,9 @@ value.SSR.0=§cOff
 value.SSR.1=§fOn
 value.SSR.2=§fWater Only
 value.SSR.3=§fMetal Only
+
+option.WORLD_CURVATURE=§aWorld Curvature
+option.SSR.comment = §eSimulates the curvature of Earth
 
 option.WATER_WAVES=§9Water Waves
 option.WATER_WAVES.comment=§6Enables 3§7-§6dimensional waves for water
@@ -394,6 +409,10 @@ value.VIBRANT_MODE.2=SE Only
 value.VIBRANT_MODE.3=Regular Only
 option.VIBRANT_MODE.comment=§6Enables LUTs for vibrant color scheme
 
+option.LUT_NORM=§dNormal LUT
+
+option.LUT_SE=§dSilent Expanse LUT
+
 option.VOLUMETRIC_LIGHTING=§6Volumetric Lighting
 option.VOLUMETRIC_LIGHTING.comment=§9Enables volumetric godrays from the sun
 
@@ -471,6 +490,8 @@ screen.FOG_SUNSET = §6Sunrise§7/§6Sunset
 screen.FOG_SUNSET_RAIN = §9Rain
 
 screen.FOG_SE = §dSilent Expanse
+
+screen.FOG_CAVE = §7Cave
 
 screen.LIGHTING=§eLighting
 

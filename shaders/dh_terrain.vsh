@@ -101,6 +101,15 @@ void main() {
 
     gl_Position = ftransform();
 
+    #ifdef WORLD_CURVATURE
+        float d = length(playerPos);
+        float R = 63710.0;
+
+        float drop = (d * d) / (2.0 * R);
+
+        gl_Position.y -= drop;
+    #endif
+
     #if SCENE_AWARE_LIGHTING > 0
         view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
         foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;

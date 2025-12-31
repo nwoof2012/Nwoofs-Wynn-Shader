@@ -10,7 +10,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     mediump float blur = radius/viewHeight;
     mediump float hstep = 1f;
     vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
-    vec3 lightColor = texture2D(colortex2,uv).rgb * BRIGHTNESS;
+    vec3 lightColor = textureLod(colortex2,uv, 6).rgb * BRIGHTNESS;
     lightColor = mix2(pow2(lightColor,vec3(0.7)), lightColor * 2,1 - step(1.0, texture2D(depthtex0, uv).r));
     float illumination = clamp(texture2D(colortex2,uv).a * BRIGHTNESS, 0.0, MAX_LIGHT * 0.5);
     //return vec4(pow2(max(lightColor,vec3(MIN_LIGHT)),vec3(GAMMA)), illumination);
@@ -42,16 +42,17 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     float weight = 0.0;
 
     for(int i = -BLOOM_QUALITY/2; i < BLOOM_QUALITY/2; i++) {
-        mediump float sampleDepth = mix2(0.0162162162,0.985135135,float(i)/(BLOOM_QUALITY/2));
-        vec2 shiftedUVs = vec2(TexCoords.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
-        vec2 specularUVs = vec2(specularCoord.x - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y - (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        mediump float sampleDepth = mix2(0.0162162162,0.985135135,abs(float(i)/(BLOOM_QUALITY/2)));
+        vec2 shiftedUVs = vec2(TexCoords.x + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, TexCoords.y + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        vec2 specularUVs = vec2(specularCoord.x + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, specularCoord.y + (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
         vec3 light = GetLightmapColor(texture2D(colortex2, shiftedUVs).rg * vec2(0.6f, 1.0f));
-        lightColor3 = texture2D(colortex2,shiftedUVs).rgb * BRIGHTNESS;
+        lightColor3 = textureLod(colortex2,uv, 6).rgb * BRIGHTNESS;
         illumination += clamp(texture2D(colortex2,shiftedUVs).a * BRIGHTNESS, 0.0, MAX_LIGHT * 0.5);
         vec2 UVsOffset = vec2((float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep, (float(i)/BLOOM_QUALITY) * radius * 4f * blur * hstep).rg;
+        float sampleWeight = 1 - length(UVsOffset)/blur;
         #ifdef SCENE_AWARE_LIGHTING
-            light = lightColor * illumination;
-            sum += lightColor * sampleDepth;
+            light = lightColor3 * illumination;
+            sum += lightColor3 * sampleWeight;
         #elif PATH_TRACING_GI == 1
             cameraRight = normalize2(cross(lightDir, vec3(0.0, 1.0, 0.0)));
             cameraUp = cross(cameraRight, lightDir);
@@ -75,7 +76,7 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
         depth = texture2D(depthtex0, shiftedUVs).r;
 
-        weight += length(UVsOffset);
+        weight += sampleWeight;
     }
 
     sum /= weight;
@@ -84,6 +85,8 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     #if BLOOM_INTENSITY + 0.5 > 0.0
         bloomLerp = 1 - smoothstep(BLOOM_THRESHOLD, 1, 1 - length(sum));
     #endif
+
+    bloomLerp = smoothstep(0.0,BLOOM_THRESHOLD, length(sum));
 
     sum *= 0.5f;
 
@@ -100,6 +103,8 @@ vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
     }
 
     sum *= BLOOM_INTENSITY + 0.5;
+
+    if(!isBiomeEnd) sum *= 1.2;
 
     return vec4(pow2(max(sum,vec3(MIN_LIGHT)),vec3(GAMMA)), illumination);
 }

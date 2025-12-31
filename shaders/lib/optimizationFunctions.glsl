@@ -170,6 +170,12 @@ vec4 smoothstep1(vec4 x) {
     return x * x * (3.0 - 2.0 * x);
 }
 
+vec3 desaturate(vec3 color, float amount) {
+    float lum = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    vec3 gray = vec3(lum);
+    return mix2(color, gray, amount);
+}
+
 float cubicBezier(float t, vec2 p1, vec2 p2) {
     // Cubic Bézier curve: P0 = (0,0), P1 = p1, P2 = p2, P3 = (1,1)
     // Solve for y given t (where t is the x-axis progress)

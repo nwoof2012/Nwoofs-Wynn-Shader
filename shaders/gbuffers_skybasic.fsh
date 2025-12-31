@@ -313,7 +313,7 @@ void main() {
     mediump float moonGradient = 1.0 - smoothstep(0.0, moonMaxDistance, moonAngle);
     vec3 sunColor = vec3(1.0, 0.9, 0.8);
     vec3 moonColor = vec3(1.0, 1.0, 1.1);
-    vec3 finalSunColor = sunColor * max(sunGradient * 2f, 1.0);
+    vec3 finalSunColor = sunColor;
     vec3 outputColorSun = mix2(vec3(0.0), finalSunColor, sunGradient);
     vec2 moonUV = moonUVs(moonDirection, viewDir, moonMaxDistance);
     vec4 outputColorMoon = texture2D(moon,getMoonCoords(1).xy).xyzw;
@@ -322,7 +322,7 @@ void main() {
     outputColorMoon.xyz = clamp(outputColorMoon.xyz,0,1);
     if(moonAngle > moonMaxDistance) outputColorMoon.w = 0.0;
     float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
-    vec4 outputSunMoon = vec4(outputColorSun,sunGradient);
+    vec4 outputSunMoon = vec4(sunColor,sunGradient);
     vec4 outputLight = vec4(outputColorSun, sunGradient);
     if(detectSunMoon > 0.99) {
         outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.5 * moonGradient);

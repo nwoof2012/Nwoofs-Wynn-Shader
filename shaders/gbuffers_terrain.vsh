@@ -214,6 +214,15 @@ void main() {
 
     timeFunctionVert();
 
+    #ifdef WORLD_CURVATURE
+        float d = length(foot_pos);
+        float R = 63710.0;
+
+        float drop = (d * d) / (2.0 * R);
+
+        gl_Position.y -= drop;
+    #endif
+
     midCoord = (gl_TextureMatrix[0] * mc_midTexCoord).st;
     vec2 texMinMidCoord = TexCoords - midCoord;
     absMidCoordPos  = abs(texMinMidCoord);

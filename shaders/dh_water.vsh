@@ -142,21 +142,24 @@ void main() {
 	vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
 	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
 	world_pos = foot_pos + cameraPosition;
+
+	#ifdef WORLD_CURVATURE
+        float d = length(playerPos);
+        float R = 63710.0;
+
+        float drop = (d * d) / (2.0 * R);
+
+        gl_Position.y -= drop;
+    #endif
 	
 	if(mat == DH_BLOCK_WATER) {
 		#ifdef WATER_WAVES
-			//vec4 worldPos = gbufferProjectionInverse * gbufferModelViewInverse * gl_Position;
-			//worldPos.xyz += foot_pos;
 			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
-			float waveHeight = WAVE_AMPLITUDE * (waveCycle.x + waveCycle.y)/2;
-			//Normal *= waveHeight;
-
-			//uint integerValue4 = uint(waveHeight * 32767);
-
-			//imageAtomicMax(cimage4, ivec2(world_pos.xy * WATER_CHUNK_RESOLUTION), integerValue4);
+			vec2 waveCycle2 = vec2(sin((world_pos.x * WAVE_DENSITY_X * 0.5) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 0.5) + (frameTimeCounter * WAVE_SPEED_Y)));
+			float waveHeight = WAVE_AMPLITUDE * ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3;
 
 			//gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
-			waterShadingHeight = (waveCycle.x + waveCycle.y)/2 + 1;
+			waterShadingHeight = ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3 + 1;
 		#endif
 	}
 	

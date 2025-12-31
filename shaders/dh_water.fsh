@@ -152,9 +152,9 @@ void main() {
         //mediump float depthLinear = calcDepth(depth, near, far*4);
         float dhDepthLinear = calcDepth(dhDepth, dhNearPlane, dhFarPlane);
 
-        if(clamp(1.0-length(viewSpaceFragPosition)/clamp(far - 32.0,32.0,far),0.0,1.0) > 0) {
+        /*if(clamp(1.0-length(viewSpaceFragPosition)/clamp(far - 32.0,32.0,far),0.0,1.0) > 0) {
             discard;
-        }
+        }*/
         
         //vec4 finalNoise = mix2(noiseMap,noiseMap2,0.5f);
         
@@ -273,5 +273,7 @@ void main() {
             #endif
         }
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
+    } else {
+        discard;
     }
 }

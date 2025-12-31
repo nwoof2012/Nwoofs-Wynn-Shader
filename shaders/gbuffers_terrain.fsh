@@ -491,7 +491,7 @@ void main() {
                             float w0 = 0.3780 / pow2(LIGHT_RADIUS, 1.975);
                             float w = w0 * exp(-dist / (2.0 * LIGHT_RADIUS * LIGHT_RADIUS));
                             float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
-                            lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*1.5)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5;
+                            lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
                             
                             //lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
                             //NdotL *= dot(lightNormal, newNormal);
@@ -561,7 +561,7 @@ void main() {
                         rawLight = decodeLightmap(bytes).xyz;
 
                         lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
-                                    clamp(1.0 - blockDist(world_pos3, world_pos2) / float(LIGHT_RADIUS + 1), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
+                                    smoothstep(1.0 - blockDist(world_pos3, world_pos2) / float(LIGHT_RADIUS + 1), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
                         
                         lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
                         NdotL *= dot(lightNormal, newNormal);
@@ -580,7 +580,7 @@ void main() {
             //finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))));
             //uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
             #if SCENE_AWARE_LIGHTING == 2
-                //finalLighting.xyz /= 3;
+                finalLighting.xyz /= 3;
             #elif SCENE_AWARE_LIGHTING == 1
                 finalLighting.xyz /= 6;
             #endif

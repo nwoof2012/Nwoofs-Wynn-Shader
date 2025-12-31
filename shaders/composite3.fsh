@@ -370,6 +370,16 @@ vec3 screenToWorld(vec2 screenPos, float depth) {
     return worldSpace.xyz;
 }
 
+vec2 worldToScreen(vec3 worldPos) {
+    vec4 viewSpace = gbufferModelView * vec4(worldPos, 1.0);
+    viewSpace /= viewSpace.w;
+    vec4 clipSpace = gbufferProjection * viewSpace;
+    clipSpace /= clipSpace.w;
+    vec2 screenSpace = clipSpace.xy;
+
+    return screenSpace;
+}
+
 uniform bool isBiomeEnd;
 
 vec3 cloudLight;
@@ -479,6 +489,10 @@ void main() {
 
     vec3 sunWorldPos = mat3(gbufferModelViewInverse) * sunPosition;
 
+    vec4 sunClipPos = gbufferProjection * vec4(sunPosition,1.0);
+    vec3 sunNDC = sunClipPos.xyz / sunClipPos.w;
+    vec2 sunScreenPos = sunNDC.xy * 0.5 + 0.5;
+
     float timeDistance = abs(worldTime - 6000);
     float maxTimeDistance = 6000.0;
     float timeBlendFactor = smoothstep(0.75,1.0,clamp(timeDistance/maxTimeDistance, 0, 1));
@@ -489,7 +503,7 @@ void main() {
     
     mediump float detectEntity = texture2D(colortex12, texCoord).g;
 
-    vec3 naturalLight = mix2(skyInfluenceColor, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT, smoothstep(0.0, 0.4, pow2(lightmap.g,1/2.2)));
+    vec3 naturalLight = mix2(sky_color, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT, smoothstep(0.0, 0.4, pow2(lightmap.g,1/2.2)));
 
     vec4 cloudsNormal;
     if(depth == 1.0) {
@@ -539,7 +553,7 @@ void main() {
                     #elif SCENE_AWARE_LIGHTING == 2
                         dynamicLight = blurLight(colortex2, depthtex1, texCoord, 1.0, 25, 1.0, 0.1);
                     #endif
-                    vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
+                    vec3 shadowLerp = mix2(vec3(1.0),vec3(0.0),timeBlendFactor);
                     shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
                     float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));
                     finalLight = vec4(mix2(totalSunlight*3, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);
@@ -624,8 +638,9 @@ void main() {
             #endif
             vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
-            float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));
-            finalLight = vec4(mix2(totalSunlight*2, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT,lightBlend2),1.0);
+            float lightBlend2 = 1 - length(shadowLerp);
+            finalLight = vec4(mix2(totalSunlight*1.5, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*SHADOW_BRIGHTNESS,lightBlend2),1.0);
+            finalLight.xyz = mix2(finalLight.xyz, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT, isCave);
             finalLight.xyz = max(finalLight.xyz, naturalLight);
             finalLight.a = 1.0;
             finalLight.xyz += dynamicLight*4;
@@ -633,11 +648,31 @@ void main() {
         #endif
     }
 
+    vec3 scattered = vec3(0.0);
+    float stepSize = 0.05;
+    float decay = 0.95;
+
+    vec3 scatterDir = sunWorldPos - screenToWorld(texCoord, depth);
+
+    for(float t = 0.0; t < 1.0; t += stepSize) {
+        vec2 sampleUV = clamp(texCoord + worldToScreen(scatterDir) * t,0,1);
+        vec3 sampleLight = sunlightAlbedo;
+        scattered += sampleLight * pow2(decay, t / stepSize);
+    }
+
     #if SCENE_AWARE_LIGHTING > 0
         vec4 vanilla = vanillaLight(1 - lightmap);
+        vec4 scatterLight = vec4(scattered * length(GetShadow(depth2)) * isCave * (1 - step(1.0, depth)) * (1 - timeBlendFactor) * dot(sunWorldPos, Normal), 1.0);
         float dynamicLightBlend = smoothstep(MIN_LIGHT, 1.0, length(vanilla) - length(finalLight));
         finalLight = mix2(finalLight, vanilla*0.75, dynamicLightBlend);
-        finalLight *= 0.5;
+        if(isBiomeEnd) {
+            scatterLight *= 0.0025;
+            finalLight *= 0.6;
+        } else {
+            scatterLight *= 0.0001;
+            finalLight *= 0.7;
+        }
+        finalLight += scatterLight;
     #endif
     
     color.xyz = blindEffect(color.xyz, texCoord);

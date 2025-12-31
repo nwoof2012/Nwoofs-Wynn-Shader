@@ -72,6 +72,25 @@ void main() {
         #endif
     #endif*/
 
+    /*vec2 texelSize = 1.0/vec2(LIGHT_RESOLUTION/viewHeight * viewWidth, LIGHT_RESOLUTION);
+
+    vec2 texelUVs = gl_FragCoord.xy;
+    texelUVs = texelUVs/viewHeight * LIGHT_RESOLUTION;
+    
+    vec4 lightSampleA = texture2D(colortex2, floor(texelUVs) * texelSize);
+    vec4 lightSampleB = texture2D(colortex2, (floor(texelUVs) + vec2(1.0, 0.0)) * texelSize);
+    vec4 lightSampleC = texture2D(colortex2, (floor(texelUVs) + vec2(0.0, 1.0)) * texelSize);
+    vec4 lightSampleD = texture2D(colortex2, (floor(texelUVs) + vec2(1.0, 1.0)) * texelSize);
+
+    vec4 lightColorA = mix(lightSampleA, lightSampleB, fract(texelUVs.x));
+    vec4 lightColorB = mix(lightSampleC, lightSampleD, fract(texelUVs.x));
+
+    vec4 lightColor = mix(lightColorA, lightColorB, fract(texelUVs.y));
+
+    vec4 rawLight = texture2D(colortex2, TexCoords);
+
+    lightColor.xyz = mix(lightColor.xyz, vec3(0.0), dot(length(rawLight.xyz),0.1));*/
+
     gl_FragData[0] = texture2D(colortex0, TexCoords);
     gl_FragData[1] = texture2D(colortex1, TexCoords);
     gl_FragData[2] = texture2D(colortex2, TexCoords);

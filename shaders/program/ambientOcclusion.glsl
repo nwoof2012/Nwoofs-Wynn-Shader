@@ -1,5 +1,5 @@
 #define AO_THRESHOLD 1.0 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
-#define AO_STRENGTH 2.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
+#define AO_STRENGTH 1.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
 
 mediump float random(in vec2 p) {
     return fract(sin(p.x*456.0+p.y*56.0)*100.0);
@@ -13,15 +13,16 @@ float calcLinearDepth(float depth, float near, float far) {
 float calcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {
     float centerDepth = calcLinearDepth(texture2D(depthMask, UVs).r, near, far);
     float depthDifference = 0f;
-    float kernel = kernelSize;
+    float kernel = kernelSize * pow2(getDepthMask(depthtex0,cSampler11),1/2.2);
 
     vec3 centerNormal = texture2D(normalMap, UVs).rgb * 2 - 1;
+
+    vec2 res = vec2(1080/viewHeight * viewWidth, 1080);
 
     for(int i = 0; i < kernelSize; i++) {
         float x = (i / sqrt(kernel)) - sqrt(kernel)/2; // Integer division for x
         float y = mod((i / sqrt(kernel)), sqrt(kernel)) - sqrt(kernel)/2; // Integer division for y
-        vec2 offset = vec2(x,y)/1080;
-        offset.x = offset.y/viewHeight * viewWidth;
+        vec2 offset = vec2(x,y)/res;
         float offsetDepth = calcLinearDepth(texture2D(depthMask, UVs + offset).r, near, far);
 
         vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2 - 1;
@@ -40,12 +41,13 @@ float DHcalcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
     float kernel = kernelSize;
 
     vec3 centerNormal = texture2D(normalMap, UVs).rgb * 2 - 1;
+
+    vec2 res = vec2(1080/viewHeight * viewWidth, 1080);
     
     for(int i = 0; i < kernelSize; i++) {
         float x = (i / sqrt(kernel)) - sqrt(kernel)/2; // Integer division for x
         float y = mod((i / sqrt(kernel)), sqrt(kernel)) - sqrt(kernel)/2; // Integer division for y
-        vec2 offset = vec2(x,y)/1080;
-        offset.x = offset.y/viewHeight * viewWidth;
+        vec2 offset = vec2(x,y)/res;;
         float offsetDepth = texture2D(depthMask, UVs + offset).b;
         vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2 - 1;
         //float depthDist = abs(centerDepth - offsetDepth) * distance(vec3(0.0), footPos) * 50;
