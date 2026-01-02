@@ -491,7 +491,7 @@ void main() {
                             float w0 = 0.3780 / pow2(LIGHT_RADIUS, 1.975);
                             float w = w0 * exp(-dist / (2.0 * LIGHT_RADIUS * LIGHT_RADIUS));
                             float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
-                            lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
+                            lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
                             
                             //lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
                             //NdotL *= dot(lightNormal, newNormal);

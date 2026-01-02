@@ -135,8 +135,11 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
             vec3 offset = texture2D(clouddis, uv).rgb * 2 - 1;
 
             vec3 movePos = pos * 0.075 * (float(l) * 1.5) + offset + vec3(float(1 - l)*250 + frameTimeCounter, float(1 - l) * CLOUD_LAYER_B_OFFSET, float(1 - l)*250 + frameTimeCounter);
+            vec3 movePos2 = pos * 0.075 + offset + vec3(frameTimeCounter, 0.0, frameTimeCounter);
 
             float density = calcDensity(movePos);
+            float density2 = calcDensity(movePos2);
+            density = min(density, density2);
             //density *= (1.0 - abs(pos.y - centerPos))/cloudHeight;
             //density = pow2(density,(1.0 - abs(pos.y - centerPos))/cloudHeight);
             float densityRain = smoothstep(0.5 * clamp(1 - rainStrength*1.75,0,1), 0.7,texture2D(cloudtex, uv).r);

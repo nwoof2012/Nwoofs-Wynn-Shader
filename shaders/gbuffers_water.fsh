@@ -106,7 +106,9 @@ void main() {
 
     vec4 finalNoise = noiseMapA * noiseMapB;
 
-    vec3 newNormal = tbnMatrix * finalNoise.xyz;
+    vec3 newNormal = Normal.xyz;
+
+    if(isWaterBlock == 1) newNormal = tbnMatrix * finalNoise.xyz;
 
     newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
 

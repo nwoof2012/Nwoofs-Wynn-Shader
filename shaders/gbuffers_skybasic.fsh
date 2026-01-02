@@ -217,6 +217,7 @@ vec2 moonUVs(vec3 moonDir, vec3 viewDir, float radius) {
 }
 
 #include "lib/timeCycle.glsl"
+#include "lib/buffers.glsl"
 
 void main() {
     vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
@@ -298,6 +299,8 @@ void main() {
     vec3 moonNDC = moonClipPos.xyz / moonClipPos.w;
 
     vec2 moonScreenPos = moonNDC.xy * 0.5 + 0.5;
+
+    equalsSky.isSky = vec4(1.0);
     
     pos = screenToView(vec3(texCoord, 1.0));
     vec3 viewDir = normalize2(pos);

@@ -50,3 +50,11 @@ struct voxel {
     vec3 position;
     vec3 emissive;
 };
+
+layout(std430, binding = 3) buffer isEntity {
+    vec4 isEntity;
+} equalsEntity;
+
+layout(std430, binding = 3) buffer isSky {
+    vec4 isSky;
+} equalsSky;

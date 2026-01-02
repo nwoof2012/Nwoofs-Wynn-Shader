@@ -225,6 +225,10 @@ uniform float screenBrightness;
 #define AMBIENT_LIGHT_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 #define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
+float getDepthMask(sampler2D local, sampler2D distant) {
+    return mix2(linearizeDepth(texture2D(depthtex0, TexCoords).x,near,far) / dhFarPlane, texture2D(colortex13, TexCoords).z * 0.475, step(1.0, texture2D(depthtex0, TexCoords).x)) * 32;
+}
+
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
     const mediump float P = 5.06f;
