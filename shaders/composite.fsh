@@ -525,7 +525,7 @@ vec3 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
     sum *= BLOOM_INTENSITY + 0.5;
 
-    return pow2(sum,vec3(GAMMA)) * vec3(0.0625);
+    return pow2(sum,vec3(GAMMA)) * vec3(0.625);
 }
 
 vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
@@ -648,7 +648,7 @@ vec3 DHbloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo) {
 
     sum *= BLOOM_INTENSITY + 0.5;
 
-    return pow2(sum,vec3(GAMMA)) * vec3(0.0625);
+    return pow2(sum,vec3(GAMMA)) * vec3(0.625);
 }
 
 vec4 GetLightVolume(vec3 pos) {

@@ -97,18 +97,32 @@ void main() {
 
     vec4 albedo = texture2D(texture, TexCoords) * Color;
 
-    vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
+    vec3 worldNormal = (gbufferModelViewInverse * Normal).xyz;
 
-    mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
+    vec3 bitangent = normalize2(cross(Tangent.xyz, worldNormal));
 
-    vec4 noiseMapA = triplanarTexture(fract((world_pos + ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
-    vec4 noiseMapB = triplanarTexture(fract((world_pos - ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
+    mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, worldNormal);
+
+    vec3 n = normalize2(worldNormal);
+
+    vec3 an = abs(n);
+    vec2 uvX = world_pos.zy;
+    vec2 uvY = world_pos.xz;
+    vec2 uvZ = world_pos.xy;
+
+    vec2 waterUV =
+        uvX * step(max(an.y, an.z), an.x) +
+        uvY * step(max(an.x, an.z), an.y) +
+        uvZ * step(max(an.x, an.y), an.z);
+
+    vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
+    vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
 
     vec4 finalNoise = noiseMapA * noiseMapB;
 
     vec3 newNormal = Normal.xyz;
 
-    if(isWaterBlock == 1) newNormal = tbnMatrix * finalNoise.xyz;
+    //if(isWaterBlock == 1) newNormal = tbnMatrix * finalNoise.xyz;
 
     newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
 
@@ -116,7 +130,7 @@ void main() {
     
     vec4 Lightmap;
 
-    if(isWater < 0.1f && isWaterBlock == 1) {
+    if(isWater < 0.1f) {
         albedo.a = 0.0f;
         Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
 
@@ -124,13 +138,13 @@ void main() {
 
         newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
     } else {
-        albedo = texture2D(colortex0, TexCoords);
+        albedo = texture2D(colortex0, TexCoords) * Color;
         Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0f, 1.0f);
     }
     mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(newNormal * 0.5 + 0.5,1.0);
+    gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
     gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
     gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, isWaterBlock);
     gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);

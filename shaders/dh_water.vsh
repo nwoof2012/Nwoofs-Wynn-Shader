@@ -34,6 +34,8 @@ uniform mat4 gbufferModelView;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
+out vec3 viewSpaceFragPosition;
+
 uniform sampler2D depthtex0;
 
 flat out int mat;
@@ -142,6 +144,8 @@ void main() {
 	vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
 	foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
 	world_pos = foot_pos + cameraPosition;
+
+	viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
 
 	#ifdef WORLD_CURVATURE
         float d = length(playerPos);

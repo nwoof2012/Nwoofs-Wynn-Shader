@@ -7,6 +7,8 @@
 #define WAVE_DENSITY_X 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
 #define WAVE_DENSITY_Y 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
 #define WAVE_AMPLITUDE 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define WAVE_FALLOFF_START 8 // [2 4 6 8 10 12 16 20 24 28 32 48 64]
+#define WAVE_FALLOFF_END 10 // [2 4 6 8 10 12 16 20 24 28 32 48 64]
 #define WATER_CHUNK_RESOLUTION 128 // [32 64 128]
 
 precision mediump float;
@@ -123,18 +125,23 @@ void main() {
 	world_pos = foot_pos + cameraPosition;
 
 	isWaterBlock = 0f;
+
+	float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 	
 	if(mc_Entity.x == 8.0 && mc_Entity.x != 10002) {
         isWaterBlock = 1f;
+		isWater = 0f;
 		#ifdef WATER_WAVES
 			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
 			vec2 waveCycle2 = vec2(sin((world_pos.x * WAVE_DENSITY_X * 0.5) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 0.5) + (frameTimeCounter * WAVE_SPEED_Y)));
 			float waveHeight = WAVE_AMPLITUDE * ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3;
 
-			gl_Position += gbufferProjection * gbufferModelView * vec4(0, waveHeight*0.25f - 0.3f, 0, 0);
+			gl_Position += gbufferProjection * gbufferModelView * vec4(0, mix(waveHeight*0.25f - 0.3f, 0f, smoothstep(WAVE_FALLOFF_START * 16, WAVE_FALLOFF_END * 16, distanceFromCamera)), 0, 0);
 			waterShadingHeight = ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3 + 1;
 		#endif
-    }
+    } else {
+		isWater = 1f;
+	}
 
 	if(mc_Entity.x == 8.0 || mc_Entity.x == 10002) {
 		isTransparent = 1.0;

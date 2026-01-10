@@ -690,7 +690,7 @@ vec3 waterFunction(vec2 coords, vec4 noise, float lightBrightness) {
     if(texture2D(depthtex0,TexCoords).x == 1.0) {
         waterColor = vec3(0.0f, 0.2f, 0.34f);
         underwaterDepth = getDepthMask(depthtex0, cSampler11);
-        underwaterDepth2 = getDepthMask(depthtex1, cSampler11);
+        underwaterDepth2 = getDepthMask(depthtex1, cSampler12);
         vec3 finalColor = pow2(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,smoothstep(0,2,1 - (underwaterDepth2 - underwaterDepth) * 0.125f)), vec3(GAMMA));
         vec3 reflectionColor = vec3(1.0);
         float fresnelBlend = waterFresnel(noise.xyz, viewDir, 0.02, 0.1, 5.0);

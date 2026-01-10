@@ -133,6 +133,10 @@ void main() {
         vec3 View = ViewW.xyz / ViewW.w;
         vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
 
+        if(clamp(1.0-length(viewSpaceFragPosition)/clamp(far - 32.0,32.0,far),0.0,1.0) > 0.1) {
+            discard;
+        }
+
         vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
 
         vec3 worldNormal = (gbufferModelViewInverse * Normal).xyz;
@@ -228,7 +232,7 @@ void main() {
 
         gl_FragData[7] = vec4(dhDepth, 0.0, 0.0, 1.0);
 
-        imageStore(cimage12, ivec2(gl_FragCoord.xy/10), vec4(dhDepth));
+        imageStore(cimage12,  ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage12)), vec4(dhDepth));
 
         if(mat == DH_BLOCK_WATER) {
             gl_FragData[4] = vec4(1.0, 0.0, 0.0, 1.0);
@@ -236,12 +240,24 @@ void main() {
             gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
         }
 
-        vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
+        vec3 bitangent = normalize2(cross(vec3(1, 0, 0), worldNormal));
 
-        mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
+        mat3 tbnMatrix = mat3(vec3(1, 0, 0), bitangent.xyz, worldNormal);
 
-        vec4 noiseMapA = triplanarTexture(fract((world_pos + ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
-        vec4 noiseMapB = triplanarTexture(fract((world_pos - ((frameCounter)/90f)*0.5f) * 0.035f), Normal.xyz, water, 1.0);
+        vec3 n = normalize2(worldNormal);
+
+        vec3 an = abs(n);
+        vec2 uvX = world_pos.zy;
+        vec2 uvY = world_pos.xz;
+        vec2 uvZ = world_pos.xy;
+
+        vec2 waterUV =
+            uvX * step(max(an.y, an.z), an.x) +
+            uvY * step(max(an.x, an.z), an.y) +
+            uvZ * step(max(an.x, an.y), an.z);
+
+        vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
+        vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
 
         vec4 finalNoise = noiseMapA * noiseMapB;
 
@@ -263,7 +279,7 @@ void main() {
                 albedo.a = 0.0;
             }
 
-            //newNormal = tbnMatrix * finalNoise.xyz;
+            newNormal = tbnMatrix * finalNoise.xyz;
 
             newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
 
