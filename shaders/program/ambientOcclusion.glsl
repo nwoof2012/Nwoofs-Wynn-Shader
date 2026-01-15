@@ -1,5 +1,6 @@
 #define AO_THRESHOLD 1.0 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
-#define AO_STRENGTH 1.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
+#define AO_STRENGTH 1.0 // [0.0 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
+#define AO_STRENGTH_PLANT 0.75 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
 
 mediump float random(in vec2 p) {
     return fract(sin(p.x*456.0+p.y*56.0)*100.0);
@@ -32,7 +33,11 @@ float calcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sample
         depthDifference += weight * depthDiff * normalFactor;
     }
 
-    return clamp(1 - pow2((depthDifference/kernel),0.5)*AO_STRENGTH, MIN_LIGHT, 1);
+    float isFoliage = 1 - texture2D(colortex13, UVs).b;
+
+    float aoStrength = mix2(AO_STRENGTH, AO_STRENGTH_PLANT, step(isFoliage, 0.5));
+
+    return clamp(1 - pow2((depthDifference/kernel),0.5)*aoStrength, MIN_LIGHT, 1);
 }
 
 float DHcalcAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {

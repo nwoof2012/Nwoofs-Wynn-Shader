@@ -238,7 +238,7 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(normalM * 0.5 + 0.5,1);
-    #if SCENE_AWARE_LIGHTING == 0
+    #if LIGHTING_MODE == 0
         gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);
     #endif
     gl_FragData[3] = vec4(1.0);

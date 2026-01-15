@@ -48,49 +48,6 @@ vec3 BloomTile(float lod, vec2 offset, vec2 scaledCoord) {
 /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 
 void main() {
-    //vec3 blur = vec3(0.0);
-
-    /*#ifdef BLOOM
-        vec2 scaledCoord = TexCoords * max(vec2(viewWidth, viewHeight) / vec2(1920.0, 1080.0), vec2(1.0));
-
-        #if defined OVERWORLD || defined END
-            blur += BloomTile(2.0, vec2(0.0      , 0.0   ), scaledCoord);
-            blur += BloomTile(3.0, vec2(0.0      , 0.26  ), scaledCoord);
-            blur += BloomTile(4.0, vec2(0.135    , 0.26  ), scaledCoord);
-            blur += BloomTile(5.0, vec2(0.2075   , 0.26  ), scaledCoord) * 0.8;
-            blur += BloomTile(6.0, vec2(0.135    , 0.3325), scaledCoord) * 0.8;
-            blur += BloomTile(7.0, vec2(0.160625 , 0.3325), scaledCoord) * 0.6;
-            blur += BloomTile(8.0, vec2(0.1784375, 0.3325), scaledCoord) * 0.4;
-        #else
-            blur += BloomTile(2.0, vec2(0.0      , 0.0   ), scaledCoord);
-            blur += BloomTile(3.0, vec2(0.0      , 0.26  ), scaledCoord);
-            blur += BloomTile(4.0, vec2(0.135    , 0.26  ), scaledCoord);
-            blur += BloomTile(5.0, vec2(0.2075   , 0.26  ), scaledCoord);
-            blur += BloomTile(6.0, vec2(0.135    , 0.3325), scaledCoord);
-            blur += BloomTile(7.0, vec2(0.160625 , 0.3325), scaledCoord);
-            blur += BloomTile(8.0, vec2(0.1784375, 0.3325), scaledCoord) * 0.6;
-        #endif
-    #endif*/
-
-    /*vec2 texelSize = 1.0/vec2(LIGHT_RESOLUTION/viewHeight * viewWidth, LIGHT_RESOLUTION);
-
-    vec2 texelUVs = gl_FragCoord.xy;
-    texelUVs = texelUVs/viewHeight * LIGHT_RESOLUTION;
-    
-    vec4 lightSampleA = texture2D(colortex2, floor(texelUVs) * texelSize);
-    vec4 lightSampleB = texture2D(colortex2, (floor(texelUVs) + vec2(1.0, 0.0)) * texelSize);
-    vec4 lightSampleC = texture2D(colortex2, (floor(texelUVs) + vec2(0.0, 1.0)) * texelSize);
-    vec4 lightSampleD = texture2D(colortex2, (floor(texelUVs) + vec2(1.0, 1.0)) * texelSize);
-
-    vec4 lightColorA = mix(lightSampleA, lightSampleB, fract(texelUVs.x));
-    vec4 lightColorB = mix(lightSampleC, lightSampleD, fract(texelUVs.x));
-
-    vec4 lightColor = mix(lightColorA, lightColorB, fract(texelUVs.y));
-
-    vec4 rawLight = texture2D(colortex2, TexCoords);
-
-    lightColor.xyz = mix(lightColor.xyz, vec3(0.0), dot(length(rawLight.xyz),0.1));*/
-
     gl_FragData[0] = texture2D(colortex0, TexCoords);
     gl_FragData[1] = texture2D(colortex1, TexCoords);
     gl_FragData[2] = texture2D(colortex2, TexCoords);

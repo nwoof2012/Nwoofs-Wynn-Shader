@@ -20,6 +20,7 @@ struct LightSource {
 
 layout (r32ui) uniform uimage3D cimage1;
 layout (r32ui) uniform uimage3D cimage2;
+layout (r32ui) uniform uimage3D cimage3;
 layout (r32ui) uniform uimage3D cimage5;
 layout (r32ui) uniform uimage3D cimage6;
 layout (r32ui) uniform uimage3D cimage13;
@@ -60,6 +61,7 @@ in vec4 at_tangent;
 out vec4 at_midBlock2;
 
 out float isFoliage;
+out float isGrass;
 
 out float isReflective;
 
@@ -206,6 +208,12 @@ void main() {
         isFoliage = 0.0;
     }
 
+    if(mc_Entity.x == 10001) {
+        isGrass = 1.0;
+    } else {
+        isGrass = 0.0;
+    }
+
     if(mc_Entity.x == 10011) {
         isReflective = 1.0;
     } else {
@@ -250,7 +258,7 @@ void main() {
 
     isLeaves = mc_Entity.x == 10003? 1.0 : 0.0;
 
-    #if SCENE_AWARE_LIGHTING > 0
+    #if SCENE_AWARE_LIGHTING > 0 || LIGHTING_MODE == 2
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : mc_Entity.x == 10003? vec4(0.0) : vec4(vec3(0.0),1.0);
 
@@ -258,6 +266,15 @@ void main() {
 
             uint voxel_data3 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
             
+            #if LIGHTING_MODE == 2
+                //opacity
+                vec4 opacity_data = mc_Entity.x == 10002? vec4(0.0) : vec4(1.0);
+
+                uint integerValue2 = packUnorm4x8(opacity_data);
+
+                imageAtomicMax(cimage2, voxel_pos, integerValue2);
+            #endif
+
             //imageStore(cimage1, ivec3(voxel_pos), voxel_data);
 
             /*if(length(voxel_data.xyz) <= 0.0) {

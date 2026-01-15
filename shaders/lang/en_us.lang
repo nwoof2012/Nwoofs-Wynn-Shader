@@ -177,6 +177,9 @@ option.MIN_SE_SATURATION.comment=§9Clamps Silent Expanse desaturation in low li
 option.MAX_LIGHT=§bMaximum Light
 value.MAX_LIGHT.4.1f=Unlimited
 
+option.MIN_FOLIAGE_LIGHT=§bMinimum Light §7(§bFoliage§7)
+value..MIN_FOLIAGE_LIGHT.0.0f=Dark
+
 option.SHADOW_BRIGHTNESS=§bShadow Brightness
 value.SHADOW_BRIGHTNESS.0.0f=Dark
 
@@ -329,6 +332,11 @@ value.SCENE_AWARE_LIGHTING.1=§aBlur
 value.SCENE_AWARE_LIGHTING.2=§4§k§l§4§k§oa §4§l§oON §4§k§l§oa
 option.SCENE_AWARE_LIGHTING.comment=Enables colored lighting based on the light source. §e§lMedium §6to §4§lSevere §6performance impact
 
+option.LIGHTING_MODE=§e§lLighting Mode
+value.LIGHTING_MODE.0=§aClassic
+value.LIGHTING_MODE.1=§6§lFancy
+option.SCENE_AWARE_LIGHTING.comment=Switches the render pipeline. §aClassic §rruns faster, but §6§lFancy §rhas more features available
+
 option.LIGHTMAP_QUALITY=§e§lLightmap Quality
 value.LIGHTMAP_QUALITY.4=4 Samples
 value.LIGHTMAP_QUALITY.8=8 Samples
@@ -372,6 +380,9 @@ option.AO_THRESHOLD.comment=§6Adjust sensitivity of Ambient Occlusion
 
 option.AO_STRENGTH=§9AO Strength
 option.AO_STRENGTH.comment=§6Adjust the emphasis of Ambient Occlusion
+
+option.AO_STRENGTH_PLANT=§9AO Strength §7(§9Plant§7)
+option.AO_STRENGTH.comment=§6Adjust the emphasis of Ambient Occlusion for plants
 
 option.AA=§aMode
 value.AA.0=Off
@@ -507,7 +518,7 @@ screen.SPECIAL_LIGHTING = §eAdditional Options
 
 screen.NORMAL_LIGHTING = §bNormal Light Settings
 
-screen.SAL_LIGHTING = §5Scene Aware Lighting Settings
+screen.FANCY_LIGHTING = §5Fancy Lighting Settings
 
 screen.SHADOW_SETTINGS = §7Shadows
 

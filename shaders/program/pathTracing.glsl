@@ -186,3 +186,59 @@
         return prevNDC;
     }
 #endif
+
+#if LIGHTING_MODE == 2 && defined TERRAIN
+    #define MAX_PT_STEPS 8 // [2 4 8 16 32]
+    #define PT_AREA 128 // [32 64 128]
+    #define PT_RADIUS (PT_AREA/2)
+    #define PT_BOUNCES 2 // [1 2 3 4]
+    #define PT_SAMPLES 8 // [2 4 8 16 32]
+
+    float stepSize = 20.0f;
+    float falloff = 1.0f;
+
+    float sampleVoxelDensity(vec3 pos) {
+        vec3 uvw = (pos - vec3(PT_RADIUS)) / vec3(PT_AREA);
+        return texture(cSampler2, uvw).r;
+    }
+
+    vec3 sampleVoxelLight(vec3 pos) {
+        vec3 uvw = (pos - vec3(PT_RADIUS)) / vec3(PT_AREA);
+        return texture(cSampler1, uvw).rgb;
+    }
+    vec3 traceVoxelLight(vec3 origin, vec3 dir) {
+        vec3 pos = origin;
+        vec3 lightAccum = vec3(0.0);
+
+        for (int i = 0; i < MAX_PT_STEPS; i++) {
+            vec3 pos2 = floor(pos / 64.0);
+            float density = sampleVoxelDensity(pos2);
+            if (density > 0.0) {
+                lightAccum *= (1.0 - density);
+            }
+
+            lightAccum += sampleVoxelLight(pos) * (1.0 - density);
+            pos += dir * stepSize;
+            
+            if (length(lightAccum) < 0.001) break;
+        }
+
+        lightAccum *= exp(-distance(pos, origin) * falloff);
+
+        return lightAccum;
+    }
+
+    vec3 computeVoxelLighting(vec3 fragPos) {
+        vec3 totalLight = vec3(0.0);
+
+        for (int bounce = 0; bounce < PT_BOUNCES; bounce++) {
+            for (int s = 0; s < PT_SAMPLES; s++) {
+                vec3 dir = normalize(fragPos - s);
+                vec3 bouncedLight = traceVoxelLight(fragPos, dir);
+                totalLight += bouncedLight / float(PT_SAMPLES);
+            }
+        }
+
+        return totalLight / float(PT_BOUNCES);
+    }
+#endif

@@ -3,6 +3,7 @@
 #define PATH_TRACING_GI 0 // [0 1]
 
 #define FRAGMENT_SHADER
+#define TERRAIN
 
 #define WAVING_FOLIAGE
 #define FOLIAGE_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
@@ -10,12 +11,6 @@
 #define FOLIAGE_WAVE_DISTANCE 4 // [2 4 8 16 32]
 
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
-
-#define SE_MIN_LIGHT 0.5f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
-
-#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
-
-#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -103,6 +98,7 @@ flat in vec2 absMidCoordPos;
 flat in vec2 midCoord;
 
 in float isFoliage;
+in float isGrass;
 
 uniform bool isBiomeEnd;
 
@@ -148,7 +144,7 @@ const float FireBrightness = 1.0;
 
 //#include "program/generateNormals.glsl"
 
-#if PATH_TRACING_GI == 1
+#if LIGHTING_MODE == 2
     #include "program/pathTracing.glsl"
 #endif
 
@@ -352,7 +348,7 @@ void main() {
 
         gl_FragData[0] = albedo;
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
-        #if SCENE_AWARE_LIGHTING == 0
+        #if LIGHTING_MODE == 0
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
 
             Diffuse = albedo.xyz;
@@ -385,7 +381,7 @@ void main() {
             mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
             gl_FragData[6] = vec4(0.0, fogAmount * 0.125, linearizeDepth(depth, near, far), 1.0);
-        #else
+        #elif LIGHTING_MODE > 0
             ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
             vec3 light_color = vec3(0.0);
             if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
@@ -451,7 +447,7 @@ void main() {
 
                 float weight;
 
-                #if SCENE_AWARE_LIGHTING == 2
+                #if SCENE_AWARE_LIGHTING > 0
                     for (int idx = 0; idx < totalLightRadius + 1; idx++) {
                         if(isLeaves > 0.5) continue;
 
@@ -525,50 +521,6 @@ void main() {
                         lightWeight += sampleWeight;
                     }
                     lighting /= max(lightWeight + 1, 1.0);*/
-                #elif SCENE_AWARE_LIGHTING == 1
-                    //if(isLeaves > 0.5) continue;
-                    
-                    //int idx = 0;
-
-                    //int x = int(idx / (side * side) - LIGHT_RADIUS);
-                    //int y = int(mod(idx/side, side) - LIGHT_RADIUS);
-                    //int z = int(mod(idx, side) - LIGHT_RADIUS);
-
-                    //if(x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
-
-                    lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + fract(cameraPosition);
-                    
-                    //if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
-
-                    ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
-
-                    uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
-
-                    //if(bytes == 0u) continue;
-
-                    if (bytes != 0) {
-                        lowp vec3 world_pos2 = foot_pos + cameraPosition;
-                        lowp vec3 world_pos3 = foot_pos + cameraPosition;
-
-                        lowp vec3 foot_pos3 = vec3(0.0);
-                        lowp vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
-
-                        block_centered_relative_pos4 = mat3(gbufferModelView) * block_centered_relative_pos4;
-
-                        lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
-                        NdotL = dot(lightNormal, newNormal);
-
-                        rawLight = decodeLightmap(bytes).xyz;
-
-                        lighting = mix2((lighting + vec4(lightColor * 0.25f,0.0)) * 0.75f, decodeLightmap(bytes),
-                                    smoothstep(1.0 - blockDist(world_pos3, world_pos2) / float(LIGHT_RADIUS + 1), 0.0, 1.0)) * normalize2(vanillaLight(AdjustLightmap(LightmapCoords))) * 2.5f;
-                        
-                        lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
-                        NdotL *= dot(lightNormal, newNormal);
-                        lighting *= max(NdotL, 0.0);
-
-                        lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
-                    }
                 #endif
             }
             vec4 finalLighting = lighting;
@@ -579,14 +531,12 @@ void main() {
             //if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else //finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
             //finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))));
             //uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
-            #if SCENE_AWARE_LIGHTING == 2
+            #if LIGHTING_MODE == 1
                 finalLighting.xyz /= 3;
-            #elif SCENE_AWARE_LIGHTING == 1
-                finalLighting.xyz /= 6;
             #endif
             gl_FragData[2] = finalLighting;
         #endif
-        gl_FragData[3] = vec4(LightmapCoords, 0.0, 1.0);
+        gl_FragData[3] = vec4(LightmapCoords, isGrass, 1.0);
         gl_FragData[4] = vec4(0.0, 1.0, isReflective, 1.0);
         gl_FragData[5] = vec4(worldSpaceVertexPosition, 1.0);
     }

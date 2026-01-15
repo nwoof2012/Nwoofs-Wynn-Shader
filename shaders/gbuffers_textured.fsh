@@ -59,7 +59,7 @@ void main() {
     
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, 1.0f);
-    #if SCENE_AWARE_LIGHTING > 0
+    #if LIGHTING_MODE == 1
         vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
         vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
         gl_FragData[2] = vec4(lighting.xyz, 1.0);

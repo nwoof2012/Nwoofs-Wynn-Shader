@@ -68,7 +68,6 @@ void main() {
             lightmap2 = GenerateLightmap(0f,1f);
     #endif
     lightmapCoords = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
-    //lightmapCoords = (lightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
 
     viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
 
@@ -120,20 +119,12 @@ void main() {
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = dhMaterialId == DH_BLOCK_ILLUMINATED? vec4(1.0) : vec4(vec3(0.0),1.0);
 
-            /*if(length(voxel_data.xyz) <= 0.0) {
-                voxel_data = vec4(at_midBlock.w);
-            }*/
-
             vec4 block_data = vec4(vec3(0.0),1.0);
             if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
 
             uint integerValue = packUnorm4x8(voxel_data);
-			
-			//uint integerValue2 = packUnorm4x8(block_data);
 
             imageAtomicMax(cimage3, voxel_pos, integerValue);
-
-			//imageAtomicMax(cimage2, voxel_pos, integerValue2);
         }
     #endif
 

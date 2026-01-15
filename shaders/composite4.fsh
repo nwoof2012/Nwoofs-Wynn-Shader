@@ -44,12 +44,6 @@
 #define LUT_NORM 1 // [0 1 2]
 #define LUT_SE 0 // [0 1]
 
-#define SE_MIN_LIGHT 0.5f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
-
-#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
-
-#define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
-
 #define LIGHTMAP_QUALITY 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
 
 #define FRAGMENT_SHADER
@@ -61,8 +55,6 @@
 #define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
 
 #define MIN_SE_SATURATION 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
-#define SSR 1 // [0 1 2 3]
 
 #define WATER_WAVES
 
@@ -998,7 +990,7 @@ vec3 antialiasing(vec2 UVs, sampler2D tex) {
 #include "program/lighting.glsl"
 
 void main() {
-    #if SCENE_AWARE_LIGHTING > 0 && defined BLOOM
+    #if LIGHTING_MODE > 0 && defined BLOOM
         mediump float aspect = float(viewWidth)/float(viewHeight);
         mediump float waterTest = texture2D(colortex5, TexCoords).r;
         mediump float dhTest = texture2D(colortex5, TexCoords).g;
