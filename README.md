@@ -23,3 +23,17 @@ Are you looking to play Wynncraft with shaders, but don't want to compromise on 
 
 ### Disclaimer
 Nwoof's Wynn Shader is in no way affiliated with Wynncraft or any of the supported mods. Do not send them any bugs related to my shader, instead send them directly to me.
+
+# Q&A
+<details>
+<summary>Frequently Asked Questions</summary>
+
+> Why is the shader so dark/bright?
+
+The optimal/preferred light levels can vary from person to person. If you feel the shader is too dark/bright, adjust the minimum/maximum light.
+
+
+> Why is the fog so strong?
+
+The default fog settings are set for my personal taste. If you'd prefer something different, you can change the fog's settings.
+</details>
