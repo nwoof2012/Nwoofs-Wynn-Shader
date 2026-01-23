@@ -238,16 +238,12 @@ void main() {
             gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
         }
 
-        vec3 bitangent = normalize2(cross(vec3(1, 0, 0), worldNormal));
-
-        mat3 tbnMatrix = mat3(vec3(1, 0, 0), bitangent.xyz, worldNormal);
-
         vec3 n = normalize2(worldNormal);
 
         vec3 an = abs(n);
-        vec2 uvX = world_pos.zy;
-        vec2 uvY = world_pos.xz;
-        vec2 uvZ = world_pos.xy;
+        vec2 uvX = foot_pos.zy;
+        vec2 uvY = foot_pos.xz;
+        vec2 uvZ = foot_pos.xy;
 
         vec2 waterUV =
             uvX * step(max(an.y, an.z), an.x) +
@@ -257,7 +253,11 @@ void main() {
         vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
         vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
 
-        vec4 finalNoise = noiseMapA * noiseMapB;
+        vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
+
+        vec3 bitangent = normalize2(cross(vec3(1, 0, 0), Normal.xyz));
+
+        mat3 tbnMatrix = mat3(vec3(1, 0, 0), bitangent.xyz, Normal.xyz);
 
         vec3 newNormal = Normal.xyz;
 

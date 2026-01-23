@@ -130,7 +130,7 @@ void main() {
 	
 	if(mc_Entity.x == 8.0 && mc_Entity.x != 10002) {
         isWaterBlock = 1f;
-		isWater = 0f;
+		isWater = 1f;
 		#ifdef WATER_WAVES
 			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
 			vec2 waveCycle2 = vec2(sin((world_pos.x * WAVE_DENSITY_X * 0.5) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 0.5) + (frameTimeCounter * WAVE_SPEED_Y)));
@@ -141,6 +141,7 @@ void main() {
 		#endif
     } else {
 		isWater = 1f;
+		isWaterBlock = 0f;
 	}
 
 	if(mc_Entity.x == 8.0 || mc_Entity.x == 10002) {

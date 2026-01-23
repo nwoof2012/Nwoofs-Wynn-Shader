@@ -83,6 +83,8 @@ vec3 currentColorB;
 
 uniform float blindness;
 
+layout (rgba8) uniform image2D cimage11;
+
 #include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
@@ -341,4 +343,6 @@ void main() {
     outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
     outputColor = mix2(outputColor, vec4(1.0), step(0.5, starData.a));
     gl_FragData[1] = vec4(0.0, 1.0, 0.0, 1.0);
+
+    imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(1.0));
 }

@@ -42,6 +42,7 @@ uniform mat4 gbufferPreviousModelViewInverse;
 uniform mat4 gbufferPreviousProjectionInverse;
 
 uniform sampler2D cSampler9;
+uniform sampler2D cSampler11;
 uniform sampler2D cSampler14;
 
 layout (rgba8) uniform image2D cimage8;
@@ -80,7 +81,12 @@ uniform float dhFarPlane;
 #include "program/gaussianBlur.glsl"
 
 float getDepthMask(sampler2D local, sampler2D distant) {
-    return mix2(linearizeDepth(texture2D(depthtex0, texCoord).x,near,far) / dhFarPlane, texture2D(colortex13, texCoord).z * 0.475, step(1.0, texture2D(depthtex0, texCoord).x)) * 32;
+    if(texture2D(depthtex0, texCoord).x >= 1.0 && texture2D(colortex13, texCoord).z == 0.0) return 1.0;
+    return mix2(linearizeDepth(texture2D(local, texCoord).x,near,far) / dhFarPlane, texture2D(colortex13, texCoord).z * 0.475, step(1.0, texture2D(depthtex0, texCoord).x)) * 32;
+}
+
+float getDepthMask(sampler2D local, sampler2D distant, vec2 uv) {
+    return mix2(linearizeDepth(texture2D(depthtex0, uv).x,near,far) / dhFarPlane, texture2D(colortex13, uv).z * 0.475, step(1.0, texture2D(depthtex0, uv).x)) * 32;
 }
 
 vec3 projectAndDivide(mat4 pm, vec3 p) {
@@ -194,6 +200,20 @@ vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
     vec4 texZY = texture2D(tex,uvZY) * normal.x;
 
     return texXZ + texXY + texZY;
+}
+
+vec3 randomNoise(vec3 worldPos, vec3 Normal, sampler2D tex, float scale, float speed) {
+    vec3 noiseA = triplanarTexture(worldPos, Normal, tex, scale).xyz;
+    vec3 noiseB = triplanarTexture(worldPos + vec3(0.3, 0.2, 0.1), Normal, tex, scale).xyz;
+    
+    vec3 finalNoise = mix2(noiseA, noiseB, fract(frameTime * speed));
+    return finalNoise;
+}
+
+vec3 warpNoise(vec3 worldPos, vec3 Normal, sampler2D tex, float scale, float speed) {
+    vec3 warp = triplanarTexture(worldPos * 0.5 + frameTimeCounter * speed, Normal, tex, scale).rgb * 2.0 - 1.0;
+    vec3 n = triplanarTexture(worldPos + warp * 0.2, Normal, tex, scale).rgb;
+    return n;
 }
 
 vec3 lightNoise(vec3 worldPos, vec3 Normal) {
@@ -411,6 +431,8 @@ vec3 sunlightAlbedo;
 
 vec3 skyInfluenceColor;
 
+float lightIntensity;
+
 void noonFunc(float time, float timeFactor) {
     if(isBiomeEnd) {
         sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
@@ -421,6 +443,7 @@ void noonFunc(float time, float timeFactor) {
     cloudLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
     cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
     skyInfluenceColor = vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B);
+    lightIntensity = LIGHT_DAY_I;
 }
 
 void sunsetFunc(float time, float timeFactor) {
@@ -432,6 +455,7 @@ void sunsetFunc(float time, float timeFactor) {
     cloudLight = mix3(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), sunsetLerp, 0.5);
     cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), sunsetLerp);
     skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
+    lightIntensity = mix2(LIGHT_DAY_I, LIGHT_NIGHT_I, sunsetLerp);
 }
 
 void nightFunc(float time, float timeFactor) {
@@ -444,6 +468,7 @@ void nightFunc(float time, float timeFactor) {
     cloudLight = vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B);
     cloudAmbience = vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B);
     skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
+    lightIntensity = LIGHT_NIGHT_I;
 }
 
 void dawnFunc(float time, float timeFactor) {
@@ -456,12 +481,44 @@ void dawnFunc(float time, float timeFactor) {
     cloudLight = mix3(vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), sunsetLerp, 0.5);
     cloudAmbience = mix2(vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
     skyInfluenceColor = mix3(vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
+    lightIntensity = mix2(LIGHT_NIGHT_I, LIGHT_DAY_I, sunsetLerp);
 }
 
 vec4 vanillaLight(in vec2 Lightmap) {
     const vec3 TorchColor = vec3(1.0f, 1.0f, 1.0f);
     vec4 lightColor = vec4(TorchColor * Lightmap.x,1.0);
     return lightColor;
+}
+
+vec3 blurNormals(vec2 uv, float radius, int sampleRadius) {
+    vec3 baseNormal = texture2D(colortex1, uv).xyz * 2 - 1;
+    vec3 accum = baseNormal;
+    float depth = getDepthMask(depthtex1, colortex13, uv);
+    float trueDepth = depth*dhFarPlane;
+
+    float isFoliage = 1 - texture2D(colortex13, uv).b;
+
+    float sampleAspect = 1.0/float(viewHeight) * float(viewWidth);
+
+    float weight = 0.0;
+
+    for(int x = -sampleRadius; x < sampleRadius; x++) {
+        for(int y = -sampleRadius; y < sampleRadius; y++) {
+            vec2 offset = vec2(x, y)/(vec2(sampleRadius * sampleAspect, sampleRadius)) * radius/1080.0 * (1 - depth);
+            vec2 sampleUV = uv + offset;
+
+            float offsetDepth = getDepthMask(depthtex1, colortex13, sampleUV);
+            float trueOffsetDepth = offsetDepth*dhFarPlane;
+
+            float isSampleFoliage = 1 - texture2D(colortex13, sampleUV).b;
+
+            float sampleWeight = 1 - clamp(length(offset)/radius,0,1) * 1 - (abs(isFoliage - isSampleFoliage));
+            vec3 sampleNormal = texture2D(colortex1, sampleUV).xyz * 2 - 1;
+            accum += sampleNormal * sampleWeight;
+            weight += sampleWeight;
+        }
+    }
+    return accum/(weight + 1.0);
 }
 
 out vec3 VertNormal;
@@ -485,6 +542,7 @@ void main() {
     mediump float depth = texture2D(depthtex0, texCoord).r;
     mediump float depth2 = texture2D(depthtex1, texCoord).r;
     mediump float depth3 = getDepthMask(depthtex1, colortex13);
+    mediump float waterTest = texture2D(colortex5, texCoord).r;
 
     vec3 Normal = normalize2(texture2D(colortex1, texCoord).rgb * 2.0f -1.0f);
 
@@ -500,10 +558,12 @@ void main() {
 
     vec4 finalLight = vec4(0.0);
 
-    float lightMask = dot(normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition), texture2D(colortex1,texCoord).xyz * 2 + 1);
+    vec3 softNormal = blurNormals(texCoord, 10.0, 5);
+
+    float lightMask = dot(normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition), softNormal + 2);
     lightMask = max(lightMask, 0.0);
 
-    float sunlightMask = dot(normalize2(mat3(gbufferModelViewInverse) * sunPosition), texture2D(colortex1,texCoord).xyz * 2 + 1);
+    float sunlightMask = dot(normalize2(mat3(gbufferModelViewInverse) * sunPosition), softNormal + 2);
     sunlightMask = max(sunlightMask, 0.0);
 
     vec3 sunLight = sunlightAlbedo * sunlightMask;
@@ -525,14 +585,15 @@ void main() {
 
     float lightBlend = (1 - timeBlendFactor) * isCave;
 
-    float minLight = mix2(MIN_LIGHT, MIN_FOLIAGE_LIGHT, step(isFoliage, 0.5));
-    vec3 ambientLight = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunlightAlbedo, step(isFoliage, 0.5));
+    float minLight = mix2(MIN_LIGHT, MIN_FOLIAGE_LIGHT, step(isFoliage, 0.5) * (1 - timeBlendFactor));
+    vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
+    vec3 ambientLight = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunlightAlbedo*1.5, step(isFoliage, 0.5) * shadowLerp);
 
     vec3 totalSunlight = mix2(sunLight*lightMask*0.016, ambientLight*minLight,lightBlend);
     
     mediump float detectEntity = texture2D(colortex12, texCoord).g;
 
-    vec3 naturalLight = mix2(sky_color, ambientLight*minLight, smoothstep(0.0, 0.4, pow2(lightmap.g,1/2.2)));
+    vec3 naturalLight = mix2(sky_color * lightIntensity, ambientLight*minLight, smoothstep(0.0, 0.4, pow2(lightmap.g,1/2.2)));
 
     vec4 cloudsNormal;
     if(depth == 1.0) {
@@ -577,7 +638,7 @@ void main() {
                 if(detectSky == 1.0) {
                     if(isBiomeEnd) skyInfluenceColor = vec3(0.0);
                     vec3 dynamicLight = texture2D(colortex2, texCoord).xyz;
-                    vec3 shadowLerp = mix2(vec3(1.0),vec3(0.0),timeBlendFactor);
+                    shadowLerp = mix2(vec3(1.0),vec3(0.0),timeBlendFactor);
                     shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
                     float lightBlend2 = 1 - min(1 - isCave, length(shadowLerp));
                     finalLight = vec4(mix2(totalSunlight*3, ambientLight*minLight,lightBlend2),1.0);
@@ -660,7 +721,6 @@ void main() {
             #elif SCENE_AWARE_LIGHTING == 2
                 //dynamicLight = blurLight(colortex2, depthtex1, texCoord, 4.0, 16, 4.0, 0.1)*4;
             #endif
-            vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
             float lightBlend2 = 1 - length(shadowLerp);
             finalLight = vec4(mix2(totalSunlight*1.5, ambientLight*SHADOW_BRIGHTNESS,lightBlend2),1.0);
@@ -686,21 +746,27 @@ void main() {
 
     #if LIGHTING_MODE > 0
         vec4 vanilla = vanillaLight(1 - lightmap);
-        vec4 scatterLight = vec4(scattered * length(GetShadow(depth2)) * isCave * (1 - step(1.0, depth)) * (1 - timeBlendFactor) * dot(sunWorldPos, Normal), 1.0);
+        float shadowSize = length(GetShadow(depth2));
+        if(depth >= 1.0) shadowSize = 1.0;
+        vec4 scatterLight = vec4(scattered * shadowSize * isCave * (1 - step(1.0, getDepthMask(depthtex0, cSampler11))) * (1 - timeBlendFactor) * dot(sunWorldPos, Normal), 1.0);
         float dynamicLightBlend = smoothstep(minLight, 1.0, length(vanilla) - length(finalLight));
         finalLight = mix2(finalLight, vanilla*0.75, dynamicLightBlend);
         if(isBiomeEnd) {
             scatterLight *= 0.0025;
             finalLight *= 0.6;
         } else {
-            scatterLight *= 0.0001;
+            scatterLight *= 0.0004;
             finalLight *= 0.7;
         }
         finalLight += scatterLight;
-        finalLight.xyz *= 0.875 + lightNoise(worldPos, Normal) * 0.25;
+        vec3 lightVariation = 0.875 + lightNoise(worldPos, Normal) * 0.25;
+        if(isBiomeEnd) lightVariation = 0.5 + lightNoise(worldPos, Normal);
+        finalLight.xyz *= lightVariation;
+        if(waterTest > 0) finalLight.xyz = texture2D(colortex2, texCoord).xyz*16;
+
+        color.xyz = blindEffect(color.xyz, texCoord);
     #endif
-    
-    color.xyz = blindEffect(color.xyz, texCoord);
+
     outcolor = vec4(pow2(color.xyz, vec3(1/2.2)), 1.0);
     gl_FragData[2] = finalLight;
     gl_FragData[3] = texture2D(colortex3, texCoord);

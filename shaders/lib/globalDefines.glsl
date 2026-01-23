@@ -19,6 +19,7 @@
 #define LIGHT_DAY_R 1.0
 #define LIGHT_DAY_G 0.93
 #define LIGHT_DAY_B 0.88
+#define LIGHT_DAY_I 1.0
 
 // Sunset/Sunrise
 #define LIGHT_SUNSET_R 1.0
@@ -29,6 +30,7 @@
 #define LIGHT_NIGHT_R 0.55
 #define LIGHT_NIGHT_G 0.6
 #define LIGHT_NIGHT_B 0.95
+#define LIGHT_NIGHT_I 0.5
 
 // Ambient
 #define AMBIENT_LIGHT_R 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]

@@ -99,9 +99,9 @@ void main() {
 
     vec3 worldNormal = (gbufferModelViewInverse * Normal).xyz;
 
-    vec3 bitangent = normalize2(cross(Tangent.xyz, worldNormal));
+    vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
 
-    mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, worldNormal);
+    mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
 
     vec3 n = normalize2(worldNormal);
 
@@ -118,7 +118,7 @@ void main() {
     vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
     vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
 
-    vec4 finalNoise = noiseMapA * noiseMapB;
+    vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
 
     vec3 newNormal = Normal.xyz;
 
@@ -130,7 +130,7 @@ void main() {
     
     vec4 Lightmap;
 
-    if(isWater < 0.1f) {
+    if(isWaterBlock > 0.1f) {
         albedo.a = 0.0f;
         Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
 
