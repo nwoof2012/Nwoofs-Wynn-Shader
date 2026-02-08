@@ -1,53 +1,29 @@
 #version 460 compatibility
-//#include "lib/includes.glsl"
 
-#include "lib/globalDefines.glsl"
+#define VERTEX_SHADER
+#define COMPOSITE_1
 
-struct LightSource {
-    int id;
-    float brightness;
-};
+out vec2 texCoord;
 
-varying vec2 TexCoords;
+out vec3 Tangent;
+in vec3 at_tangent;
+
+out vec3 VertNormal;
 
 varying vec2 LightmapCoords;
 
-out vec4 lightSourceData;
-
-in vec4 mc_Entity;
-
-vec4 GenerateLightmap(LightSource source) {
-    switch (source.id) {
-        case 10005:
-            return vec4(1,0,0, source.brightness);
-        case 10006:
-            return vec4(0,1,0, source.brightness);;
-        case 10007:
-            return vec4(0,0,1, source.brightness);
-        case 10008:
-            return vec4(0.5,0,0, source.brightness);
-        case 10009:
-            return vec4(0,0.5,0, source.brightness);
-        case 10010:
-            return vec4(0,0,0.5, source.brightness);
-        default:
-            return vec4(0);
-    }
-}
+#include "lib/timeCycle.glsl"
 
 void main() {
     gl_Position = ftransform();
-    TexCoords = gl_MultiTexCoord0.st;
+    texCoord = gl_MultiTexCoord0.st;
+    Tangent = normalize(gl_NormalMatrix * at_tangent.xyz);
 
     LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 
-    LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
-    
-    #if SCENE_AWARE_LIGHTING > 0
-        LightSource source;
-        source.id = int(mc_Entity.x);
-        source.brightness = LightmapCoords.x;
-        lightSourceData = GenerateLightmap(source);
-    #endif
+    timeFunctionVert();
 
+    VertNormal = normalize(gl_NormalMatrix * gl_Normal);
+
+    //LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);
 }

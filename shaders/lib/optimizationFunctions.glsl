@@ -348,3 +348,15 @@ vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int sa
 vec3 contrastBoost(vec3 color, float contrast) {
     return ((color - 0.5) * contrast + 0.5);
 }
+
+vec2 calcRefraction(vec2 uv, float camDist, vec2 noise) {
+    return noise.xy * vec2(0.03125f) / max(camDist,1);
+}
+
+float encodeDist(float d, float maxDist) {
+    return log2(1.0 + d) / log2(1.0 + maxDist);
+}
+
+float decodeDist(float x, float maxDist) {
+    return (exp2(x * log2(1.0 + maxDist)) - 1.0);
+}

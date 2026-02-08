@@ -1,5 +1,8 @@
 #version 460 compatibility
-#define SHADOW_SAMPLES 2
+
+#define FRAGMENT_SHADER
+#define COMPOSITE_1
+
 #define PI 3.14159265358979323846f
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -31,14 +34,11 @@
 #define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 #define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
 
-#define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
-#define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
-
 #define BLOOM
 
 #define VIBRANT_MODE 1 //[0 1 2 3]
 
-#define BLOOM_QUALITY 32 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
+#define BLOOM_QUALITY 16 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
 #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 
@@ -48,12 +48,12 @@
 
 #define RAY_TRACED_SHADOWS 0 // [0 1]
 
-#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
-
 #define MIN_SE_SATURATION 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 #define WATER_WAVES
 
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
 #include "lib/globalDefines.glsl"
 
 layout (rgba8) uniform image2D cimage14;
@@ -66,10 +66,6 @@ float thisLum;
 varying vec2 TexCoords;
 
 uniform vec3 sunPosition;
-
-const int colortex2Format = 0x8814;
-const int colortex10Format = 0x8814;
-const int colortex15Format = 0x8814;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
@@ -174,8 +170,6 @@ in vec3 foot_pos;
 
 in vec3 Tangent;
 
-#include "lib/includes2.glsl"
-#include "lib/optimizationFunctions.glsl"
 #include "program/blindness.glsl"
 #include "distort.glsl"
 #include "lib/spaceConversion.glsl"
@@ -1267,18 +1261,24 @@ void main() {
 
         mediump float maxLight = MAX_LIGHT;
 
+        #ifdef BLOOM
+            vec3 LightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha)).xyz;
+        #else
+            vec3 LightmapColor = texture2D(colortex2, TexCoords.xy).rgb;
+        #endif
+
+        vec3 shadowLerp = GetShadow(Depth);
+        if(waterTest > 0) {
+            shadowLerp = vec3(1.0);
+        }
+
         if(Depth2 == 1.0f) {
             currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
 
             mediump float detectSky = texture2D(colortex5, TexCoords).g;
             mediump float detectEntity = texture2D(colortex12, TexCoords).r;
-            #ifdef BLOOM
-                vec3 lightmapColor = DHbloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha));
-            #else
-                vec3 lightmapColor = texture2D(colortex2, TexCoords.xy).rgb;
-            #endif
 
-            vec3 rawLight = lightmapColor;
+            vec3 rawLight = LightmapColor;
             if(detectSky < 1.0) {
                 if(isBiomeEnd) {
                     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
@@ -1291,83 +1291,28 @@ void main() {
                     vec3 Diffuse2 = texture2D(colortex0, TexCoords.xy).rgb;
                     vec3 Diffuse3 = mix2(Diffuse, Diffuse2, 0.5);
                     Diffuse = mix2(Diffuse, Diffuse3, length(Diffuse));
-                    Diffuse = mix2(Diffuse, vec3(1.0), lightmapColor.x);
+                    Diffuse = mix2(Diffuse, vec3(1.0), LightmapColor.x);
                     Diffuse = mix2(Diffuse,vec3(pow2(dot(Diffuse,vec3(0.333f)),1/2.55) * 0.5),clamp(CalcSaturation(Diffuse.xyz),0,1 - MIN_SE_SATURATION));
                     float fogFactor = clamp(texture2D(colortex6, TexCoords).y,0,1);
                     Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, fogFactor * 0.0625 * fogIntensity + 0.0625);
 
                     Diffuse.xyz = calcTonemap(Diffuse.xyz);
                 } else {
-                    vec3 shadowLightDirection = normalize2(mat3(gbufferModelViewInverse) * shadowLightPosition);
-
-                    vec3 worldNormal = Normal;
-
-                    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
-
-                    Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
-
-                    float aoValue = 1;
-                    #ifdef AO
-                        aoValue = DHcalcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
+                    #if PATH_TRACING_GI == 0
+                        LightmapColor *= vec3(0.2525);
+                        lightBrightness = max(lightBrightness, 0.5);
                     #endif
-
-                    float weightDay = 0.5 + 0.5 * cos((timeNorm - 0.25) * 2.0 * PI);
-                    float weightNight = 0.5 + 0.5 * cos((timeNorm - 0.75) * 2.0 * PI);
-                    vec3 currentLightColor = (weightDay * lightColorDay) + (weightNight * lightColorNight);
-
-                    lightmapColor = max(lightmapColor, MIN_LIGHT)*aoValue;
-
-                    if(waterTest > 0) {
-                        Albedo = waterFunction(TexCoords, finalNoise, lightBrightness);
-                        #ifdef WATER_WAVES
-                            Albedo = mix3(Albedo * 0.5, Albedo, Albedo * 0.75 + vec3(0.25), 0.3,cubicBezier(texture2D(colortex15,TexCoords).b, vec2(0.9, 0.0), vec2(1.0, 1.0)));
-                        #endif
-                        #if SSR == 1 || SSR = 2
-                            vec3 refNormal = texture2D(colortex1, TexCoords).rgb * 2 - 1;
-                            vec4 Albedo4 = waterReflectionsDH(Albedo.xyz,TexCoords,refNormal, finalNoise);
-                            Albedo.xyz = Albedo4.xyz;
-                            albedoAlpha = Albedo4.a;
-                        #endif
-                        Diffuse.xyz = Albedo.xyz;
-                    }
                     if(maxLight < 4.1f) {
-                        lightmapColor = clamp(lightmapColor,vec3(0f), normalize2(lightmapColor) * maxLight);
+                        LightmapColor = clamp(LightmapColor*10,vec3(0f), vec3(maxLight*10))/2.5;
                     }
-
-                    float lightMask = dot(shadowLightDirection, texture2D(colortex1,TexCoords).xyz * 2 + 1);
-    
-                    vec3 sunLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
-
-                    vec2 lightmap = 1 - texture2D(colortex13, TexCoords).rg;
-                    float isCave = smoothstep(0.0, 0.9, lightmap.g);
-
-                    vec3 sunWorldPos = mat3(gbufferModelViewInverse) * sunPosition;
-
-                    float timeDistance = abs(worldTime - 6000);
-                    float maxTimeDistance = 6000.0;
-                    float timeBlendFactor = clamp(timeDistance/maxTimeDistance, 0, 1);
-
-                    vec3 sunDir = normalize2(sunWorldPos);
-
-                    vec3 totalSunlight = mix2(sunLight, vec3(NIGHT_R, NIGHT_G, NIGHT_B)*NIGHT_I * 0.005f, clamp(dot(Normal,shadowLightDirection),0,1) * (1 - isCave));
-
-                    totalSunlight *= clamp(lightMask,0,1);
-
-                    //Diffuse.xyz *= lightmapColor + mix2(totalSunlight, vec3(NIGHT_R, NIGHT_G, NIGHT_B)*NIGHT_I * 0.005f, (1 - lightmap.g) * (1 - isCave));
-
-                    vec3 finalLight = lightmapColor + mix2(totalSunlight, vec3(NIGHT_R, NIGHT_G, NIGHT_B)*NIGHT_I * 0.005f, timeBlendFactor * (1 - isCave));
-
-                    Diffuse.xyz *= finalLight;
-
-                    Diffuse.xyz *= aoValue;
-                    
+                    Diffuse.xyz = mix2(Albedo * (LightmapColor + NdotL + Ambient),Albedo * (NdotL + Ambient),0.25);
                     Diffuse.xyz = calcTonemap(Diffuse.xyz);
                 }
                 Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
                 gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
             } else {
                 #ifdef BLOOM
-                    Albedo.xyz = mix2(Albedo.xyz, max(normalize2(lightmapColor),lightmapColor/10), clamp(length(lightmapColor), 0.0, 1.0));
+                    Albedo.xyz = mix2(Albedo.xyz, max(normalize2(LightmapColor),LightmapColor/10), clamp(length(LightmapColor), 0.0, 1.0));
                 #endif
                 Albedo.xyz = blindEffect(Albedo.xyz, TexCoords);
                 gl_FragData[0] = vec4(texture2D(colortex0, TexCoords).xyz, 1.0f);
@@ -1391,20 +1336,9 @@ void main() {
         #ifdef AO
             aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
         #endif
-        
-        vec3 shadowLerp = GetShadow(Depth);
-        if(waterTest > 0) {
-            shadowLerp = vec3(1.0);
-        }
 
         vec3 totalSunlight = mix2(sunLight, vec3(NIGHT_R, NIGHT_G, NIGHT_B)*NIGHT_I * 0.005f, clamp(dot(Normal,shadowLightDirection),0,1) * shadowLerp * (1 - isCave));
         
-        vec3 LightmapColor;
-        #ifdef BLOOM
-            LightmapColor = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha)).xyz + totalSunlight;
-        #else
-            LightmapColor = GetLightmapColor(texture2D(colortex2, TexCoords2).rg);
-        #endif
         vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb + lightBrightness;
 
         if(isBiomeEnd) {
@@ -1442,7 +1376,7 @@ void main() {
 
         Diffuse.xyz = mix2(Diffuse.xyz * lightBrightness,Diffuse.xyz,dot(LightmapColor, vec3(0.333)));
 
-        float fogFactor = texture2D(colortex6, TexCoords).y;
+        mediump float fogFactor = texture2D(colortex6, TexCoords).y;
         Diffuse.xyz = mix2(Diffuse.xyz, fogAlbedo, smoothstep(0.0, 1.0, fogFactor) * 0.03125 * fogIntensity);
 
         #if VIBRANT_MODE >= 1

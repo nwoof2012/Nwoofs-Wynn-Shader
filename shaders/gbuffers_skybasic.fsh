@@ -26,8 +26,6 @@
 #define CLOUD_COLOR_RAIN_B_G 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 #define CLOUD_COLOR_RAIN_B_B 0.0f // [0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f]
 
-#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
-
 precision mediump float;
 
 varying vec2 TexCoords;
@@ -65,16 +63,13 @@ uniform float aspectRatio;
 
 #include "lib/dither.glsl"
 
-//vec3 dayColor = vec3(1.0f,1.0f,1.0f);
 vec3 dayColorA;
 vec3 dayColorB;
 
 vec3 dayColorRainA;
 vec3 dayColorRainB;
-//vec3 nightColor = vec3(0.9f,1.0f,1.1f);
 vec3 nightColorA;
 vec3 nightColorB;
-//vec3 transitionColor = vec3(1.1f, 1.0f, 0.8f);
 vec3 transitionColorA;
 vec3 transitionColorB;
 

@@ -1,5 +1,8 @@
 #version 460 compatibility
+
 #define VERTEX_SHADER
+#define COMPOSITE_1
+
 #define PATH_TRACING_GI 0 // [0 1]
 
 #define PATH_TRACING_GI

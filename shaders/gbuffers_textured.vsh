@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define VERTEX_SHADER
+
 varying vec2 TexCoords;
 varying vec3 Normal;
 varying vec4 Color;

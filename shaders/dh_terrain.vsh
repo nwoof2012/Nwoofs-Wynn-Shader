@@ -1,5 +1,6 @@
 #version 460 compatibility
 
+#include "lib/includes2.glsl"
 #include "lib/globalDefines.glsl"
 
 #define DISTANT_HORIZONS
@@ -8,13 +9,10 @@
 
 #define VERTEX_SHADER
 
-layout (r32ui) uniform uimage3D cimage3;
-
 uniform mat4 dhProjection;
 
 out vec4 blockColor;
 out vec2 lightmapCoords;
-out vec3 viewSpaceFragPosition;
 
 out vec3 playerPos;
 
@@ -108,25 +106,4 @@ void main() {
 
         gl_Position.y -= drop;
     #endif
-
-    #if SCENE_AWARE_LIGHTING > 0
-        view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
-        foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
-        vec3 world_pos = foot_pos + cameraPosition;
-        block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
-        ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
-
-        if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-            vec4 voxel_data = dhMaterialId == DH_BLOCK_ILLUMINATED? vec4(1.0) : vec4(vec3(0.0),1.0);
-
-            vec4 block_data = vec4(vec3(0.0),1.0);
-            if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
-
-            uint integerValue = packUnorm4x8(voxel_data);
-
-            imageAtomicMax(cimage3, voxel_pos, integerValue);
-        }
-    #endif
-
-    
 }

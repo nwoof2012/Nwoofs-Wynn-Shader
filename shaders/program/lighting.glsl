@@ -1,19 +1,46 @@
-#ifdef SCENE_AWARE_LIGHTING
-    vec3 calcLighting(vec3 Albedo, vec3 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp) {
-        vec3 rawLight = LightmapColor;
+#if defined FRAGMENT_SHADER && defined COMPOSITE_3
+    #ifdef SCENE_AWARE_LIGHTING
+        vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor) {
+            vec3 rawLight = LightmapColor.xyz;
 
-        vec3 Normal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
-        
-        float aoValue = calcAO(TexCoords, foot_pos, 100, depthtex0, colortex1);
+            vec3 Normal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
+            
+            float aoValue = 1.0;
+            #ifdef AO
+                if(isDistant == 1) aoValue = DHcalcAO(TexCoords, foot_pos, 25, depthtex0, colortex1);
+                else aoValue = calcAO(TexCoords, foot_pos, 25, depthtex0, colortex1);
+            #endif
 
-        if(isDistant == 1) shadowLerp = vec3(1.0);
-        
-        vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
-        mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
+            if(isDistant == 1) shadowLerp = vec3(1.0);
+            
+            vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+            mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
 
-        vec3 Diffuse3 = mix2(Albedo * (LightmapColor*4 + NdotL * shadowLerp + Ambient) * aoValue,Albedo * (NdotL * shadowLerp + Ambient) * aoValue,0.25);
-        Diffuse3 = mix2(Diffuse3, LightmapColor*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(LightmapColor)) * 0.5,1.75),0,0.125));
+            vec3 worldPos = screenToFoot(TexCoords,texture2D(depthtex0, TexCoords).x);
+            vec3 dirFromSun = normalize2(abs(worldSpaceSunPos - 3.5) - abs(worldPos - 3.5));
+            
+            float sunDist = smoothstep(0.2, 0.5, dirFromSun.b);
 
-        return Diffuse3;
+            float aoLight = MIN_LIGHT * mix2(1.0, 0.01, timeBlendFactor);
+            
+            LightmapColor.xyz = mix2(LightmapColor.xyz, vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B)*aoLight, 1 - aoValue);
+
+            vec3 Diffuse3 = mix2(Albedo * (LightmapColor.xyz*4 + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
+            Diffuse3 = mix2(Diffuse3, LightmapColor.xyz*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(LightmapColor)) * 0.5,1.75),0,0.125));
+            //vec3 Diffuse4 = mix2(Albedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B) * 0.1,clamp(sunDist, 0, 0.75));
+
+            //Diffuse3 = mix2(Diffuse3, Diffuse4, clamp(sunDist, 0, 0.75));
+
+            return Diffuse3;
+        }
+    #endif
+#elif defined FRAGMENT_SHADER && defined COMPOSITE_2
+    #define FLICKER_INTENSITY 0.01
+    #define FLICKER_SPEED 0.06
+    
+    vec3 lightFlicker(vec3 light) {
+        vec2 lightUVs = vec2(frameTimeCounter * FLICKER_SPEED);
+        vec2 lightNoise = vec2(texture2D(randnoisea, texCoord + lightUVs).r, texture2D(randnoiseb, texCoord + lightUVs).r);
+        return light * (1 - mix2(lightNoise.x, lightNoise.y, fract(lightUVs.x)) * FLICKER_INTENSITY);
     }
 #endif

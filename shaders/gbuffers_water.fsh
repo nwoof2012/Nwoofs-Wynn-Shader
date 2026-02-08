@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define FRAGMENT_SHADER
+
 #define WATER_WAVES
 #define WATER_WAVES_DISTANCE 12 // [4 6 8 10 12 14 16]
 #define WATER_CHUNK_RESOLUTION 128 // [32 64 128]
@@ -63,6 +65,8 @@ in float waterShadingHeight;
 
 uniform float near;
 uniform float far;
+
+in float isGlass;
 
 #include "lib/globalDefines.glsl"
 
@@ -147,5 +151,6 @@ void main() {
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
     gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
     gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, isWaterBlock);
+    gl_FragData[5] = vec4(isGlass, 0.0, 0.0, 1.0);
     gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
 }

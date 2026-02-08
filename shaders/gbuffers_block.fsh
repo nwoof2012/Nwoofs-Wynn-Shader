@@ -2,8 +2,6 @@
 
 #define FRAGMENT_SHADER
 
-#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
-
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_B 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -68,6 +66,8 @@ uniform float far;
 
 uniform int viewWidth;
 uniform int viewHeight;
+
+uniform float dhFarPlane;
 
 #include "lib/globalDefines.glsl"
 
@@ -178,10 +178,6 @@ void main() {
 
     vec3 worldPosition = cameraPosition + (gbufferModelViewInverse * vec4(viewSpaceFragPosition, depth)).xyz;
 
-    /*if(blindness > 0f) {
-        albedo.xyz = blindEffect(albedo.xyz);
-    }*/
-
     fogMin = FOG_DAY_DIST_MIN;
     fogMax = FOG_DAY_DIST_MAX;
 
@@ -194,7 +190,7 @@ void main() {
     
     vec3 newNormal = (gbufferModelViewInverse * vec4(Normal,1.0)).xyz;
 
-    gl_FragData[6] = vec4(0.0, fogAmount, depth, 1.0);
+    gl_FragData[6] = vec4(0.0, encodeDist(distanceFromCamera, dhFarPlane), depth, 1.0);
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
@@ -213,5 +209,4 @@ void main() {
     #endif
     gl_FragData[3] = vec4(1.0, distanceFromCamera, 0.0, 1.0);
     gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
-    gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
 }

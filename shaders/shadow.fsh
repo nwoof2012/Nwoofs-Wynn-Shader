@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define FRAGMENT_SHADER
+
 #define SHADOWS_ENABLED
 //#define ENTITY_SHADOWS
 #define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
@@ -15,11 +17,15 @@ uniform vec3 chunkOffset;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec3 cameraPosition;
-uniform mat4 gbufferModelViewInverse;
 
 uniform int entityId;
 
 in vec3 vaPosition;
+
+#include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
 
 //flat in vec3 mc_Entity;
 

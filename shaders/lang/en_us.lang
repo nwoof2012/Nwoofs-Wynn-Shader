@@ -450,8 +450,11 @@ value.TONEMAP_SAL.2=Aces
 value.TONEMAP_SAL.3=Lottes
 value.TONEMAP_SAL.4=Unreal
 value.TONEMAP_SAL.5=Uncharted 2
-value.TONEMAP_SAL.6=Nwoof
-value.TONEMAP_SAL.7=Nwoof 2
+value.TONEMAP_SAL.6=AgX
+value.TONEMAP_SAL.7=AgX §7(§eGolden§7)
+value.TONEMAP_SAL.8=AgX §7(&ePunchy§7)
+value.TONEMAP_SAL.9=Nwoof
+value.TONEMAP_SAL.10=Nwoof 2
 option.TONEMAP_SAL.comment=§6Changes the screen's tonemapping curve
 
 option.TONEMAP_NORM=§7Tonemap
@@ -461,8 +464,11 @@ value.TONEMAP_NORM.2=Aces
 value.TONEMAP_NORM.3=Lottes
 value.TONEMAP_NORM.4=Unreal
 value.TONEMAP_NORM.5=Uncharted 2
-value.TONEMAP_NORM.6=Nwoof
-value.TONEMAP_NORM.7=Nwoof 2
+value.TONEMAP_NORM.6=AgX
+value.TONEMAP_NORM.7=AgX §7(&eGolden§7)
+value.TONEMAP_NORM.8=AgX §7(&ePunchy§7)
+value.TONEMAP_NORM.9=Nwoof
+value.TONEMAP_NORM.10=Nwoof 2
 option.TONEMAP_NORM.comment=§6Changes the screen's tonemapping curve
 
 option.BRIGHTNESS=§eBrightness
@@ -473,6 +479,21 @@ option.NORM_EXP.comment=§9Adjusts how strongly the light reaches you
 
 option.SE_EXP=§eExposure
 option.SE_EXP.comment=§9Adjusts how strongly the light reaches you
+
+option.DEBUG=§fEnabled
+value.DEBUG.0=§cOff
+value.DEBUG.1=§aOn
+
+option.DEBUG_MODE=§fMode
+value.DEBUG_MODE.0=§fBase Color
+value.DEBUG_MODE.1=§fNormal
+value.DEBUG_MODE.2=§fLighting
+value.DEBUG_MODE.3=§fBuffer A
+value.DEBUG_MODE.4=§fBuffer B
+value.DEBUG_MODE.5=§fBuffer C
+value.DEBUG_MODE.6=§fDepth
+value.DEBUG_MODE.7=§fDistance From Camera
+value.DEBUG_MODE.8=§fWater Depth
 
 screen.PERFORMANCE=§cPerformance
 
@@ -525,6 +546,8 @@ screen.SHADOW_SETTINGS = §7Shadows
 screen.SILENT_EXPANSE = §dSilent Expanse
 
 screen.ANTIALIASING = §aAntialiasing
+
+screen.DEBUG = §fDebug Mode
 
 profile.TOASTER=§7Toaster
 profile.POTATO=§3Potato

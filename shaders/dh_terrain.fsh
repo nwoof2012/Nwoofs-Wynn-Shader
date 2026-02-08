@@ -24,8 +24,6 @@
 
 #define AO_WIDTH 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
-#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
-
 precision mediump float;
 
 uniform usampler3D cSampler3;
@@ -67,9 +65,8 @@ uniform float far;
 uniform float dhNearPlane;
 uniform float dhFarPlane;
 
-#include "lib/globalDefines.glsl"
-
 #include "lib/includes2.glsl"
+#include "lib/globalDefines.glsl"
 #include "lib/optimizationFunctions.glsl"
 
 /* RENDERTARGETS:0,2,6,5,1,12,15,13 */
@@ -334,10 +331,12 @@ void main() {
 
     vec3 worldNormal = mat3(gbufferModelViewInverse) * Normal;
 
-    mediump float lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
+    mediump float lightBrightness = 0.0;
 
     if(isBiomeEnd) {
         lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, SE_MIN_LIGHT),SE_MAX_LIGHT);
+    } else {
+        lightBrightness = clamp(dot(shadowLightDirection, worldNormal),max(0.2, MIN_LIGHT),MAX_LIGHT);
     }
 
     vec4 outputColorData = blockColor;
@@ -381,10 +380,11 @@ void main() {
 
     mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
-    fogOut = vec4(0.0, fogAmount, remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
+    float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
+
+    fogOut = vec4(0.0, encodeDist(distanceFromCamera, dhFarPlane), remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
 
     if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
-        mediump float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
 
         if(clamp(1.0-length(viewSpaceFragPosition)/clamp(far - 32.0,32.0,far),0.0,1.0) > 0.1) {
             discard;
@@ -395,7 +395,7 @@ void main() {
         outColor0 = vec4(pow2(outputColor.xyz,vec3(1/GAMMA)), alpha);
 
         normal = vec4(worldNormal * 0.5 + 0.5, 1.0);
-        dataTex0 = vec4(1 - lightmapCoords.g, 1.0, 1.0, 1.0);
+        dataTex0 = vec4(1 - lightmapCoords.g, 0.0, 1.0, 1.0);
         camDist = vec4(distanceFromCamera, dhDepth, far/dhFarPlane, 1.0);
 
         #if LIGHTING_MODE == 0
@@ -408,7 +408,7 @@ void main() {
                 light_color = bytes.xyz;
             }
 
-            outColor2 = mix2(vec4(0.0), vec4(mix2(light_color*0.1,light_color,finalLight), 1.0), step(0.999, depth));
+            outColor2 = vec4(light_color, 1.0);
         #endif
 
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(vec3(remapDHDepth(dhDepth, near, far, dhFarPlane)),1.0));
@@ -417,5 +417,5 @@ void main() {
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(vec3(0.0),1.0));
     }
 
-    gl_FragData[7] = vec4(pow2(lightmapCoords,vec2(2.2)), remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
+    gl_FragData[7] = vec4(lightmapCoords.xy, 0.0, 1.0);
 }

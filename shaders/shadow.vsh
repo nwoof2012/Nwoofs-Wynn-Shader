@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define VERTEX_SHADER
+
 uniform float near;
 uniform float far;
 
@@ -10,6 +12,7 @@ uniform vec3 cameraPosition;
 
 #include "lib/globalDefines.glsl"
 
+#include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
 #include "distort.glsl"
 //#define ENTITY_SHADOWS

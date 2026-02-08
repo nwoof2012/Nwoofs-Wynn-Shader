@@ -1,4 +1,7 @@
 #version 460 compatibility
+
+#define VERTEX_SHADER
+
 #define PI 3.14159265358979323846f
 
 #define WATER_WAVES
@@ -19,10 +22,6 @@ varying vec3 Tangent;
 varying vec4 Color;
 
 varying vec2 LightmapCoords;
-
-layout (r32ui) uniform uimage3D cimage1;
-layout (r32ui) uniform uimage3D cimage2;
-layout (r32ui) uniform uimage2D cimage4;
 
 varying float isWaterBlock;
 
@@ -71,7 +70,12 @@ uniform vec3 cameraPosition;
 
 out float waterShadingHeight;
 
+out float isGlass;
+
 #include "lib/globalDefines.glsl"
+
+#include "lib/includes2.glsl"
+#include "lib/optimizationFunctions.glsl"
 
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -113,6 +117,15 @@ float pNoise(vec2 p, int res){
 	return nf*nf*nf*nf;
 }
 
+vec3 waterDisplace(vec3 worldPos) {
+	float wave1 = sin(worldPos.x + frameTimeCounter * 0.8);
+	float wave2 = sin(worldPos.z * 1.3 + frameTimeCounter * 1.1);
+
+	float waveHeight = (wave1 + wave2) * 0.1 - 0.2;
+
+	return worldPos + vec3(0.0, waveHeight, 0.0) - cameraPosition;
+}
+
 void main() {
 	gl_Position = ftransform();
 	TexCoords = gl_MultiTexCoord0.st;
@@ -132,17 +145,17 @@ void main() {
         isWaterBlock = 1f;
 		isWater = 1f;
 		#ifdef WATER_WAVES
-			vec2 waveCycle = vec2(sin((world_pos.x * WAVE_DENSITY_X * 7) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 7) + (frameTimeCounter * WAVE_SPEED_Y)));
-			vec2 waveCycle2 = vec2(sin((world_pos.x * WAVE_DENSITY_X * 0.5) + (frameTimeCounter * WAVE_SPEED_X)), -sin((world_pos.z * WAVE_DENSITY_Y * 0.5) + (frameTimeCounter * WAVE_SPEED_Y)));
-			float waveHeight = WAVE_AMPLITUDE * ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3;
-
-			gl_Position += gbufferProjection * gbufferModelView * vec4(0, mix(waveHeight*0.25f - 0.3f, 0f, smoothstep(WAVE_FALLOFF_START * 16, WAVE_FALLOFF_END * 16, distanceFromCamera)), 0, 0);
-			waterShadingHeight = ((waveCycle.x + waveCycle.y)/2 + (waveCycle2.x + waveCycle2.y))/3 + 1;
+			vec3 waterHeight = waterDisplace(world_pos);
+			vec4 waterDisplacementAmount = gbufferProjection * gbufferModelView * vec4(waterHeight,1.0);
+			waterShadingHeight = distance(foot_pos, waterHeight);
+			gl_Position = waterDisplacementAmount;
 		#endif
     } else {
 		isWater = 1f;
 		isWaterBlock = 0f;
 	}
+
+	isGlass = mc_Entity.x == 10014? 0.0 : 1.0;
 
 	if(mc_Entity.x == 8.0 || mc_Entity.x == 10002) {
 		isTransparent = 1.0;

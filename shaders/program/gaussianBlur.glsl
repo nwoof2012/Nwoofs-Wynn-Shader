@@ -14,6 +14,26 @@ vec4 gaussianBlur(sampler2D tex, vec2 pos, float radius, vec2 res) {
     return color;
 }
 
+vec4 shadowBilinear(sampler2D tex, vec2 uv, ivec2 res) {
+    vec2 texCoord = uv * vec2(res);
+    
+    ivec2 i0 = ivec2(floor(texCoord));
+    ivec2 i1 = ivec2(ceil(texCoord));
+    ivec2 i10 = ivec2(ceil(texCoord.x), floor(texCoord.y));
+    ivec2 i01 = ivec2(floor(texCoord.x), ceil(texCoord.y));
+    vec2 f = fract(texCoord);
+
+    vec4 c00 = texture2D(tex, vec2(i0)/vec2(res));
+    vec4 c10 = texture2D(tex, vec2(i10)/vec2(res));
+    vec4 c01 = texture2D(tex, vec2(i01)/vec2(res));
+    vec4 c11 = texture2D(tex, vec2(i1)/vec2(res));
+
+    vec4 cx0 = mix2(c00, c10, f.x);
+    vec4 cx1 = mix2(c01,c11, f.x);
+    
+    return mix2(cx0, cx1, f.y);
+}
+
 #if CLOUD_STYLE == 1
     vec4 imageBilinear(vec2 uv, ivec2 res) {
         vec2 texCoord = uv * vec2(res);         // texel-space

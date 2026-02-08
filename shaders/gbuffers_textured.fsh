@@ -1,5 +1,7 @@
 #version 460 compatibility
 
+#define FRAGMENT_SHADER
+
 precision mediump float;
 
 varying vec2 TexCoords;

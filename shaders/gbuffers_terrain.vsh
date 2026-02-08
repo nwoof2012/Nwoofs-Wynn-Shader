@@ -3,6 +3,7 @@
 #define VERTEX_SHADER
 
 #include "lib/globalDefines.glsl"
+#include "lib/includes2.glsl"
 
 #define PATH_TRACING_GI 0 // [0 1]
 
@@ -19,11 +20,6 @@ struct LightSource {
 };
 
 layout (r32ui) uniform uimage3D cimage1;
-layout (r32ui) uniform uimage3D cimage2;
-layout (r32ui) uniform uimage3D cimage3;
-layout (r32ui) uniform uimage3D cimage5;
-layout (r32ui) uniform uimage3D cimage6;
-layout (r32ui) uniform uimage3D cimage13;
 
 in vec3 vaPosition;
 in vec2 vaUV0;
@@ -42,8 +38,6 @@ uniform float frameTimeCounter;
 uniform vec3 cameraPosition;
 uniform vec3 chunkOffset;
 uniform mat4 modelViewMatrix;
-
-out vec3 viewSpaceFragPosition;
 
 out vec4 lightSourceData;
 
@@ -243,10 +237,7 @@ void main() {
 
     #ifdef WAVING_FOLIAGE
         vec4 foliage_data = isFoliage == 1.0? vec4(1.0) : vec4(vec3(0.0),1.0);
-        
-        uint foliageIntValue = packUnorm4x8(foliage_data);
 
-        imageAtomicMax(cimage5, voxel_pos, foliageIntValue);
         if(isFoliage == 1.0 && distanceFromCamera <= FOLIAGE_WAVE_DISTANCE * 16f) {
             vec3 waving = vec3(FOLIAGE_INTENSITY * sin(frameTimeCounter * FOLIAGE_SPEED));
             //vec3 waving = GetRawWave(worldSpaceVertexPosition, FOLIAGE_INTENSITY);
@@ -258,28 +249,13 @@ void main() {
 
     isLeaves = mc_Entity.x == 10003? 1.0 : 0.0;
 
-    #if SCENE_AWARE_LIGHTING > 0 || LIGHTING_MODE == 2
+    #if (SCENE_AWARE_LIGHTING > 0 && LIGHTING_MODE > 0) || LIGHTING_MODE == 2
         if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
             vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : mc_Entity.x == 10003? vec4(0.0) : vec4(vec3(0.0),1.0);
 
             uint voxel_data2 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
 
             uint voxel_data3 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
-            
-            #if LIGHTING_MODE == 2
-                //opacity
-                vec4 opacity_data = mc_Entity.x == 10002? vec4(0.0) : vec4(1.0);
-
-                uint integerValue2 = packUnorm4x8(opacity_data);
-
-                imageAtomicMax(cimage2, voxel_pos, integerValue2);
-            #endif
-
-            //imageStore(cimage1, ivec3(voxel_pos), voxel_data);
-
-            /*if(length(voxel_data.xyz) <= 0.0) {
-                voxel_data = vec4(at_midBlock.w);
-            }*/
 
             vec4 block_data = vec4(vec3(0.0),1.0);
             if(length(Normal.xyz) > 0.0 && mc_Entity.x != 2 && mc_Entity.x != 10003) block_data = vec4(1.0);
@@ -291,14 +267,8 @@ void main() {
             imageAtomicMax(cimage1, voxel_pos, voxel_data2);
         }
 
-        LightSource source;
-        source.id = int(mc_Entity.x);
-        source.brightness = LightmapCoords.x;
-        lightSourceData = GenerateLightmap(source);
-
         #if FOG_STYLE == 2
             uint intValue = uint(clamp(length(foot_pos),minFog, maxFog) * FOG_PRECISION);
-            imageAtomicMax(cimage13, voxel_pos, intValue);
         #endif
     #endif
 }

@@ -2,8 +2,6 @@
 
 #define FRAGMENT_SHADER
 
-#define GAMMA 2.2 // [1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0]
-
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_B 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -75,6 +73,8 @@ uniform int viewWidth;
 uniform int viewHeight;
 
 uniform vec3 cameraPosition;
+
+uniform float dhFarPlane;
 
 #include "lib/globalDefines.glsl"
 
@@ -151,6 +151,8 @@ void main() {
     vec4 albedo = texture2D(texture, TexCoords) * Color;
     mediump float depth = texture2D(depthtex0, TexCoords).r;
 
+    mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
     fogMin = FOG_DAY_DIST_MIN;
     fogMax = FOG_DAY_DIST_MAX;
 
@@ -169,7 +171,7 @@ void main() {
 
     mediump float fogAmount = (length(viewSpaceFragPosition)*(far/dhRenderDistance * 0.75) - fogStart)/(fogEnd - fogStart);
 
-    gl_FragData[5] = vec4(0.0, fogAmount, depth, 1.0);
+    gl_FragData[5] = vec4(0.0, encodeDist(distanceFromCamera, dhFarPlane), depth, 1.0);
 
     mediump float a;
 
