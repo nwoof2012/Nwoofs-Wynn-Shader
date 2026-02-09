@@ -11,7 +11,10 @@
                 else aoValue = calcAO(TexCoords, foot_pos, 25, depthtex0, colortex1);
             #endif
 
-            if(isDistant == 1) shadowLerp = vec3(1.0);
+            if(isDistant == 1) {
+                shadowLerp = vec3(1.0 - timeBlendFactor);
+                LightmapColor.xyz *= mix2(1.0, 0.5, timeBlendFactor);
+            }
             
             vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
             mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);

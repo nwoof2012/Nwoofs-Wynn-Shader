@@ -644,7 +644,7 @@ void main() {
 
     vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
     shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
-    if(depth2 >= 1.0) shadowLerp = vec3(1.0);
+    if(depth2 >= 1.0) shadowLerp = vec3(1.0 - timeBlendFactor);
 
     /*vec3 ambientLight = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*SHADOW_BRIGHTNESS, sunlightAlbedo*1.5, max(vec3(step(isFoliage, 0.5)),shadowLerp));
 
@@ -756,7 +756,7 @@ void main() {
             
             //vec4 vanilla = vanillaLight(1 - lightmap);
             mediump float shadowSize = length(shadowLerp);
-            if(depth >= 1.0) shadowSize = 1.0;
+            if(depth >= 1.0) shadowSize = 1.0 - timeBlendFactor;
             //mediump float dynamicLightBlend = 1 - smoothstep(minLight, 1.0, length(vanilla) - length(finalLight));
             //dynamicLightBlend = mix2(dynamicLightBlend * isCave,1.0, step(isFoliage, 0.5));
             //vec4 scatterLight = vec4(dynamicLightBlend * scattered * (1 - step(1.0, getDepthMask(depthtex0, cSampler11))) * (1 - timeBlendFactor) * mix2(dot(sunWorldPos, Normal), 1.0, step(isFoliage, 0.5)), 1.0);
@@ -796,6 +796,8 @@ void main() {
             finalLight.xyz += mix2(totalSunlight, vec3(0.0), lightBlend2);
 
             finalLight.xyz = mix2(finalLight.xyz, vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G,LIGHT_NIGHT_B)*LIGHT_NIGHT_I, timeBlendFactor);
+
+            if(depth >= 1.0) finalLight.xyz *= mix2(1.0, 0.5, timeBlendFactor);
 
             finalLight.xyz = mix2(finalLight.xyz, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*MIN_LIGHT, isCave);
 
