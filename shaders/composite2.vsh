@@ -12,7 +12,7 @@ out vec3 VertNormal;
 
 varying vec2 LightmapCoords;
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 void main() {
     gl_Position = ftransform();

@@ -3,6 +3,8 @@
 #define FRAGMENT_SHADER
 #define COMPOSITE_2
 
+#define PI 3.14159265358979323846f
+
 #define CLOUD_STYLE 1 // [0 1]
 #define CLOUD_FOG 0.5 // [0.0 0.25 0.5 0.75 1.0]
 #define CLOUD_DENSITY 0.5 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
@@ -78,13 +80,13 @@ uniform float far;
 
 uniform float dhFarPlane;
 
-#include "program/blindness.glsl"
+#include "lib/post/blindness.glsl"
 
-#include "lib/buffers.glsl"
+#include "lib/misc/buffers.glsl"
 
-#include "program/gaussianBlur.glsl"
+#include "lib/post/gaussianBlur.glsl"
 
-#include "program/lighting.glsl"
+#include "lib/lighting/lighting.glsl"
 
 vec4 triplanarTexture(vec3 worldPos, vec3 normal, sampler2D tex, float scale) {
     normal = abs(normal);
@@ -383,7 +385,7 @@ vec2 AdjustLightmap(in vec2 Lightmap){
 const int ShadowSamplesPerSize = 2 * SHADOW_SAMPLES + 1;
 const int TotalSamples = ShadowSamplesPerSize * ShadowSamplesPerSize;
 
-#include "distort.glsl"
+#include "program/distort.glsl"
 
 mediump float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
     return step(SampleCoords.z - 0.001f, texture2D(ShadowMap, SampleCoords.xy).r);
@@ -448,6 +450,19 @@ vec3 screenToWorld(vec2 screenPos, float depth) {
     vec4 worldSpace = gbufferModelViewInverse * viewSpace;
     worldSpace /= worldSpace.w;
     worldSpace.xyz += cameraPosition * 2.0;
+
+    return worldSpace.xyz;
+}
+
+vec3 screenToFoot(vec2 screenPos, float depth) {
+    vec2 ndc = screenPos * 2.0 - 1.0;
+
+    vec4 clipSpace = vec4(ndc, depth, 1.0);
+    vec4 viewSpace = gbufferProjectionInverse * clipSpace;
+    viewSpace /= viewSpace.w;
+
+    vec4 worldSpace = gbufferModelViewInverse * viewSpace;
+    worldSpace /= worldSpace.w;
 
     return worldSpace.xyz;
 }
@@ -580,13 +595,18 @@ vec3 blurNormals(vec2 uv, float radius, int sampleRadius) {
 
 out vec3 VertNormal;
 
-#include "lib/timeCycle.glsl"
-
-#include "program/bloom.glsl"
+#include "lib/world/timeCycle.glsl"
 
 uniform sampler2D cloudnormal;
 
-#include "program/clouds.glsl"
+#include "lib/world/clouds.glsl"
+
+#define PT_THRESHOLD 0.1
+#define PT_BOUNCE_COUNT 32
+
+#if LIGHTING_MODE == 2
+    #include "lib/lighting/pathTracing.glsl"
+#endif
 
 /* RENDERTARGETS:0,1,2,3,4,5,6,14 */
 layout(location = 0) out vec4 outcolor;
@@ -710,7 +730,7 @@ void main() {
             #endif
         #endif
     } else {
-        #if LIGHTING_MODE > 0
+        #if LIGHTING_MODE == 1
             dynamicLight = pow2(texture2D(colortex2, texCoord).xyz, vec3(GAMMA));
             if(waterTest > 0 || detectEntity > 0) dynamicLight *= GAMMA * GAMMA;
             #if SCENE_AWARE_LIGHTING == 1
@@ -744,7 +764,7 @@ void main() {
         scattered += sampleLight * pow2(decay, t / stepSize);
     }*/
 
-    #if LIGHTING_MODE > 0
+    #if LIGHTING_MODE == 1
         if(detectSky < 1.0 || depth2 < 1.0) {
             vec2 res = vec2(1080/viewHeight * viewWidth, 1080);
             /*vec3 bounce =
@@ -849,6 +869,39 @@ void main() {
         //if(waterTest > 0) finalLight.xyz = texture2D(colortex2, texCoord).xyz*16;
 
         color.xyz = blindEffect(color.xyz, texCoord);
+    #elif LIGHTING_MODE == 2
+        vec3 worldPos = screenToWorld(texCoord, depth);
+        vec3 throughput = color.xyz;
+        vec3 radiance = vec3(0.0);
+
+        vec3 outPos = vec3(0.0);
+        vec3 outNormal = vec3(0.0);
+
+        vec2 rand = vec2(calcRandom3D(worldPos, frameTimeCounter),calcRandom3D(worldPos - 1, frameTimeCounter));
+
+        for (int bounce = 0; bounce < PT_BOUNCE_COUNT; bounce++) {
+
+            vec3 dir = sampleHemisphere(Normal, rand * 2 - 1);
+            vec3 hitPos;
+
+            if (!rayMarch(worldPos, dir, hitPos)) {
+                radiance += throughput * skyInfluenceColor;
+                break;
+            }
+
+            vec2 hitUV = worldToScreen(hitPos);
+
+            vec3 hitColor = texture2D(colortex0, hitUV).rgb;
+            vec3 hitNormal = texture2D(colortex1, hitUV).xyz * 2 - 1;
+
+            radiance += throughput * texture3D(colortex2, hitUV).xyz;
+
+            throughput *= hitColor;
+            outPos = hitPos;
+            outNormal = hitNormal;
+        }
+        
+        if(detectSky == 0.0 || depth2 < 1.0) finalLight = vec4(pow2(radiance,vec3(1/GAMMA)),1.0);
     #endif
 
     outcolor = vec4(pow2(color.xyz, vec3(1/GAMMA)), 1.0);

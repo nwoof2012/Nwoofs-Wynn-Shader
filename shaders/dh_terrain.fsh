@@ -183,7 +183,7 @@ float remapDHDepth(float depth, float nearPlane, float farPlaneChunks, float far
     return mix(d_far_chunks, 1.0, t);
 }
 
-#include "program/pathTracing.glsl"
+#include "lib/lighting/pathTracing.glsl"
 
 vec3 aces(vec3 x) {
   mediump float a = 2.51;
@@ -324,7 +324,7 @@ void dawnFunc(float time, float timeFactor) {
     }
 }
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 void main() {
     vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);

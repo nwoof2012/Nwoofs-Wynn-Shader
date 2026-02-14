@@ -27,7 +27,7 @@ uniform mat4 gbufferProjection;
 
 uniform float aspectRatio;
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 out vec3 lightmap;
 
@@ -45,7 +45,7 @@ in vec3 at_midBlock;
 
 out float isLeaves;
 
-#include "program/pathTracing.glsl"
+#include "lib/lighting/pathTracing.glsl"
 
 vec3 lightmapData() {
     vec3 TorchColor = vec3(1.0f, 0.0f, 0.0f);

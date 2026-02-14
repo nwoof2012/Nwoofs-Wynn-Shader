@@ -5,8 +5,6 @@
 
 #define PATH_TRACING_GI 0 // [0 1]
 
-#define PATH_TRACING_GI
-
 varying vec2 TexCoords;
 varying vec2 LightmapCoords;
 
@@ -23,7 +21,7 @@ uniform mat4 gbufferProjection;
 
 uniform float aspectRatio;
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 out vec3 lightmap;
 
@@ -37,7 +35,7 @@ out vec3 foot_pos;
 
 in vec3 at_tangent;
 
-#include "program/pathTracing.glsl"
+#include "lib/lighting/pathTracing.glsl"
 
 vec3 lightmapData() {
     vec3 TorchColor = vec3(1.0f, 0.0f, 0.0f);

@@ -173,15 +173,15 @@ layout (rgba8) uniform image2D cimage14;
 mediump float thisExposure;
 mediump float thisLum;
 
-#include "lib/buffers.glsl"
+#include "lib/misc/buffers.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "distort.glsl"
+#include "program/distort.glsl"
 #include "lib/spaceConversion.glsl"
-#include "program/underwater.glsl"
-#include "program/gaussianBlur.glsl"
+#include "lib/post/underwater.glsl"
+#include "lib/post/gaussianBlur.glsl"
 #include "lib/colorFunctions.glsl"
 
-#include "program/hdr.glsl"
+#include "lib/post/hdr.glsl"
 
 mediump vec3 dayColor = vec3(DAY_R,DAY_G,DAY_B);
 mediump vec3 nightColor = vec3(NIGHT_R,NIGHT_G,NIGHT_B);
@@ -242,7 +242,7 @@ mediump float getDepthMask(sampler2D local, sampler2D distant) {
     return mix2(linearizeDepth(texture2D(depthtex0, TexCoords).x,near,far) / dhFarPlane, texture2D(colortex13, TexCoords).z * 0.5, step(1.0, texture2D(depthtex0, TexCoords).x)) * 32;
 }
 
-#include "program/ambientOcclusion.glsl"
+#include "lib/lighting/ambientOcclusion.glsl"
 
 mediump float AdjustLightmapTorch(in float torch) {
     const mediump float K = 2.0f;
@@ -393,7 +393,7 @@ mediump vec3 GetLightmapColor(in vec2 Lightmap){
     return LightmapLighting;
 }
 
-#include "program/pathTracing.glsl"
+#include "lib/lighting/pathTracing.glsl"
 
 mediump float Visibility(in sampler2D ShadowMap, in vec3 SampleCoords) {
     return step(SampleCoords.z - 0.001f, texture2D(ShadowMap, SampleCoords.xy).r);
@@ -445,13 +445,13 @@ mediump vec3 GetShadow(float depth) {
     #endif
 }
 
-#include "program/volumetricLight.glsl"
+#include "lib/lighting/volumetricLight.glsl"
 
 mediump vec3 SceneToVoxel(vec3 scenePos) {
 	return scenePos + fract(cameraPosition) + (0.5 * vec3(voxelVolumeSize));
 }
 
-#include "program/tonemapping.glsl"
+#include "lib/post/tonemapping.glsl"
 
 mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
     mediump float ao = 0.0;
@@ -462,7 +462,7 @@ mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
     return ao;
 }
 
-#include "program/bloom.glsl"
+#include "lib/post/bloom.glsl"
 
 mediump vec4 rayMarch(vec3 rayOrigin, vec3 rayDir, float density) {
     vec4 color = vec4(0.0);
@@ -959,9 +959,9 @@ mediump vec3 sharpenMask(sampler2D tex, vec2 UVs, vec3 color, float factor, floa
 }
 
 #if AA == 2
-    #include "lib/smaa.glsl"
+    #include "lib/antialiasing/smaa.glsl"
 #elif AA == 3
-    #include "lib/taa.glsl"
+    #include "lib/antialiasing/taa.glsl"
 #endif
 
 mediump vec3 antialiasing(vec2 UVs, sampler2D tex) {
@@ -1001,13 +1001,13 @@ mediump vec3 antialiasing(vec2 UVs, sampler2D tex) {
     return finalColor;
 }
 
-#include "program/fog.glsl"
+#include "lib/world/fog.glsl"
 
-#include "program/blindness.glsl"
+#include "lib/post/blindness.glsl"
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
-#include "program/lighting.glsl"
+#include "lib/lighting/lighting.glsl"
 
 /* RENDERTARGETS:0 */
 

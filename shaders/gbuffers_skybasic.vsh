@@ -21,7 +21,7 @@ flat out vec3 upVec, sunVec;
 
 const float sunPathRotation = -40.0f;
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 uniform mat4 gbufferProjection;
 
 flat out int worldTime2;

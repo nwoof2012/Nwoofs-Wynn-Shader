@@ -68,6 +68,7 @@ uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 
 uniform usampler3D cSampler1;
+uniform usampler3D cSampler2;
 
 uniform ivec2 atlasSize;
 uniform vec3 sunPosition;
@@ -115,7 +116,7 @@ flat in uint lightData;
 #include "lib/globalDefines.glsl"
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/gaussianBlur.glsl"
+#include "lib/post/gaussianBlur.glsl"
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
 const float TorchBrightness = 1.0;
@@ -137,7 +138,7 @@ const float FireBrightness = 1.0;
 //#include "program/generateNormals.glsl"
 
 #if LIGHTING_MODE == 2
-    #include "program/pathTracing.glsl"
+    #include "lib/lighting/pathTracing.glsl"
 #endif
 
 mediump float AdjustLightmapTorch(in float torch) {
@@ -319,7 +320,7 @@ void dawnFunc(float time, float timeFactor) {
     }
 }
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 /* RENDERTARGETS:0,1,2,13,5,10,6,12*/
 

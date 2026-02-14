@@ -166,7 +166,7 @@ vec4 GenerateLightmap(LightSource source) {
     }
 #endif
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 void main() {
     gl_Position = ftransform();

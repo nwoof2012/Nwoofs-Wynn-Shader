@@ -141,7 +141,7 @@ void dawnFunc(float time, float timeFactor) {
     }
 }
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 uniform int dhRenderDistance;
 

@@ -2,7 +2,7 @@
 
 #define FRAGMENT_SHADER
 
-#include "program/underwater.glsl"
+#include "lib/post/underwater.glsl"
 
 #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -168,7 +168,7 @@ void dawnFunc(float time, float timeFactor) {
     }
 }
 
-#include "lib/timeCycle.glsl"
+#include "lib/world/timeCycle.glsl"
 
 uniform int dhRenderDistance;
 

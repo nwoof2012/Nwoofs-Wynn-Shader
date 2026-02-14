@@ -135,7 +135,7 @@ void main() {
     vec4 Lightmap;
 
     if(isWaterBlock > 0.1f) {
-        albedo.a = 0.0f;
+        //albedo.a = 0.0f;
         Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
 
         newNormal = tbnMatrix * finalNoise.xyz;
@@ -147,10 +147,11 @@ void main() {
     }
     mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
-    gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
     gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
     gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, isWaterBlock);
     gl_FragData[5] = vec4(isGlass, 0.0, 0.0, 1.0);
     gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
+    if(isWaterBlock > 0.1f) return;
+    gl_FragData[0] = albedo;
 }

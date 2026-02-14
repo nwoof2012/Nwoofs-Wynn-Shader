@@ -213,8 +213,8 @@ vec2 moonUVs(vec3 moonDir, vec3 viewDir, float radius) {
     return vec2(uAngle, vAngle) / radius * 0.5 + 0.5;
 }
 
-#include "lib/timeCycle.glsl"
-#include "lib/buffers.glsl"
+#include "lib/world/timeCycle.glsl"
+#include "lib/misc/buffers.glsl"
 
 void main() {
     vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
