@@ -309,16 +309,16 @@ vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int sa
 
 #ifdef AUTO_EXPOSURE
     vec3 autoExposure(vec3 color, float targetLum, float speed) {
-        vec4 prevColor = imageLoad(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)));
+        //vec4 prevColor = imageLoad(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)));
         float sceneLum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-        float prevAvgLum = dot(prevColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        //float prevAvgLum = dot(prevColor.rgb, vec3(0.2126, 0.7152, 0.0722));
         //thisExposure = prevAvgLum;
         thisLum = sceneLum;
         float smoothedFrame = mix2(timeExposure.delta, frameTime, 0.1);
         float avgLum = sceneLum; //mix2(prevAvgLum, sceneLum, 1.0 - exp(-timeExposure.time * speed));
         float exposure = targetLum * (avgLum + 1e-4);
         thisExposure = exposure;
-        imageStore(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)), vec4(color * exposure,1.0));
+        //imageStore(cimage14, ivec2(gl_FragCoord.xy * vec2(viewWidth, viewHeight)), vec4(color * exposure,1.0));
         return color * exposure;
     }
 
@@ -359,4 +359,20 @@ float encodeDist(float d, float maxDist) {
 
 float decodeDist(float x, float maxDist) {
     return (exp2(x * log2(1.0 + maxDist)) - 1.0);
+}
+
+vec3 encodeLight(vec3 light, float maxLight) {
+    return log2(light + 1.0) / log2(maxLight + 1.0);
+}
+
+vec3 decodeLight(vec3 encodedLight, float maxLight) {
+    return exp2(encodedLight * log2(maxLight + 1.0)) - 1.0;
+}
+
+vec4 encodeLight(vec4 light, float maxLight) {
+    return vec4(log2(light.xyz + 1.0) / log2(maxLight + 1.0),light.w);
+}
+
+vec4 decodeLight(vec4 encodedLight, float maxLight) {
+    return vec4(exp2(encodedLight.xyz * log2(maxLight + 1.0)) - 1.0,encodedLight.w);
 }

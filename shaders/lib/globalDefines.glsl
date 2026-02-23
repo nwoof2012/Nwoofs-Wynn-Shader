@@ -51,7 +51,7 @@
 #define MIN_LIGHT 0.1f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f 0.55f 0.6f 0.65f 0.7f 0.75f 0.8f 0.85f 0.9f 0.95f 1.0f]
 
 // Maximum Light
-#define MAX_LIGHT 1.5f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
+#define MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
 // Minimum Foliage Light
 #define MIN_FOLIAGE_LIGHT 1.0f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f 0.55f 0.6f 0.65f 0.7f 0.75f 0.8f 0.85f 0.9f 0.95f 1.0f]
@@ -109,6 +109,7 @@
 #define SHADOW_SAMPLES 2
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
 #define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+#define VARIABLE_PENUMBRA_SHADOWS
 
 //<---------------------------[Misc]------------------------>\\
 
@@ -388,3 +389,5 @@
 
 // Debug Mode (0 = Base Color, 1 = Normal, 2 = Lighting, 3 = Buffer A, 4 = Buffer B, 5 = Buffer C, 6 = Depth, 7 = Distance From Camera, 8 = Water Depth)
 #define DEBUG_MODE 0 // [0 1 2 3 4 5 6 7 8]
+
+#define DISTANT_HORIZONS

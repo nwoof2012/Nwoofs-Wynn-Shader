@@ -1,0 +1,51 @@
+{
+    "unusedString": "
+        #define ANTIALIASING_RELATED_SETTINGS
+    ",
+    "version": 1,
+    "excludeLodsFromVanillaDepth": false,
+    "opaqueDrawBuffers": [0,1,2],
+    "translucentDrawBuffers": [0,1,2],
+    "blending": { 
+        -1: "off", 
+        0: "SRC_ALPHA ONE_MINUS_SRC_ALPHA ONE_MINUS_DST_ALPHA ONE"
+    },
+    "samplers": [
+        "noisetex",
+        "colortex4",
+        "colortex5",
+        "vxDepthTexOpaque"
+    ],
+    "uniforms": [
+        "vxRenderDistance",
+        "vxViewProj",
+        "vxViewProjInv",
+        "vxViewProjPrev",
+        "vxModelView",
+        "vxModelViewInv",
+        "vxModelViewPrev",
+        "vxProj",
+        "vxProjInv",
+        "vxProjPrev",
+        "gbufferModelView",
+        "gbufferModelViewInverse",
+        "gbufferProjection",
+        "gbufferProjectionInverse",
+        "gbufferPreviousModelView",
+        "gbufferPreviousProjection",
+        "cameraPosition",
+        "previousCameraPosition",
+        "frameTimeCounter",
+        "sunPosition",
+        "sunElevation",
+        "texelSize",
+        "isEyeInWater",
+        "near",
+        "far",
+        "taaJitter",
+        "LOD_NEARPLANE",
+        "LOD_FARPLANE",
+        "LOD_RENDERDISTANCE",
+        "frameCounter"
+    ]
+}

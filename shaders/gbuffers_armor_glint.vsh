@@ -1,8 +1,5 @@
 #version 460 compatibility
 
-varying vec2 TexCoords;
+#define VERTEX_SHADER
 
-void main() {
-    gl_Position = ftransform();
-    TexCoords = gl_MultiTexCoord0.st;
-}
+#include "program/gbuffers_armor_glint.glsl"

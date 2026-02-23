@@ -1,6 +1,6 @@
 #version 460 compatibility
 
-precision mediump float;
+#define FRAGMENT_SHADER
 
 const int PHYSICS_ITERATIONS_OFFSET = 13;
 const mediump float PHYSICS_DRAG_MULT = 0.048;
@@ -36,6 +36,7 @@ uniform sampler2D gDepth;
 
 uniform sampler2D noise;
 
+uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D shadowtex1;
 
@@ -70,7 +71,7 @@ in float camDist;
 
 #include "lib/includes2.glsl"
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
+#include "lib/post/blindness.glsl"
 
 vec2 physics_waveDirection(vec2 position, int iterations, float time) {
     position = (position - physics_waveOffset) * PHYSICS_XZ_SCALE * physics_oceanWaveHorizontalScale;
@@ -236,7 +237,6 @@ void main() {
 
     WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
 
-    gl_FragData[0] = albedo;
     gl_FragData[1] = vec4(normalM * 0.5 + 0.5,1);
     #if LIGHTING_MODE == 0
         gl_FragData[2] = vec4(LightmapCoords.xy, 1.0f, 1.0f);

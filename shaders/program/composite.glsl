@@ -40,8 +40,6 @@
     #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
     #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 
-    #define FRAGMENT_SHADER
-
     #define PATH_TRACING_GI 0 // [0 1]
 
     #define RAY_TRACED_SHADOWS 0 // [0 1]
@@ -138,7 +136,11 @@
 
     uniform sampler2D colortex15;
 
-    uniform float dhFarPlane;
+    #ifdef DISTANT_HORIZONS
+        uniform float dhFarPlane;
+    #else
+        float dhFarPlane = far;
+    #endif
 
     const mediump float sunPathRotation = -40.0f;
 
@@ -1274,7 +1276,7 @@
                 currentColor = mix2(currentColor, cloudColor.xyz, cloudColor.a);
 
                 mediump float detectSky = texture2D(colortex5, TexCoords).g;
-                mediump float detectEntity = texture2D(colortex12, TexCoords).r;
+                mediump float detectEntity = texture2D(colortex12, TexCoords).g;
 
                 vec3 rawLight = LightmapColor;
                 if(detectSky < 1.0) {

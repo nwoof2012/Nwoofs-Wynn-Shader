@@ -15,7 +15,7 @@
 
         vec3 sum = vec3(0.0);
         
-        vec3 baseLight = texture2D(colortex2,uv).rgb;
+        vec3 baseLight = decodeLight(texture2D(colortex2,uv).rgb,MAX_LIGHT);
 
         float totalWeight = 0.0;
         
@@ -31,7 +31,7 @@
 
             if(weight > 1.0) continue;
 
-            sum += texture2D(colortex2, uv + offset).rgb;
+            sum += decodeLight(texture2D(colortex2, uv + offset).rgb,MAX_LIGHT);
             totalWeight += weight;
         }
 

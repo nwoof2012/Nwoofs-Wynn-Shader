@@ -1,5 +1,5 @@
 #if defined FRAGMENT_SHADER && defined COMPOSITE_3
-    #ifdef SCENE_AWARE_LIGHTING
+    #if LIGHTING_MODE > 0
         vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor) {
             vec3 rawLight = LightmapColor.xyz;
 
@@ -7,7 +7,7 @@
             
             float aoValue = 1.0;
             #ifdef AO
-                if(isDistant == 1) aoValue = DHcalcAO(TexCoords, foot_pos, 25, depthtex0, colortex1);
+                if(isDistant == 1) aoValue = DHcalcAO(TexCoords, foot_pos, 25, colortex6, colortex1);
                 else aoValue = calcAO(TexCoords, foot_pos, 25, depthtex0, colortex1);
             #endif
 
@@ -40,6 +40,25 @@
 #elif defined FRAGMENT_SHADER && defined COMPOSITE_2
     #define FLICKER_INTENSITY 0.01
     #define FLICKER_SPEED 0.06
+
+    vec3 calcRim(vec3 viewDir, vec3 normal, vec3 worldColor, vec3 rimTint) {
+        float normalViewDir = dot(normal, viewDir);
+        float rim = smoothstep(0.8,1.1,pow2(1 - clamp(1 + normalViewDir, 0, 1),0.5));
+        return mix2(worldColor, rimTint, rim);
+    }
+    vec3 calcSpec(vec3 viewDir, vec3 lightDir, vec3 normal, vec3 worldColor, vec3 specTint, float specIntensity) {
+        float normalViewDir = dot(viewDir + lightDir, normal);
+        float gloss = smoothstep(0.75,1.1,pow2(1 - normalViewDir, 0.5)) * specIntensity;
+        return mix2(worldColor, specTint, gloss);
+    }
+
+    float specFactor(vec3 viewPos, vec3 lightPos, vec3 normal, float shine, float intensity) {
+        vec3 R = reflect(lightPos, normal);
+
+        float spec = pow2(max(dot(viewPos, R),0.0),shine);
+
+        return spec * intensity;
+    }
     
     vec3 lightFlicker(vec3 light) {
         vec2 lightUVs = vec2(frameTimeCounter * FLICKER_SPEED);

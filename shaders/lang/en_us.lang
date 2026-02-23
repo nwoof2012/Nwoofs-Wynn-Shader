@@ -48,6 +48,9 @@ value.SHADOW_DIST.30=§4§k§l§oa §4§l§o30 Chunks §4§k§l§oa
 value.SHADOW_DIST.31=§4§k§l§oa §4§l§o31 Chunks §4§k§l§oa
 value.SHADOW_DIST.32=§4§k§l§oa §4§l§o32 Chunks §4§k§l§oa
 
+option.VARIABLE_PENUMBRA_SHADOWS=§7Variable Penumbra Shadows
+option.VARIABLE_PENUMBRA_SHADOWS.comment=§eWhen enabled, shadow sharpness will increase the further it is from the source
+
 
 option.DAY_R=§cRed
 option.DAY_G=§aGreen

@@ -1,8 +1,6 @@
 #version 460 compatibility
 #define PI 3.14159265358979323846f
 
-precision mediump float;
-
 const int PHYSICS_ITERATIONS_OFFSET = 13;
 const mediump float PHYSICS_DRAG_MULT = 0.048;
 const mediump float PHYSICS_XZ_SCALE = 0.035;
@@ -67,9 +65,10 @@ out vec3 physics_foamColor;
 out float physics_localWaviness;
 
 #include "lib/globalDefines.glsl"
+#include "lib/includes2.glsl"
 
 #include "lib/optimizationFunctions.glsl"
-#include "program/blindness.glsl"
+#include "lib/post/blindness.glsl"
 
 mediump float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -185,10 +184,6 @@ void main() {
 	vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset,1.0)).xyz;
 
 	camDist = distance(worldSpaceVertexPosition, cameraPosition);
-
-	//gl_Position.y += sin(((ViewW.x + worldTime/10.0f) + (ViewW.z + worldTime/5.0f) * (180.0f/PI))) * 0.25f;
-
-    //gl_Position.y += sin(TexCoords + (worldTime*0.001f));
 
     Color = gl_Color;
     LightmapCoords = (LightmapCoords * 33.05f / 32.0f) - (1.05f / 32.0f);

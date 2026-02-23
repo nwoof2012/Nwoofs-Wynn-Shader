@@ -3,8 +3,6 @@
     //#define ENTITY_SHADOWS
     #define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
 
-    precision mediump float;
-
     varying vec2 TexCoords;
     varying vec4 Color;
 
@@ -60,8 +58,6 @@
     #include "/lib/optimizationFunctions.glsl"
     #include "distort.glsl"
     //#define ENTITY_SHADOWS
-
-    precision mediump float;
 
     varying vec2 TexCoords;
     varying vec4 Color;
