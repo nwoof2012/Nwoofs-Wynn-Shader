@@ -498,6 +498,9 @@ value.DEBUG_MODE.6=§fDepth
 value.DEBUG_MODE.7=§fDistance From Camera
 value.DEBUG_MODE.8=§fWater Depth
 
+option.PARTICLE_RAIN_SUPPORT=§bParticle Rain Support
+option.PARTICLE_RAIN_SUPPORT.comment=§6Patches particle light rendering to work better with Particle Rain
+
 screen.PERFORMANCE=§cPerformance
 
 screen.SKY = §bSky
@@ -551,6 +554,8 @@ screen.SILENT_EXPANSE = §dSilent Expanse
 screen.ANTIALIASING = §aAntialiasing
 
 screen.DEBUG = §fDebug Mode
+
+screen.MISC = §6Miscellaneous
 
 profile.TOASTER=§7Toaster
 profile.POTATO=§3Potato

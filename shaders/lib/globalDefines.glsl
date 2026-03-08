@@ -390,4 +390,14 @@
 // Debug Mode (0 = Base Color, 1 = Normal, 2 = Lighting, 3 = Buffer A, 4 = Buffer B, 5 = Buffer C, 6 = Depth, 7 = Distance From Camera, 8 = Water Depth)
 #define DEBUG_MODE 0 // [0 1 2 3 4 5 6 7 8]
 
+/*<==========================================================>*/
+/*|                                                          |*/
+/*|                          [MISC]                          |*/
+/*|                                                          |*/
+/*<==========================================================>*/
+
+// Distant Horizons Support
 #define DISTANT_HORIZONS
+
+// Particle Rain Support
+//#define PARTICLE_RAIN_SUPPORT

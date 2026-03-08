@@ -22,6 +22,8 @@
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
 
+    uniform float rainStrength;
+
     /* RENDERTARGETS:0,1,2,6,5 */
     void main() {
         vec4 color = texture2D(texture, TexCoords) * Color;
@@ -32,8 +34,14 @@
         
         gl_FragData[0] = color;
         gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5, 1.0);
+        vec3 rainColor = color.xyz;
+        #ifdef PARTICLE_RAIN_SUPPORT
+            rainColor = mix2(rainColor * 0.5, rainColor * 0.25, rainStrength);
+        #else
+            rainColor *= 0.5;
+        #endif
         #if LIGHTING_MODE == 1
-            gl_FragData[2] = vec4(color.xyz * 0.5f, 1.0f);
+            gl_FragData[2] = vec4(encodeLight(rainColor,MAX_LIGHT), 1.0f);
         #else
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
         #endif

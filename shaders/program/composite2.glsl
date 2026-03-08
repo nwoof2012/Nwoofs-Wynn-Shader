@@ -53,6 +53,7 @@
     layout (rgba8) uniform image2D cimage14;
 
     uniform float rainStrength;
+    uniform float rainFactor;
     uniform vec3 sunPosition;
 
     uniform float viewWidth;
@@ -224,8 +225,8 @@
         for(float i = 0; i < cloudLevels; i++) {
             vec4 noiseA = texture2D(noiseb,fract(uv * 0.0625f - vec2(0.0, (cloudHeight * i)/cloudLevels) - worldTime));
             vec4 noiseB = texture2D(noiseb,fract(uv * 0.015625f - vec2(0.0, (cloudHeight * i)/cloudLevels) + worldTime));
-            noiseA = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseA, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
-            noiseB = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseB, vec4(CLOUD_DENSITY_RAIN)),rainStrength);
+            noiseA = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseA, vec4(CLOUD_DENSITY_RAIN)),rainFactor);
+            noiseB = mix2(pow2(noiseA, vec4(CLOUD_DENSITY)),pow2(noiseB, vec4(CLOUD_DENSITY_RAIN)),rainFactor);
             finalNoise += noiseA * noiseB * attenuation;
             attenuation += 0.125;
         }
@@ -270,7 +271,7 @@
     }
 
     mediump float get_cloud(vec3 p) {
-        return clamp(texture2D(noiseb,p.xz/p.y).r * texture2D(noiseb,p.xz/p.y * 0.1).r * texture2D(noiseb,p.xz/p.y * 0.05).r * (1.0-(0.3*(1.0 - rainStrength)))*4.0,0,1);
+        return clamp(texture2D(noiseb,p.xz/p.y).r * texture2D(noiseb,p.xz/p.y * 0.1).r * texture2D(noiseb,p.xz/p.y * 0.05).r * (1.0-(0.3*(1.0 - rainFactor)))*4.0,0,1);
     }
 
     mediump float get_cloud(vec3 p, vec3 p2) {
@@ -655,6 +656,12 @@
     /* RENDERTARGETS:0,1,2,3,4,5,6,14 */
     layout(location = 0) out vec4 outcolor;
     layout(location = 1) out vec4 outnormal;
+    layout(location = 2) out vec4 outlight;
+    layout(location = 3) out vec4 outbufferA;
+    layout(location = 4) out vec4 outbufferB;
+    layout(location = 5) out vec4 outbufferC;
+    layout(location = 6) out vec4 outbufferD;
+    layout(location = 7) out vec4 outbufferE;
 
     void main() {
         timeFunctionFrag();
@@ -707,7 +714,7 @@
         mediump float minLight = mix2(MIN_LIGHT, MIN_FOLIAGE_LIGHT, step(isFoliage, 0.5));
 
         vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
-        shadowLerp = mix2(shadowLerp, vec3(0.0), rainStrength);
+        shadowLerp = mix2(shadowLerp, vec3(0.0), rainFactor);
         if(depth2 >= 1.0) shadowLerp = vec3(1.0 - timeBlendFactor);
 
         /*vec3 ambientLight = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*SHADOW_BRIGHTNESS, sunlightAlbedo*1.5, max(vec3(step(isFoliage, 0.5)),shadowLerp));
@@ -761,7 +768,7 @@
                     color.rgb = mix2(color.rgb, clouds.rgb,clouds.a);
                 }
 
-                #if LIGHTING_MODE > 0 && defined BLOOM
+                #if LIGHTING_MODE > 0
                     if(detectSky == 1.0) {
                         #ifdef VOLUMETRIC_LIGHTING
                             finalLight = vec4(mix2(light, decodeLight(texture2D(colortex2, texCoord).xyz,MAX_LIGHT)*texture2D(colortex2, texCoord).a + light, 1 - clouds.a),texture2D(colortex2, texCoord).a);
@@ -770,7 +777,7 @@
                         #endif
                     }
                 #else
-                    finalLight = vec4(texture2D(colortex2, texCoord).xyz*2.5, 1.0);
+                    finalLight = vec4(texture2D(colortex2, texCoord).xyz*2.5, texture2D(colortex2, texCoord).a);
                 #endif
             #endif
         } else {
@@ -960,12 +967,12 @@
         #endif
 
         outcolor = vec4(pow2(color.xyz, vec3(1/GAMMA)), 1.0);
-        gl_FragData[2] = encodeLight(finalLight,MAX_LIGHT);
-        gl_FragData[3] = texture2D(colortex3, texCoord);
-        gl_FragData[4] = texture2D(colortex4, texCoord);
-        gl_FragData[5] = texture2D(colortex5, texCoord);
-        gl_FragData[6] = texture2D(colortex6, texCoord);
-        gl_FragData[7] = vec4(shadowLerp, 1.0);
+        outlight = encodeLight(finalLight,MAX_LIGHT);
+        outbufferA = texture2D(colortex3, texCoord);
+        outbufferB = texture2D(colortex4, texCoord);
+        outbufferC = texture2D(colortex5, texCoord);
+        outbufferD = texture2D(colortex6, texCoord);
+        outbufferE = vec4(shadowLerp, 1.0);
     }
 #endif
 

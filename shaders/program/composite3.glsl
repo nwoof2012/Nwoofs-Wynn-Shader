@@ -667,6 +667,14 @@
         return bias + scale * pow2(1.0 - cosTheta, power);
     }
 
+    float calcWaterDepth(vec3 pos, vec3 waterPos) {
+        vec3 ray = normalize2(pos - cameraPos);
+        vec3 ray2 = normalize2(waterPos - cameraPos);
+        float rayDist = getDepthMask(depthtex1, cSampler12)*dhFarPlane - getDepthMask(depthtex0, cSampler11)*dhFarPlane;
+        float waterDepth = max(rayDist,0f) * abs(ray.y);
+        return waterDepth;
+    }
+
     mediump vec3 waterFunction(vec2 coords, vec3 noise, float lightBrightness, out vec2 refractionUVs) {
         mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
         mediump float isRain = texture2D(colortex3, TexCoords).r;
@@ -674,23 +682,27 @@
         mediump vec2 TexCoords2 = coords;
         mediump float underwaterDepth = linearizeDepth(texture2D(depthtex0,coords).x,near,far);
         mediump float underwaterDepth2 = linearizeDepth(texture2D(depthtex1,coords).x,near,far);
+        mediump vec3 worldPos = screenToWorld(coords, clamp(texture2D(depthtex0,coords).x,0,1));
+        mediump vec3 worldPos2 = screenToWorld(coords, clamp(texture2D(depthtex1,coords).x,0,1));
+        vec3 ray = normalize2(worldPos - cameraPosition);
+        float rayDistance = distance(worldPos2, worldPos);
+        float waterDepth = underwaterDepth2 - underwaterDepth;
         refractionUVs = vec2(0.0);
         #ifdef WATER_REFRACTION
             if(isRain == 1.0) {
                 refractionUVs = calcRefraction(coords, distanceFromCamera*2f, noise.xz);
-                TexCoords2 += refractionUVs;
+                vec2 testUVs = TexCoords2 + refractionUVs;
+                if(texture2D(colortex5, testUVs).r >= 1.0) TexCoords2 = testUVs;
                 underwaterDepth = linearizeDepth(texture2D(depthtex0,coords).x,near,far);
                 underwaterDepth2 = linearizeDepth(texture2D(depthtex1,coords).x,near,far);
             }
         #endif
-        mediump vec3 waterColor = mix2(vec3(0.2f, 0.4f, 0.44f), vec3(0.0f, 0.2f, 0.22f), smoothstep(0,4,(underwaterDepth2 - underwaterDepth)));
+        mediump vec3 waterColor = mix2(vec3(0.2f, 0.4f, 0.44f), vec3(0.0f, 0.2f, 0.22f), smoothstep(0,4,(waterDepth)));
         /*if(underwaterDepth >= 1.0) {
             //waterColor = vec3(0.0f, 0.2f, 0.22f);
             return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1.85),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85)), vec3(GAMMA));
         }*/
 
-        mediump vec3 worldPos = screenToWorld(coords, clamp(texture2D(depthtex0,coords).x,0,1));
-        mediump vec3 worldPos2 = screenToWorld(coords, clamp(texture2D(depthtex1,coords).x,0,1));
         mediump vec3 viewDir = normalize2(cameraPosition - worldPos);
 
         mediump vec3 sunDir = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
@@ -705,7 +717,7 @@
             finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
             return pow2(finalColor, vec3(GAMMA));
         }
-        mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,smoothstep(0,1.5,(underwaterDepth2 - underwaterDepth)));
+        mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,smoothstep(0,1.5,(waterDepth)));
 
         mediump vec3 reflectionColor = vec3(1.0);
         float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
@@ -1014,27 +1026,28 @@
     #include "/lib/lighting/lighting.glsl"
 
     /* RENDERTARGETS:0 */
+    layout(location = 0) out vec4 outcolor;
 
     void main() {
         #if DEBUG == 1
             #if DEBUG_MODE == 0
-                gl_FragData[0] = texture2D(colortex0, TexCoords);
+                outcolor = texture2D(colortex0, TexCoords);
             #elif DEBUG_MODE == 1
-                gl_FragData[0] = abs(texture2D(colortex1, TexCoords) * 2 - 1);
+                outcolor = abs(texture2D(colortex1, TexCoords) * 2 - 1);
             #elif DEBUG_MODE == 2
-                gl_FragData[0] = texture2D(colortex2, TexCoords);
+                outcolor = texture2D(colortex2, TexCoords);
             #elif DEBUG_MODE == 3
-                gl_FragData[0] = texture2D(colortex3, TexCoords);
+                outcolor = texture2D(colortex3, TexCoords);
             #elif DEBUG_MODE == 4
-                gl_FragData[0] = texture2D(colortex4, TexCoords);
+                outcolor = texture2D(colortex4, TexCoords);
             #elif DEBUG_MODE == 5
-                gl_FragData[0] = texture2D(colortex5, TexCoords);
+                outcolor = texture2D(colortex5, TexCoords);
             #elif DEBUG_MODE == 6
-                gl_FragData[0] = vec4(getDepthMask(colortex13, cSampler11));
+                outcolor = vec4(getDepthMask(colortex13, cSampler11));
             #elif DEBUG_MODE == 7
-                gl_FragData[0] = vec4(getDistMask(colortex6)/dhFarPlane);
+                outcolor = vec4(getDistMask(colortex6)/dhFarPlane);
             #elif DEBUG_MODE == 8
-                gl_FragData[0] = vec4(linearizeDepth(texture2D(depthtex1, TexCoords).x,near,far) - linearizeDepth(texture2D(depthtex0, TexCoords).x,near,far));
+                outcolor = vec4(linearizeDepth(texture2D(depthtex1, TexCoords).x,near,far) - linearizeDepth(texture2D(depthtex0, TexCoords).x,near,far));
             #endif
             return;
         #endif
@@ -1321,7 +1334,7 @@
                                 if(isBiomeEnd) Albedo.xyz = mix2(Albedo.xyz, calcHDR(Albedo.xyz, SE_EXP, 5.0, 16, 8), SE_EXP_BLEND); else Albedo.xyz = mix2(Albedo.xyz, calcHDR(Albedo.xyz, NORM_EXP, 5.0, 16, 8), NORM_EXP_BLEND);
                             #endif
                             Albedo = calcTonemap(Albedo);
-                            gl_FragData[0] = vec4(Albedo, 1.0);
+                            outcolor = vec4(Albedo, 1.0);
                             return;
                         } else {
                             mediump vec3 sunDir = normalize2(mat3(gbufferModelViewInverse) * sunPosition);
@@ -1365,7 +1378,7 @@
                         }
                     #endif
                     Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
-                    gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
+                    outcolor = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
                 } else {
                     LightmapColor = decodeLight(texture2D(colortex2, TexCoords.xy).rgba,MAX_LIGHT);
                     #ifdef BLOOM
@@ -1383,7 +1396,7 @@
                     #endif
                     Albedo.xyz = blindEffect(Albedo.xyz, TexCoords);
                     Albedo.xyz = mix2(Albedo.xyz, vec3(0), blindness);
-                    gl_FragData[0] = vec4(currentColor * Albedo, 1.0f);
+                    outcolor = vec4(currentColor * Albedo, 1.0f);
                 }
                 return;
             }
@@ -1410,7 +1423,7 @@
                         #endif
                     }
                 #endif
-                gl_FragData[0] = vec4(pow2(Albedo, vec3(1.0/GAMMA)),1.0);
+                outcolor = vec4(pow2(Albedo, vec3(1.0/GAMMA)),1.0);
                 return;
             }
             mediump vec3 LightmapColor2 = texture2D(colortex7,TexCoords2).rgb + lightBrightness;
@@ -1502,7 +1515,7 @@
                 Diffuse.xyz = mix2(Diffuse.xyz, vignetteColor, vignetteAlpha);
             #endif
 
-            gl_FragData[0] = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
+            outcolor = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
         #else
             vec4 Albedo = texture2D(colortex0,TexCoords);
             Albedo.xyz = pow2(Albedo.xyz, vec3(GAMMA));
@@ -1542,7 +1555,7 @@
             #endif
 
             Albedo.xyz = pow2(Albedo.xyz, vec3(1/GAMMA));
-            gl_FragData[0] = Albedo;
+            outcolor = Albedo;
         #endif
     }
 #endif

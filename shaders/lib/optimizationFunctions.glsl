@@ -376,3 +376,52 @@ vec4 encodeLight(vec4 light, float maxLight) {
 vec4 decodeLight(vec4 encodedLight, float maxLight) {
     return vec4(exp2(encodedLight.xyz * log2(maxLight + 1.0)) - 1.0,encodedLight.w);
 }
+
+#define BASE 256.0
+#define MAX_PACKED_VEC4 (BASE*BASE*BASE*BASE)
+
+float encodeVec4Float(vec4 v, float maxValue) {
+    // normalize each channel to [0,1] with log scale if needed
+    vec4 nv = log2(1.0 + v) / log2(1.0 + maxValue);
+
+    // encode into single float
+    float f = nv.x
+            + nv.y / BASE
+            + nv.z / (BASE*BASE)
+            + nv.w / (BASE*BASE*BASE);
+
+    // normalized to [0,1] (just to be safe)
+    return f / (1.0 + 1.0/BASE + 1.0/(BASE*BASE) + 1.0/(BASE*BASE*BASE));
+}
+
+vec4 decodeVec4Float(float f, float maxValue) {
+    float scale = 1.0 + 1.0/BASE + 1.0/(BASE*BASE) + 1.0/(BASE*BASE*BASE);
+    f *= scale;
+
+    float x = fract(f);
+    float y = fract(f * BASE);
+    float z = fract(f * BASE * BASE);
+    float w = fract(f * BASE * BASE * BASE);
+
+    return exp2(vec4(x, y, z, w) * log2(1.0 + maxValue)) - 1.0;
+}
+
+const uint maxEncode = 1 << 24;
+
+float packColor(vec3 color, float maxValue) {
+    float x = color.x/maxValue;
+    float y = color.y/maxValue;
+    float z = color.z/maxValue;
+    uint packedColor = (uint(x*255.0f) << 16) | (uint(y*255.0f) << 8) | uint(z*255.0f);
+    float packedFloat = (float(packedColor)/float(maxEncode));
+    return packedFloat;
+}
+
+vec3 unpackColor(float f, float maxValue) {
+    float unpacked = f * float(maxEncode);
+    float r = floor(max(unpacked/65536.0f,0.0f));
+    float g = floor(mod(max(unpacked - 256.0f,0.0f), 65536.0f) / 256.0f);
+    float b = mod(max(unpacked - 65736.0f,0.0f), 256.0f);
+
+    return vec3(r/255.0f, g/255.0f, b/255.0f) * maxValue;
+}
