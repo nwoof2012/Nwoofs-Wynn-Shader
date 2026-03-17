@@ -13,8 +13,8 @@
 // Scene Aware Lighting
 #define SCENE_AWARE_LIGHTING 2 // [0 2]
 
-// Ambient Occlusion
-#define AO
+// Ambient Occlusion (0 = Off, 1 = SSAO, 2 = GTAO)
+#define AO 2 // [0 1 2]
 
 //<----------------------[Light Colors]---------------------->\\
 
@@ -182,7 +182,7 @@
 #define SSR 1 // [0 1 2 3]
 
 // World Curvature
-#define WORLD_CURVATURE
+//#define WORLD_CURVATURE
 
 //<---------------------------[Fog]-------------------------->\\
 
@@ -395,9 +395,6 @@
 /*|                          [MISC]                          |*/
 /*|                                                          |*/
 /*<==========================================================>*/
-
-// Distant Horizons Support
-#define DISTANT_HORIZONS
 
 // Particle Rain Support
 //#define PARTICLE_RAIN_SUPPORT

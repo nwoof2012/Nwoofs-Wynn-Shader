@@ -165,7 +165,7 @@
         uniform float dhRenderDistance;
     #else
         float dhFarPlane = far;
-        float dhRenderDistance = renderDistance;
+        float dhRenderDistance = far/16;
     #endif
 
     void main() {

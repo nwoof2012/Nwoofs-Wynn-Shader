@@ -268,13 +268,34 @@
         return nf*nf*nf*nf;
     }
 
+    mediump float random(in vec2 p) {
+        return fract(sin(p.x*456.0+p.y*56.0)*100.0);
+    }
+
+    vec2 smoothUVs(in vec2 v) {
+        return v*v*(3.0-2.0*v);
+    }
+
+    mediump float smooth_noise(in vec2 p) {
+        vec2 f = smoothUVs(fract(p));
+        mediump float a = random(floor(p));
+        mediump float b = random(vec2(ceil(p.x),floor(p.y)));
+        mediump float c = random(vec2(floor(p.x),ceil(p.y)));
+        mediump float d = random(ceil(p));
+        return mix2(
+            mix2(a,b,f.x),
+            mix2(c,d,f.x),
+            f.y
+        );
+    }
+
     vec3 waterDisplace(vec3 worldPos) {
-        float wave1 = sin(worldPos.x + frameTimeCounter * 0.8);
-        float wave2 = sin(worldPos.z * 1.3 + frameTimeCounter * 1.1);
+        float wave1 = smooth_noise(worldPos.xz * 0.75 + frameTimeCounter * 0.8);
+        float wave2 = smooth_noise(worldPos.xz * 0.975 + frameTimeCounter * 1.1);
 
-        float waveHeight = (wave1 + wave2) * 0.1 - 0.2;
+        float waveHeight = (wave1 + wave2) * 0.2 - 0.4;
 
-        return worldPos + vec3(0.0, waveHeight, 0.0) - cameraPosition;
+        return vec3(0.0, waveHeight, 0.0);
     }
 
     void main() {
@@ -297,9 +318,9 @@
             isWater = 1f;
             #ifdef WATER_WAVES
                 vec3 waterHeight = waterDisplace(world_pos);
-                vec4 waterDisplacementAmount = gbufferProjection * gbufferModelView * vec4(waterHeight,1.0);
-                waterShadingHeight = distance(foot_pos, waterHeight);
-                gl_Position = waterDisplacementAmount;
+                vec4 wavePos = vec4(view_pos + (gbufferModelView * vec4(waterHeight,0.0)).xyz,1.0);
+                gl_Position = gbufferProjection * wavePos;
+                waterShadingHeight = distance(view_pos, wavePos.xyz);
             #endif
         } else {
             isWater = 1f;

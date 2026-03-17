@@ -6,9 +6,9 @@
             vec3 Normal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
             
             float aoValue = 1.0;
-            #ifdef AO
-                if(isDistant == 1) aoValue = DHcalcAO(TexCoords, foot_pos, 25, colortex6, colortex1);
-                else aoValue = calcAO(TexCoords, foot_pos, 25, depthtex0, colortex1);
+            #if AO > 0
+                aoValue = fastBilateral(colortex6,TexCoords,250.0,1.0).z;
+                //aoValue = texture2D(colortex6,TexCoords).z;
             #endif
 
             if(isDistant == 1) {
@@ -35,6 +35,11 @@
             //Diffuse3 = mix2(Diffuse3, Diffuse4, clamp(sunDist, 0, 0.75));
 
             return Diffuse3;
+        }
+        vec3 calcSpec(vec3 viewDir, vec3 lightDir, vec3 normal, vec3 worldColor, vec3 specTint, float specIntensity) {
+            float normalViewDir = dot(viewDir + lightDir, normal);
+            float gloss = smoothstep(0.75,1.1,pow2(1 - normalViewDir, 0.5)) * specIntensity;
+            return mix2(worldColor, specTint, gloss);
         }
     #endif
 #elif defined FRAGMENT_SHADER && defined COMPOSITE_2

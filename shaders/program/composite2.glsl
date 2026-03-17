@@ -530,6 +530,8 @@
         return viewSpace.xyz / viewSpace.w;
     }
 
+    #include "/lib/lighting/ambientOcclusion.glsl"
+
     uniform bool isBiomeEnd;
 
     vec3 cloudLight;
@@ -816,7 +818,12 @@
         }*/
 
         #if LIGHTING_MODE == 1
-            if(detectSky < 1.0 || depth2 < 1.0) {
+            #ifdef VOXY
+                bool isLit = detectSky < 1.0;
+            #else
+                bool isLit = detectSky < 1.0 || depth2 < 1.0;
+            #endif
+            if(isLit) {
                 vec2 res = vec2(1080/viewHeight * viewWidth, 1080);
                 /*vec3 bounce =
                 (texture2D(colortex0, texCoord + vec2( 2, 1)/res).rgb +
@@ -972,6 +979,11 @@
         outbufferB = texture2D(colortex4, texCoord);
         outbufferC = texture2D(colortex5, texCoord);
         outbufferD = texture2D(colortex6, texCoord);
+        #if AO > 0
+            vec3 foot_pos = screenToFoot(texCoord, depth);
+            if(depth >= 1.0) outbufferD.z = DHcalcAO(texCoord, foot_pos, 25, colortex6, colortex1);
+            else outbufferD.z = calcAO(texCoord, foot_pos, 25, depthtex0, colortex1);
+        #endif
         outbufferE = vec4(shadowLerp, 1.0);
     }
 #endif

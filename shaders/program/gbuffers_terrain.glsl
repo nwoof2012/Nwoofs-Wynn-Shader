@@ -10,8 +10,15 @@
     #define TERRAIN
 
     #define WAVING_FOLIAGE
-    #define FOLIAGE_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
-    #define FOLIAGE_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+
+    #define WAVING_GRASS
+    #define GRASS_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    #define GRASS_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+
+    #define WAVING_LEAVES
+    #define LEAVES_SPEED 0.5f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    #define LEAVES_INTENSITY 0.5f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    
     #define FOLIAGE_WAVE_DISTANCE 4 // [2 4 8 16 32]
 
     #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
@@ -512,7 +519,7 @@
                 gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);
             #endif
             gl_FragData[3] = vec4(LightmapCoords, isGrass, 1.0);
-            gl_FragData[4] = vec4(0.0, 1.0, isReflective, 1.0);
+            gl_FragData[4] = vec4(0.0, 0.0, isReflective, 1.0);
             gl_FragData[5] = vec4(1.0, 0.0, 0.0, 1.0);
         }
     }
@@ -532,8 +539,15 @@
     #define PATH_TRACING_GI 0 // [0 1]
 
     #define WAVING_FOLIAGE
-    #define FOLIAGE_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
-    #define FOLIAGE_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+
+    #define WAVING_GRASS
+    #define GRASS_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    #define GRASS_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+
+    #define WAVING_LEAVES
+    #define LEAVES_SPEED 0.5f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    #define LEAVES_INTENSITY 0.5f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+
     #define FOLIAGE_WAVE_DISTANCE 4 // [2 4 8 16 32]
 
     struct LightSource {
@@ -599,6 +613,8 @@
 
     flat out uint lightData;
 
+    mediump float bottomY = at_midBlock.y - 0.5;
+
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
     const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
     const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
@@ -619,6 +635,17 @@
         wave.y = sin(wind*0.0015 + d2 + d0 + pos.z + pos.y - pos.y) * magnitude;
 
         return wave;
+    }
+
+    vec4 foliageWave(vec3 world, vec3 view, float speed, float intensity) {
+        float windPhase = world.x * 0.2 + world.z * 0.2;
+        float wind = sin(windPhase * 50 + frameTimeCounter * 1.2 * speed) + 0.5 * sin(windPhase * 115 + frameTimeCounter * 2.0 * speed);
+        float heightMask = clamp(1 - bottomY, 0.0, 1.0);
+        float swayAmount = intensity * 0.1;
+        vec2 offsetXZ = vec2(wind * swayAmount * heightMask);
+        vec3 offset = vec3(offsetXZ.x, 0.0, offsetXZ.y);
+        vec4 wavePos = vec4(view + (gbufferModelView * vec4(offset,0.0)).xyz,1.0);
+        return gbufferProjection * wavePos;
     }
 
     vec4 GenerateLightmap(LightSource source) {
@@ -714,8 +741,6 @@
         Tangent = (gl_NormalMatrix * at_tangent.xyz);
         Color = gl_Color;
 
-        mediump float bottomY = at_midBlock.y - 0.5;
-
         at_midBlock2 = at_midBlock;
 
         if(mc_Entity.x == 10001) {
@@ -763,14 +788,13 @@
             vec4 foliage_data = isFoliage == 1.0? vec4(1.0) : vec4(vec3(0.0),1.0);
 
             if((isFoliage == 1.0 || isLeaves == 1.0) && distanceFromCamera <= FOLIAGE_WAVE_DISTANCE * 16f) {
-                float windPhase = world_pos.x * 0.2 + world_pos.z * 0.2;
-                float wind = sin(windPhase + frameTimeCounter * 1.2 * FOLIAGE_SPEED) + 0.5 * sin(windPhase * 2.3 + frameTimeCounter * 2.0 * FOLIAGE_SPEED);
-                float heightMask = clamp(1 - bottomY, 0.0, 1.0);
-                float swayAmount = FOLIAGE_INTENSITY * 0.1;
-                vec2 offsetXZ = vec2(wind * swayAmount * heightMask);
-                vec3 offset = vec3(offsetXZ.x, 0.0, offsetXZ.y);
-                gl_Position += gbufferProjection * gbufferModelView * vec4(offset,0.0);
-                //vec3 waving = vec3(FOLIAGE_INTENSITY * sin(frameTimeCounter * FOLIAGE_SPEED));
+                #ifdef WAVING_GRASS
+                    if(isFoliage == 1.0) gl_Position = foliageWave(world_pos, view_pos, GRASS_SPEED, GRASS_INTENSITY);
+                #endif
+                #ifdef WAVING_LEAVES
+                    if(isLeaves == 1.0) gl_Position = foliageWave(world_pos, view_pos, LEAVES_SPEED, LEAVES_INTENSITY);
+                #endif
+                //vec3 waving = vec3(GRASS_INTENSITY * sin(frameTimeCounter * GRASS_SPEED));
                 //gl_Position += gbufferProjection * gbufferModelView * (vec4(waving.x,0.0,waving.x,0.0)*(clamp(pow(1 - bottomY,1.5),0,1)) * 0.125);
             }
         #endif

@@ -1399,7 +1399,38 @@
             gl_FragData[5] = texture2D(colortex5,TexCoords);
         #else
             gl_FragData[0] = texture2D(colortex0,TexCoords);
-            gl_FragData[1] = texture2D(colortex1,TexCoords);
+            #ifdef VOXY
+                mediump float waterTest = texture2D(colortex5, TexCoords).r;
+
+                if(waterTest >= 1.0)
+                {
+                    vec3 worldPos = screenToWorld(TexCoords, texture2D(depthtex0, TexCoords).x);
+                    vec3 Normal = normalize2(texture2D(colortex1, TexCoords).rgb * 2.0f -1.0f);
+                    vec3 an = abs(Normal);
+                    vec2 uvX = worldPos.zy;
+                    vec2 uvY = worldPos.xz;
+                    vec2 uvZ = worldPos.xy;
+
+                    vec2 waterUV =
+                        uvX * step(max(an.y, an.z), an.x) +
+                        uvY * step(max(an.x, an.z), an.y) +
+                        uvZ * step(max(an.x, an.y), an.z);
+
+                    vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
+                    vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
+
+                    mat3 tbn = tbnNormalTangent((gbufferModelView * vec4(Normal,1.0)).xyz, Tangent);
+
+                    vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
+                    Normal = tbn * finalNoise.xyz;
+
+                    gl_FragData[1] = vec4(Normal * 0.5 + 0.5, 1.0);
+                } else {
+                    gl_FragData[1] = texture2D(colortex1,TexCoords);
+                }
+            #else
+                gl_FragData[1] = texture2D(colortex1,TexCoords);
+            #endif
             gl_FragData[2] = texture2D(colortex2,TexCoords);
             gl_FragData[3] = texture2D(colortex3,TexCoords);
             gl_FragData[4] = texture2D(colortex4,TexCoords);
