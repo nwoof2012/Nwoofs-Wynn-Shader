@@ -215,6 +215,11 @@ value.SSR.3=§fMetal Only
 option.WORLD_CURVATURE=§aWorld Curvature
 option.SSR.comment = §eSimulates the curvature of Earth
 
+option.POM=§9Parallax Occlusion Mapping §7(§9POM§7)
+value.POM.false=§cOff
+value.POM.true=§aOn
+option.POM.comment=§eAdds dynamic depth to blocks
+
 option.WATER_WAVES=§9Water Waves
 option.WATER_WAVES.comment=§6Enables 3§7-§6dimensional waves for water
 

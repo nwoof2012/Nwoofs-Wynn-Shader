@@ -75,6 +75,8 @@
 
     layout (rgba8) uniform image2D cimage11;
 
+    in vec3 Normal;
+
     #include "/lib/globalDefines.glsl"
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
@@ -118,7 +120,7 @@
         return tmp.xyz / tmp.w;
     }
 
-    /* DRAWBUFFERS:052 */
+    /* DRAWBUFFERS:0521 */
     layout(location = 0) out vec4 outputColor;
 
     void noonFunc(float time, float timeFactor) {
@@ -298,7 +300,7 @@
         vec3 viewDir = normalize2(pos);
         float invertSunMoon = 1.0;
         outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/GAMMA)),vec3(0),blindness),1.0);
-        mediump float sunMaxDistance = 0.11;
+        mediump float sunMaxDistance = 0.22;
         mediump float distToSun = length((texCoord - sunScreenPos) * vec2(aspectRatio, 1.0));
         float sunAngle = acos(dot(viewDir, sunDirection));
         mediump float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, sunAngle);
@@ -310,7 +312,7 @@
         vec3 sunColor2 = vec3(1.0, 0.7, 0.5);
         vec3 moonColor = vec3(1.0, 1.0, 1.1);
         vec3 finalSunColor = sunColor;
-        vec3 outputColorSun = mix2(sunColor2, finalSunColor,sunGradient);
+        vec3 outputColorSun = sunColor * pow2(sunGradient, 4.0);
         vec2 moonUV = moonUVs(moonDirection, viewDir, moonMaxDistance);
         vec4 outputColorMoon = texture2D(moon,getMoonCoords(1).xy).xyzw;
         outputColorMoon = mix2(vec4(outputColorMoon.xyz, 0.0), outputColorMoon.xyzw, outputColorMoon.w);
@@ -318,24 +320,27 @@
         outputColorMoon.xyz = clamp(outputColorMoon.xyz,0,1);
         if(moonAngle > moonMaxDistance) outputColorMoon.w = 0.0;
         float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
-        vec4 outputSunMoon = vec4(sunColor, smoothstep(0.0, 0.75, sunGradient));
+        vec4 outputSunMoon = vec4(outputColorSun, 1.0);
         vec4 outputLight = vec4(outputColorSun * smoothstep(0.0, 0.75, sunGradient), smoothstep(0.0, 0.75, sunGradient));
         if(detectSunMoon > 0.99) {
-            outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.5 * moonGradient);
+            outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.25 + 0.5 * moonGradient);
             outputSunMoon = outputColorMoon.xyzw;
             outputLight = vec4(0.0);
+            outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
         } else {
             gl_FragData[2] = encodeLight(outputLight,MAX_LIGHT);
+            outputColor.rgb = outputColor.rgb + outputSunMoon.xyz;
         }
         outputSunMoon *= 1 - rainStrength;
         if(worldTime2%24000 < 12000) {
             gl_FragData[3] = vec4(vec3(distToSun * 5.0),1.0);
         }
-        outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
         outputColor = mix2(outputColor, vec4(1.0), step(0.5, starData.a));
         gl_FragData[1] = vec4(0.0, 1.0, 0.0, 1.0);
 
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(1.0));
+
+        gl_FragData[3] = vec4((gbufferModelViewInverse * vec4(Normal,1.0)).xyz * 0.5 + 0.5, 1.0);
     }
 #endif
 
@@ -354,6 +359,8 @@
     in vec2 vaUV0;
 
     out vec4 starData;
+
+    out vec3 Normal;
 
     flat out vec3 upVec, sunVec;
 
@@ -382,6 +389,8 @@
         gl_Position = ftransform();
         starData = vec4(gl_Color.rgb, float(gl_Color.r == gl_Color.g && gl_Color.g == gl_Color.b && gl_Color.r > 0.0));
         TexCoords = vaUV0;
+
+        Normal = normalize(gl_NormalMatrix * gl_Normal);
 
         upVec = normalize(gbufferModelView[1].xyz);
         sunVec = GetSunVector();

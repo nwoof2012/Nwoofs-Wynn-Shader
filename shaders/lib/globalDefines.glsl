@@ -170,6 +170,9 @@
 #define WATER_REFRACTION
 #define WATER_FOAM
 
+// Style
+#define WATER_STYLE 1 // [0 1]
+
 /*<==========================================================>*/
 /*|                                                          |*/
 /*|                          [WORLD]                         |*/
@@ -180,6 +183,12 @@
 
 // Screen Space Reflections (0 = Off, 1 = On, 2 = Water Only, 3 = Metal Only)
 #define SSR 1 // [0 1 2 3]
+
+#if SSR > 0
+    /*
+        const int colortex2Format = RGBA16F;
+    */
+#endif
 
 // World Curvature
 //#define WORLD_CURVATURE

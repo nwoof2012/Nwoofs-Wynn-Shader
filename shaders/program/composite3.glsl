@@ -691,68 +691,72 @@
     }
 
     mediump vec3 waterFunction(vec2 coords, vec3 noise, float lightBrightness, out vec2 refractionUVs) {
-        mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-        mediump float isRain = texture2D(colortex3, TexCoords).r;
-        mediump vec2 refractionFactor = vec2(0);
-        mediump vec2 TexCoords2 = coords;
-        mediump float underwaterDepth = linearizeDepth(texture2D(depthtex0,coords).x,near,far);
-        mediump float underwaterDepth2 = linearizeDepth(texture2D(depthtex1,coords).x,near,far);
-        mediump vec3 worldPos = screenToWorld(coords, clamp(texture2D(depthtex0,coords).x,0,1));
-        mediump vec3 worldPos2 = screenToWorld(coords, clamp(texture2D(depthtex1,coords).x,0,1));
-        vec3 ray = normalize2(worldPos - cameraPosition);
-        float rayDistance = distance(worldPos2, worldPos);
-        float waterDepth = underwaterDepth2 - underwaterDepth;
-        refractionUVs = vec2(0.0);
-        #ifdef WATER_REFRACTION
-            if(isRain == 1.0) {
-                refractionUVs = calcRefraction(coords, distanceFromCamera*2f, noise.xz);
-                vec2 testUVs = TexCoords2 + refractionUVs;
-                if(texture2D(colortex5, testUVs).r >= 1.0) TexCoords2 = testUVs;
-                underwaterDepth = linearizeDepth(texture2D(depthtex0,coords).x,near,far);
-                underwaterDepth2 = linearizeDepth(texture2D(depthtex1,coords).x,near,far);
-            }
-        #endif
-        mediump vec3 waterColor = mix2(vec3(0.2f, 0.4f, 0.44f), vec3(0.0f, 0.2f, 0.22f), smoothstep(0,4,(waterDepth)));
-        /*if(underwaterDepth >= 1.0) {
-            //waterColor = vec3(0.0f, 0.2f, 0.22f);
-            return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1.85),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85)), vec3(GAMMA));
-        }*/
-
-        mediump vec3 viewDir = normalize2(cameraPosition - worldPos);
-
-        mediump vec3 sunDir = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
-        #ifdef VOXY
-            if(texture2D(colortex3, TexCoords).y >= 1.0) {
-                underwaterDepth = getDepthMask(depthtex0, cSampler11)*dhFarPlane;
-                underwaterDepth2 = getDepthMask(depthtex1, cSampler12)*dhFarPlane;
-                //mediump vec3 waterColor = vec3(0.0f, 0.2f, 0.22f) * 0.8;
-                mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1);
-                mediump vec3 reflectionColor = vec3(1.0);
-                float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
-                finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
-                return pow2(vec3(0.0f, 0.2f, 0.22f), vec3(GAMMA));
-            }
+        #if WATER_STYLE == 0
+            return pow2(texture2D(colortex0, coords).rgb, vec3(GAMMA));
         #else
-            if(texture2D(depthtex0,TexCoords).x == 1.0) {
-                underwaterDepth = getDepthMask(depthtex0, cSampler11)*dhFarPlane;
-                underwaterDepth2 = getDepthMask(depthtex1, cSampler12)*dhFarPlane;
-                //mediump vec3 waterColor = vec3(0.0f, 0.2f, 0.22f) * 0.8;
-                mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1);
-                mediump vec3 reflectionColor = vec3(1.0);
-                float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
-                finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
-                return pow2(finalColor, vec3(GAMMA));
-            }
+            mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+            mediump float isRain = texture2D(colortex3, TexCoords).r;
+            mediump vec2 refractionFactor = vec2(0);
+            mediump vec2 TexCoords2 = coords;
+            mediump float underwaterDepth = linearizeDepth(texture2D(depthtex0,coords).x,near,far);
+            mediump float underwaterDepth2 = linearizeDepth(texture2D(depthtex1,coords).x,near,far);
+            mediump vec3 worldPos = screenToWorld(coords, clamp(texture2D(depthtex0,coords).x,0,1));
+            mediump vec3 worldPos2 = screenToWorld(coords, clamp(texture2D(depthtex1,coords).x,0,1));
+            vec3 ray = normalize2(worldPos - cameraPosition);
+            float rayDistance = distance(worldPos2, worldPos);
+            float waterDepth = underwaterDepth2 - underwaterDepth;
+            refractionUVs = vec2(0.0);
+            #ifdef WATER_REFRACTION
+                if(isRain == 1.0) {
+                    refractionUVs = calcRefraction(coords, distanceFromCamera*2f, noise.xz);
+                    vec2 testUVs = TexCoords2 + refractionUVs;
+                    if(texture2D(colortex5, testUVs).r >= 1.0) TexCoords2 = testUVs;
+                    underwaterDepth = linearizeDepth(texture2D(depthtex0,coords).x,near,far);
+                    underwaterDepth2 = linearizeDepth(texture2D(depthtex1,coords).x,near,far);
+                }
+            #endif
+            mediump vec3 waterColor = mix2(vec3(0.2f, 0.4f, 0.44f), vec3(0.0f, 0.2f, 0.22f), smoothstep(0,4,(waterDepth)));
+            /*if(underwaterDepth >= 1.0) {
+                //waterColor = vec3(0.0f, 0.2f, 0.22f);
+                return pow2(clamp(mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1.85),vec3(0.0f, 0.0f, 0.0f),(texture2D(colortex0, TexCoords2).rgb/0.2 * 0.15) + (waterColor*0.85)), vec3(GAMMA));
+            }*/
+
+            mediump vec3 viewDir = normalize2(cameraPosition - worldPos);
+
+            mediump vec3 sunDir = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+            #ifdef VOXY
+                if(texture2D(colortex3, TexCoords).y >= 1.0) {
+                    underwaterDepth = getDepthMask(depthtex0, cSampler11)*dhFarPlane;
+                    underwaterDepth2 = getDepthMask(depthtex1, cSampler12)*dhFarPlane;
+                    //mediump vec3 waterColor = vec3(0.0f, 0.2f, 0.22f) * 0.8;
+                    mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1);
+                    mediump vec3 reflectionColor = vec3(1.0);
+                    float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
+                    finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
+                    return pow2(vec3(0.0f, 0.2f, 0.22f), vec3(GAMMA));
+                }
+            #else
+                if(texture2D(depthtex0,TexCoords).x == 1.0) {
+                    underwaterDepth = getDepthMask(depthtex0, cSampler11)*dhFarPlane;
+                    underwaterDepth2 = getDepthMask(depthtex1, cSampler12)*dhFarPlane;
+                    //mediump vec3 waterColor = vec3(0.0f, 0.2f, 0.22f) * 0.8;
+                    mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,1);
+                    mediump vec3 reflectionColor = vec3(1.0);
+                    float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
+                    finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
+                    return pow2(finalColor, vec3(GAMMA));
+                }
+            #endif
+            mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,smoothstep(0,1.5,(waterDepth)));
+
+            mediump vec3 reflectionColor = vec3(1.0);
+            float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
+            finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
+
+            //finalColor = mix2(finalColor, vec3(1.0), smoothstep(0.95,1.0,dot((gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz, noise.xyz * 2 - 1)));
+
+            return pow2(finalColor, vec3(GAMMA));
         #endif
-        mediump vec3 finalColor = mix2(texture2D(colortex0, TexCoords2).rgb,waterColor,smoothstep(0,1.5,(waterDepth)));
-
-        mediump vec3 reflectionColor = vec3(1.0);
-        float fresnelBlend = waterFresnel(noise.xyz, sunDir, 0.02, 0.1, 5.0);
-        finalColor = mix2(finalColor, vec3(1.0), fresnelBlend);
-
-        //finalColor = mix2(finalColor, vec3(1.0), smoothstep(0.95,1.0,dot((gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz, noise.xyz * 2 - 1)));
-
-        return pow2(finalColor, vec3(GAMMA));
     }
 
     bool isOutOfTexture(vec2 texcoord) {

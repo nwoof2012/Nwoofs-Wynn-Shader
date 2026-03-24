@@ -41,6 +41,8 @@
     #define SE_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
     #define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
 
+    //#define POM
+
     //vec3 dayColor = vec3(1.0f,1.0f,1.0f);
     vec3 dayColor = vec3(DAY_R,DAY_G,DAY_B);
     //vec3 nightColor = vec3(0.9f,1.0f,1.1f);
@@ -75,6 +77,8 @@
     uniform sampler2D lightmap;
     uniform sampler2D depthtex0;
     uniform sampler2D depthtex1;
+    
+    uniform sampler2D noisec;
 
     uniform usampler3D cSampler1;
     uniform usampler3D cSampler2;
@@ -335,6 +339,29 @@
         }
     }
 
+    vec4 blurAlbedo(vec2 uv) {
+        vec4 baseAlbedo = texture2D(gtexture, uv) * Color;
+
+        vec2 uvSize = vec2(atlasSize);
+
+        vec2 i00 = vec2(floor(uv * uvSize))/uvSize;
+        vec2 i01 = vec2(floor(uv.x * uvSize.x), ceil(uv.y * uvSize.y))/uvSize;
+        vec2 i10 = vec2(ceil(uv.x * uvSize.x), floor(uv.y * uvSize.y))/uvSize;
+        vec2 i11 = vec2(ceil(uv * uvSize))/uvSize;
+
+        vec2 f = fract(uv * uvSize);
+
+        vec4 c00 = texture2D(gtexture, i00) * Color;
+        vec4 c01 = texture2D(gtexture, i01) * Color;
+        vec4 c10 = texture2D(gtexture, i10) * Color;
+        vec4 c11 = texture2D(gtexture, i11) * Color;
+
+        vec4 cx0 = mix2(c00, c10, f.x);
+        vec4 cx1 = mix2(c01, c11, f.x);
+
+        return mix2(cx0, cx1, f.y);
+    }
+
     #include "/lib/world/timeCycle.glsl"
 
     /* RENDERTARGETS:0,1,2,13,5,10,6,12*/
@@ -353,7 +380,11 @@
 
             albedo.xyz = pow2(albedo.xyz, vec3(1/GAMMA));
             mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
-
+            
+            #ifdef POM
+                float noiseMap = texture2D(noisec, TexCoords * 16).r;
+                newNormal.xyz *= mix2(0.1, 1.0, noiseMap * smoothstep(0.25,0.75,length(blurAlbedo(TexCoords).xyz)));
+            #endif
             gl_FragData[0] = albedo;
             gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
             #if LIGHTING_MODE == 0

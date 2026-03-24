@@ -102,22 +102,24 @@
 
         mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
 
-        vec3 n = normalize2(worldNormal);
+        #if WATER_STYLE == 1
+            vec3 n = normalize2(worldNormal);
 
-        vec3 an = abs(n);
-        vec2 uvX = world_pos.zy;
-        vec2 uvY = world_pos.xz;
-        vec2 uvZ = world_pos.xy;
+            vec3 an = abs(n);
+            vec2 uvX = world_pos.zy;
+            vec2 uvY = world_pos.xz;
+            vec2 uvZ = world_pos.xy;
 
-        vec2 waterUV =
-            uvX * step(max(an.y, an.z), an.x) +
-            uvY * step(max(an.x, an.z), an.y) +
-            uvZ * step(max(an.x, an.y), an.z);
+            vec2 waterUV =
+                uvX * step(max(an.y, an.z), an.x) +
+                uvY * step(max(an.x, an.z), an.y) +
+                uvZ * step(max(an.x, an.y), an.z);
 
-        vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
-        vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
+            vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
+            vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
 
-        vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
+            vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
+        #endif
 
         vec3 newNormal = Normal.xyz;
 
@@ -133,9 +135,11 @@
             //albedo.a = 0.0f;
             Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
 
-            newNormal = tbnMatrix * finalNoise.xyz;
+            #if WATER_STYLE == 1
+                newNormal = tbnMatrix * finalNoise.xyz;
 
-            newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+                newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+            #endif
         } else {
             albedo = texture2D(colortex0, TexCoords) * Color;
             Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0f, 1.0f);
@@ -147,7 +151,9 @@
         gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, isWaterBlock);
         gl_FragData[5] = vec4(isGlass, 0.0, 0.0, 1.0);
         gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
-        if(isWaterBlock > 0.1f) return;
+        #if WATER_STYLE == 1
+            if(isWaterBlock > 0.1f) return;
+        #endif
         gl_FragData[0] = albedo;
     }
 #endif

@@ -48,6 +48,8 @@
 
     #define WATER_WAVES
 
+    //#define POM
+
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
     #include "/lib/globalDefines.glsl"
@@ -1056,6 +1058,39 @@
 
     /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
 
+    #define LAYERS 4
+    
+    vec2 ParallaxOcclusionMapping( sampler2D depthMap, vec2 uv, vec2 displacement, float pivot ) {
+        const float layerDepth = 1.0 / float( LAYERS );
+        float currentLayerDepth = 0.0;
+
+        vec2 deltaUv = displacement / float( LAYERS );
+        vec2 currentUv = uv + pivot * displacement;
+        float currentDepth = texture2D( depthMap, currentUv ).r;
+
+        for( int i = 0; i < LAYERS; i++ ) {
+            if( currentLayerDepth > currentDepth )
+                break;
+
+            currentUv -= deltaUv;
+            currentDepth = texture2D( depthMap, currentUv ).r;
+            currentLayerDepth += layerDepth;
+        }
+
+        vec2 prevUv = currentUv + deltaUv;
+        float endDepth = currentDepth - currentLayerDepth;
+        float startDepth =
+            texture2D( depthMap, prevUv ).r - currentLayerDepth + layerDepth;
+
+        float w = endDepth / ( endDepth - startDepth );
+
+        return mix2( currentUv, prevUv, w );
+    }
+
+    vec2 ParallaxOcclusionMapping( sampler2D depthMap, vec2 uv, vec2 displacement ) {
+        return ParallaxOcclusionMapping( depthMap, uv, displacement, 0.0 );
+    }
+
     void main() {
         #if LIGHTING_MODE == 0 || !defined BLOOM
             mediump float aspectRatio = float(viewWidth)/float(viewHeight);
@@ -1398,7 +1433,14 @@
             gl_FragData[2] = vec4(LightmapColor, 1.0f);
             gl_FragData[5] = texture2D(colortex5,TexCoords);
         #else
-            gl_FragData[0] = texture2D(colortex0,TexCoords);
+            vec2 TexCoords2 = TexCoords;
+            #ifdef POM
+                if(texture2D(colortex12, TexCoords).g != 1.0 && texture2D(colortex5, TexCoords).r != 1.0)
+                TexCoords2 = ParallaxOcclusionMapping(depthtex0, TexCoords, vec2(0.0, length(texture2D(colortex1,TexCoords).xyz * 2 - 1) * 0.1 / (1 + linearizeDepth(texture2D(depthtex0, TexCoords).r,near,far))));
+
+                if(texture2D(colortex12, TexCoords2).g > 0.0 || texture2D(colortex5, TexCoords).r == 1.0) TexCoords2 = TexCoords;
+            #endif
+            gl_FragData[0] = texture2D(colortex0,TexCoords2);
             #ifdef VOXY
                 mediump float waterTest = texture2D(colortex5, TexCoords).r;
 
@@ -1426,17 +1468,17 @@
 
                     gl_FragData[1] = vec4(Normal * 0.5 + 0.5, 1.0);
                 } else {
-                    gl_FragData[1] = texture2D(colortex1,TexCoords);
+                    gl_FragData[1] = texture2D(colortex1,TexCoords2);
                 }
             #else
-                gl_FragData[1] = texture2D(colortex1,TexCoords);
+                gl_FragData[1] = texture2D(colortex1,TexCoords2);
             #endif
-            gl_FragData[2] = texture2D(colortex2,TexCoords);
-            gl_FragData[3] = texture2D(colortex3,TexCoords);
-            gl_FragData[4] = texture2D(colortex4,TexCoords);
-            gl_FragData[5] = texture2D(colortex5,TexCoords);
-            gl_FragData[6] = texture2D(colortex6,TexCoords);
-            gl_FragData[7] = texture2D(colortex10,TexCoords);
+            gl_FragData[2] = texture2D(colortex2,TexCoords2);
+            gl_FragData[3] = texture2D(colortex3,TexCoords2);
+            gl_FragData[4] = texture2D(colortex4,TexCoords2);
+            gl_FragData[5] = texture2D(colortex5,TexCoords2);
+            gl_FragData[6] = texture2D(colortex6,TexCoords2);
+            gl_FragData[7] = texture2D(colortex10,TexCoords2);
         #endif
     }
 #endif

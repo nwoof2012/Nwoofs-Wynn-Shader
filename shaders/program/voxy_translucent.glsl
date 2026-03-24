@@ -131,6 +131,8 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
     FORWARD_RENDERED_COLOR.rgb = finalColor;
     FORWARD_RENDERED_COLOR.a = isWater? 0.0 : albedo.a;
 
+    TINT_AND_MASK.a = 1.0;
+
     WRITE_DEPTH.r = gl_FragCoord.z;
     WRITE_DEPTH.g = 1.0;
     
