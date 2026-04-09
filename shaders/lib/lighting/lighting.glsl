@@ -4,10 +4,14 @@
             vec3 rawLight = LightmapColor.xyz;
 
             vec3 Normal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
+
+            float depthMask = linearizeDepth(texture2D(depthtex0, TexCoords).r,near,far)/far;
             
             float aoValue = 1.0;
             #if AO > 0
-                aoValue = fastBilateral(colortex6,TexCoords,250.0,1.0).z;
+                aoValue = mix2(fastBilateral(colortex6,TexCoords,250.0,1.0).z, texture2D(colortex6,TexCoords).z, depthMask);
+                float detectSky = texture2D(colortex5, TexCoords).g;
+                aoValue = mix2(aoValue, 1.0, detectSky);
                 //aoValue = texture2D(colortex6,TexCoords).z;
             #endif
 
@@ -24,11 +28,17 @@
             
             float sunDist = smoothstep(0.2, 0.5, dirFromSun.b);
 
-            float aoLight = MIN_LIGHT * mix2(1.0, 0.01, timeBlendFactor);
-            
+            float aoLight = MIN_LIGHT * 0.1;
+
+            vec2 lightmap = 1 - texture2D(colortex13, TexCoords).rg;
+            mediump float isCave = smoothstep(0.0, 0.9, lightmap.g);
+
+            //LightmapColor.xyz = mix2((LightmapColor.xyz*4 + NdotL * shadowLerp + Ambient),(NdotL * shadowLerp + Ambient),0.25);
+            //LightmapColor.xyz = mix2(LightmapColor.xyz, vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B)*MIN_LIGHT, isCave);
+
             LightmapColor.xyz = mix2(LightmapColor.xyz, vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B)*aoLight, 1 - aoValue);
 
-            vec3 Diffuse3 = mix2(Albedo * (LightmapColor.xyz*4 + NdotL * shadowLerp + Ambient),Albedo * (NdotL * shadowLerp + Ambient),0.25);
+            vec3 Diffuse3 = Albedo * LightmapColor.xyz;
             Diffuse3 = mix2(Diffuse3, LightmapColor.xyz*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(LightmapColor)) * 0.5,1.75),0,0.125));
             //vec3 Diffuse4 = mix2(Albedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B) * 0.1,clamp(sunDist, 0, 0.75));
 

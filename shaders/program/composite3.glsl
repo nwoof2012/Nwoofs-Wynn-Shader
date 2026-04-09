@@ -2,60 +2,11 @@
     #define COMPOSITE_3
 
     #define PI 3.14159265358979323846f
-    #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define DAY_B 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define DAY_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+    #define HALF_PI 1.5707963267948966f
 
-    #define NIGHT_R 0.9f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define NIGHT_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define NIGHT_B 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define NIGHT_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-    #define SUNSET_R 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SUNSET_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SUNSET_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SUNSET_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-    #define SE_R 0.7f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SE_G 0.4f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SE_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-    #define NATURAL_LIGHT_DAY_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_DAY_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_DAY_B 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_DAY_I 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
-
-    #define NATURAL_LIGHT_NIGHT_R 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_NIGHT_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
-
-    #define AMBIENT_LIGHT_R 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define AMBIENT_LIGHT_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
-    #define VIBRANT_MODE 1 //[0 1 2 3]
-
-    #define LUT_NORM 1 // [0 1 2]
-    #define LUT_SE 0 // [0 1]
-
-    #define LIGHTMAP_QUALITY 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
-
-    #define FRAGMENT_SHADER
-
-    #define PATH_TRACING_GI 0 // [0 1]
-
-    #define AO_WIDTH 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
-    #define MIN_SE_SATURATION 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
-    #define WATER_WAVES
+    #include "/lib/data/settings.glsl"
 
     #include "/lib/includes2.glsl"
-
-    #include "/lib/globalDefines.glsl"
 
     varying vec2 TexCoords;
 
@@ -91,7 +42,8 @@
 
     uniform sampler2D cSampler11;
     uniform sampler2D cSampler12;
-
+    
+    uniform sampler2D noises;
     uniform sampler2D noisetex;
 
     uniform mat4 shadowModelView;
@@ -162,6 +114,7 @@
     varying vec2 LightmapCoords;
 
     uniform bool isBiomeEnd;
+    uniform bool isBiomeWet;
 
     in vec3 vaPosition;
 
@@ -210,8 +163,6 @@
 
     mediump float fogIntensity;
     mediump float fogCurve;
-
-    #define FOG_RAIN_MULTIPLIER 1.0;
 
     mediump float baseFogDHTransition;
 
@@ -311,8 +262,6 @@
 
         return worldSpace.xyz;
     }
-
-    #include "/lib/lighting/ambientOcclusion.glsl"
 
     mediump vec3 translucentMult;
 
@@ -471,6 +420,47 @@
     }
 
     #include "/lib/post/tonemapping.glsl"
+
+    mediump vec3 getWorldPosition(vec2 texcoord, float depth) {
+        mediump vec3 clipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
+        mediump vec4 viewW = gbufferProjectionInverse * vec4(clipSpace, 1.0);
+        mediump vec3 viewSpace = viewW.xyz / viewW.w;
+        mediump vec4 world = gbufferModelViewInverse * vec4(viewSpace, 1.0);
+
+        return world.xyz;
+    }
+
+    mediump vec3 getViewPosition(vec2 texcoord, float depth) {
+        mediump vec3 clipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
+        mediump vec4 viewW = gbufferProjectionInverse * vec4(clipSpace, 1.0);
+        mediump vec3 viewSpace = viewW.xyz / viewW.w;
+
+        return viewSpace;
+    }
+
+    mediump vec3 getUVFromPosition(vec3 position) {
+        mediump vec4 projection = gbufferProjection * gbufferModelView * vec4(position, 1.0);
+        projection.xyz /= projection.w;
+        mediump vec3 clipSpace = projection.xyz * 0.5 + 0.5;
+
+        return clipSpace.xyz;
+    }
+
+    mediump vec3 getUVFromViewPosition(vec3 position) {
+        mediump vec4 projection = gbufferProjection * vec4(position, 1.0);
+        projection.xyz /= projection.w;
+        mediump vec3 clipSpace = projection.xyz * 0.5 + 0.5;
+
+        return clipSpace.xyz;
+    }
+
+    mediump vec3 screenToView(vec2 uv, float depth) {
+        mediump vec4 ndcPos = vec4(uv, depth, 1.0) * 2.0 - 1.0;
+        mediump vec4 tmp = gbufferProjectionInverse * ndcPos;
+        return tmp.xyz / tmp.w;
+    }
+
+    #include "/lib/lighting/ambientOcclusion.glsl"
 
     mediump float ambientOcclusion(vec3 normal, vec3 pos, float camDist) {
         mediump float ao = 0.0;
@@ -763,46 +753,6 @@
         return (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0);
     }
 
-    mediump vec3 getWorldPosition(vec2 texcoord, float depth) {
-        mediump vec3 clipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
-        mediump vec4 viewW = gbufferProjectionInverse * vec4(clipSpace, 1.0);
-        mediump vec3 viewSpace = viewW.xyz / viewW.w;
-        mediump vec4 world = gbufferModelViewInverse * vec4(viewSpace, 1.0);
-
-        return world.xyz;
-    }
-
-    mediump vec3 getViewPosition(vec2 texcoord, float depth) {
-        mediump vec3 clipSpace = vec3(texcoord, depth) * 2.0 - 1.0;
-        mediump vec4 viewW = gbufferProjectionInverse * vec4(clipSpace, 1.0);
-        mediump vec3 viewSpace = viewW.xyz / viewW.w;
-
-        return viewSpace;
-    }
-
-    mediump vec3 getUVFromPosition(vec3 position) {
-        mediump vec4 projection = gbufferProjection * gbufferModelView * vec4(position, 1.0);
-        projection.xyz /= projection.w;
-        mediump vec3 clipSpace = projection.xyz * 0.5 + 0.5;
-
-        return clipSpace.xyz;
-    }
-
-    mediump vec3 getUVFromViewPosition(vec3 position) {
-        mediump vec4 projection = gbufferProjection * vec4(position, 1.0);
-        projection.xyz /= projection.w;
-        mediump vec3 clipSpace = projection.xyz * 0.5 + 0.5;
-
-        return clipSpace.xyz;
-    }
-
-    mediump vec3 screenToView(vec2 uv, float depth) {
-        mediump vec4 ndcPos = vec4(uv, depth, 1.0) * 2.0 - 1.0;
-        mediump vec4 tmp = gbufferProjectionInverse * ndcPos;
-        return tmp.xyz / tmp.w;
-    }
-
-
     mediump vec2 ssrRay(vec3 startPosition, vec3 reflectionDir) {
 
         const int maxIter = 64;
@@ -1083,7 +1033,7 @@
             #elif DEBUG_MODE == 1
                 outcolor = abs(texture2D(colortex1, TexCoords) * 2 - 1);
             #elif DEBUG_MODE == 2
-                outcolor = texture2D(colortex2, TexCoords);
+                outcolor = fastBilateral(colortex2,TexCoords,250.0,1.0);
             #elif DEBUG_MODE == 3
                 outcolor = texture2D(colortex3, TexCoords);
             #elif DEBUG_MODE == 4
@@ -1314,12 +1264,15 @@
 
             mediump float desatAmount = smoothstep(64, 10240, getDistMask(colortex6)) * 0.1;
 
+            mediump float detectSky = texture2D(colortex5, TexCoords).g;
+            
             #ifdef BLOOM
-                mediump vec4 bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha),refractionUVs);
+                mediump vec4 bloomAmount = vec4(0.0);
+                if(detectSky < 1.0) bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha),refractionUVs);
                 LightmapColor = bloomAmount;
                 lightBrightness2 = bloomAmount.a;
             #else
-                LightmapColor = texture2D(colortex2, TexCoords.xy).rgba;
+                if(detectSky < 1.0) LightmapColor = fastBilateral(colortex2,TexCoords,250.0,1.0);
             #endif
 
             //vec3 LightmapColor3 = calcRim(viewDir, viewNormal, LightmapColor.xyz, vec3(1.0, 0.9, 0.8));
@@ -1333,7 +1286,6 @@
             //LightmapColor.xyz = mix2(LightmapColor.xyz, LightmapColor3, LightmapColor.xyz * max(shadowLerp, isCave));
 
             if(Depth2 == 1.0f && texture2D(colortex10, TexCoords).x == 0.0){
-                mediump float detectSky = texture2D(colortex5, TexCoords).g;
                 mediump float detectEntity = texture2D(colortex12, TexCoords).g;
                 if(detectSky < 1.0) {
                     if(isBiomeEnd) {
@@ -1389,7 +1341,7 @@
                         Diffuse = pow2(texture2D(colortex0, TexCoords.xy).rgb,vec3(GAMMA));
                         if(waterTest > 0) {
                             Albedo = waterFunction(TexCoords, Normal, lightBrightness, refractionUVs);
-                            Albedo += pow2(texture2D(colortex2, TexCoords).xyz,vec3(GAMMA));
+                            Albedo += pow2(fastBilateral(colortex2,TexCoords,250.0,1.0).xyz,vec3(GAMMA));
                             Albedo = blindEffect(Albedo, TexCoords);
                             #if SSR == 1 || SSR == 2
                                 if(isRain == 1.0) {
@@ -1431,6 +1383,13 @@
                                 fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
                                 fogCurve = mix2(fogCurve, FOG_CAVE_CURVE,isCave);
                                 fogIntensity = mix2(fogIntensity, FOG_CAVE_INTENSITY,isCave);
+                                if(isBiomeWet) {
+                                    fogAlbedo = vec3(FOG_MISTWOODS_R, FOG_MISTWOODS_G, FOG_MISTWOODS_B);
+                                    fogDistMin = FOG_MISTWOODS_DIST_MIN;
+                                    fogDistMax = FOG_MISTWOODS_DIST_MAX;
+                                    fogCurve = FOG_MISTWOODS_CURVE;
+                                    fogIntensity = FOG_MISTWOODS_INTENSITY;
+                                }
                                 mediump float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,distFactor),fogCurve),0,min(fogIntensity,1.0));
                                 Diffuse.xyz = calcFogColor(viewPos, sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
                             #endif
@@ -1448,7 +1407,7 @@
                     Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
                     outcolor = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
                 } else {
-                    LightmapColor = decodeLight(texture2D(colortex2, TexCoords.xy).rgba,MAX_LIGHT);
+                    LightmapColor = decodeLight(fastBilateral(colortex2,TexCoords,250.0,1.0),MAX_LIGHT);
                     #ifdef BLOOM
                         Albedo.xyz = mix2(Albedo.xyz, LightmapColor.xyz, clamp(length(LightmapColor.xyz), 0.0, 1.0));
                     #endif
@@ -1462,6 +1421,22 @@
                             Albedo.xyz = loadLUT(Albedo.xyz, lutnormal);
                         }
                     #endif
+                    #if FOG_STYLE > 0
+                        fogAlbedo = mix2(fogAlbedo, vec3(FOG_CAVE_R, FOG_CAVE_G, FOG_CAVE_B), isCave);
+                        fogDistMin = mix2(fogDistMin, FOG_CAVE_DIST_MIN,isCave);
+                        fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
+                        fogCurve = mix2(fogCurve, FOG_CAVE_CURVE,isCave);
+                        fogIntensity = mix2(fogIntensity, FOG_CAVE_INTENSITY,isCave);
+                        if(isBiomeWet) {
+                            fogAlbedo = vec3(FOG_MISTWOODS_R, FOG_MISTWOODS_G, FOG_MISTWOODS_B);
+                            fogDistMin = FOG_MISTWOODS_DIST_MIN;
+                            fogDistMax = FOG_MISTWOODS_DIST_MAX;
+                            fogCurve = FOG_MISTWOODS_CURVE;
+                            fogIntensity = FOG_MISTWOODS_INTENSITY;
+                        }
+                        mediump float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,distFactor),fogCurve),0,min(fogIntensity,1.0));
+                        Albedo = calcFogColor(viewPos, sunPosition, Albedo, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), float(isBiomeWet));
+                    #endif
                     Albedo.xyz = blindEffect(Albedo.xyz, TexCoords);
                     Albedo.xyz = mix2(Albedo.xyz, vec3(0), blindness);
                     outcolor = vec4(currentColor * Albedo, 1.0f);
@@ -1469,7 +1444,7 @@
                 return;
             }
             if(waterTest > 0) {
-                Albedo += pow2(texture2D(colortex2, TexCoords).xyz,vec3(GAMMA));
+                Albedo += pow2(fastBilateral(colortex2,TexCoords,250.0,1.0).xyz,vec3(GAMMA));
                 Albedo = blindEffect(Albedo, TexCoords);
                 mediump vec3 dirFromSun = normalize2(abs((gbufferModelViewInverse * vec4(sunPosition, 1.0)).xyz - 3.5) - abs(worldPos - 3.5));
                 
@@ -1489,6 +1464,22 @@
                             Albedo.xyz = loadLUT(Albedo.xyz, lutnormal);
                         #endif
                     }
+                #endif
+                #if FOG_STYLE > 0
+                    fogAlbedo = mix2(fogAlbedo, vec3(FOG_CAVE_R, FOG_CAVE_G, FOG_CAVE_B), isCave);
+                    fogDistMin = mix2(fogDistMin, FOG_CAVE_DIST_MIN,isCave);
+                    fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
+                    fogCurve = mix2(fogCurve, FOG_CAVE_CURVE,isCave);
+                    fogIntensity = mix2(fogIntensity, FOG_CAVE_INTENSITY,isCave);
+                    if(isBiomeWet) {
+                        fogAlbedo = vec3(FOG_MISTWOODS_R, FOG_MISTWOODS_G, FOG_MISTWOODS_B);
+                        fogDistMin = FOG_MISTWOODS_DIST_MIN;
+                        fogDistMax = FOG_MISTWOODS_DIST_MAX;
+                        fogCurve = FOG_MISTWOODS_CURVE;
+                        fogIntensity = FOG_MISTWOODS_INTENSITY;
+                    }
+                    mediump float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,distFactor),fogCurve),0,min(fogIntensity,1.0));
+                    Albedo = calcFogColor(viewPos, sunPosition, Albedo, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
                 #endif
                 outcolor = vec4(pow2(Albedo, vec3(1.0/GAMMA)),1.0);
                 return;
@@ -1557,6 +1548,13 @@
                 fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
                 fogCurve = mix2(fogCurve, FOG_CAVE_CURVE,isCave);
                 fogIntensity = mix2(fogIntensity, FOG_CAVE_INTENSITY,isCave);
+                if(isBiomeWet) {
+                    fogAlbedo = vec3(FOG_MISTWOODS_R, FOG_MISTWOODS_G, FOG_MISTWOODS_B);
+                    fogDistMin = FOG_MISTWOODS_DIST_MIN;
+                    fogDistMax = FOG_MISTWOODS_DIST_MAX;
+                    fogCurve = FOG_MISTWOODS_CURVE;
+                    fogIntensity = FOG_MISTWOODS_INTENSITY;
+                }
                 mediump float fogFactor = clamp(pow2(smoothstep(fogDistMin, fogDistMax,distFactor),fogCurve),0,min(fogIntensity,1.0));
                 Diffuse.xyz = calcFogColor(viewPos, sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
             #endif

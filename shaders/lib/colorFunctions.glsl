@@ -1,3 +1,4 @@
+// Calculate Saturation
 mediump float CalcSaturation(in vec3 color) {
     vec4 k = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     vec4 p = mix2(vec4(color.bg, k.wz), vec4(color.gb, k.xy), step(color.b, color.g));
@@ -10,6 +11,7 @@ mediump float CalcSaturation(in vec3 color) {
     return hsv.g;
 }
 
+// Calculate HSV
 mediump vec4 CalcHSV(in vec3 color) {
     float maxC = max(max(color.r, color.g), color.b);
     float minC = min(min(color.r, color.g), color.b);
@@ -29,6 +31,7 @@ mediump vec4 CalcHSV(in vec3 color) {
     return vec4(hue, sat, val, maxC);
 }
 
+// Convert RGB to HSV
 vec3 rgb2hsv(vec3 c) {
     vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -39,7 +42,20 @@ vec3 rgb2hsv(vec3 c) {
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
+// Convert RGB to RGB
 vec3 hsv2rgb(vec3 c) {
     vec3 p = abs(fract(c.xxx + vec3(0.0, 1.0/3.0, 2.0/3.0)) * 6.0 - 3.0);
     return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+}
+
+// Calculate Luminance
+float luminance(vec3 color) {
+    return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+// Desaturate Color
+vec3 desaturate(vec3 color, float amount) {
+    float lum = luminance(color);
+    vec3 gray = vec3(lum);
+    return mix2(color, gray, amount);
 }

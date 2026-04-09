@@ -164,6 +164,15 @@ option.DH_FOG_CAVE_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_CAVE_INTENSITY=§bIntensity
 option.FOG_CAVE_CURVE=§eCurve
 
+option.FOG_MISTWOODS_R=§cRed
+option.FOG_MISTWOODS_G=§aGreen
+option.FOG_MISTWOODS_B=§9Blue
+option.FOG_MISTWOODS_DIST_MIN=§7Minimum Distance
+option.FOG_MISTWOODS_DIST_MAX=§7Maximum Distance
+option.DH_FOG_MISTWOODS_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_MISTWOODS_INTENSITY=§bIntensity
+option.FOG_MISTWOODS_CURVE=§eCurve
+
 option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
 
@@ -529,7 +538,7 @@ value.TONEMAP_SAL.4=Unreal
 value.TONEMAP_SAL.5=Uncharted 2
 value.TONEMAP_SAL.6=AgX
 value.TONEMAP_SAL.7=AgX §7(§eGolden§7)
-value.TONEMAP_SAL.8=AgX §7(&ePunchy§7)
+value.TONEMAP_SAL.8=AgX §7(§ePunchy§7)
 value.TONEMAP_SAL.9=Nwoof
 value.TONEMAP_SAL.10=Nwoof 2
 option.TONEMAP_SAL.comment=§6Changes the screen's tonemapping curve
@@ -542,8 +551,8 @@ value.TONEMAP_NORM.3=Lottes
 value.TONEMAP_NORM.4=Unreal
 value.TONEMAP_NORM.5=Uncharted 2
 value.TONEMAP_NORM.6=AgX
-value.TONEMAP_NORM.7=AgX §7(&eGolden§7)
-value.TONEMAP_NORM.8=AgX §7(&ePunchy§7)
+value.TONEMAP_NORM.7=AgX §7(§eGolden§7)
+value.TONEMAP_NORM.8=AgX §7(§ePunchy§7)
 value.TONEMAP_NORM.9=Nwoof
 value.TONEMAP_NORM.10=Nwoof 2
 option.TONEMAP_NORM.comment=§6Changes the screen's tonemapping curve
@@ -607,6 +616,8 @@ screen.FOG_SUNSET_RAIN = §9Rain
 screen.FOG_SE = §dSilent Expanse
 
 screen.FOG_CAVE = §7Cave
+
+screen.FOG_MISTWOODS = §2Mistwoods
 
 screen.LIGHTING=§eLighting
 

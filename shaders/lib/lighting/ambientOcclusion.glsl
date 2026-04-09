@@ -165,6 +165,9 @@ float calcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
 
 float calcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {
     mediump float centerDepth = calcLinearDepth(texture2D(depthMask, UVs).r, near, far);
+    mediump float skyTest = texture2D(colortex5, UVs).g;
+    if(skyTest > 0.0) return 1.0;
+    vec3 centerNormal = texture2D(normalMap, UVs).xyz * 2 - 1;
     float radius = GTAO_RADIUS / (centerDepth + 0.001);
     radius = clamp(radius, GTAO_MIN_RADIUS, GTAO_MAX_RADIUS);
 
@@ -182,11 +185,17 @@ float calcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
         for(int s = 1; s <= GTAO_NUM_STEPS; s++) {
             float stepDist = (float(s)/float(GTAO_NUM_STEPS)) * radius / screenRes.y;
             vec2 sampleUV = UVs + dir * stepDist;
+            mediump float sampleSkyTest = texture2D(colortex5, sampleUV).g;
 
             float sampleDepth = calcLinearDepth(texture2D(depthMask, sampleUV).r, near, far);
             float deltaDepth = sampleDepth - centerDepth;
 
-            if(deltaDepth > 5.0) continue;
+            vec3 sampleNormal = texture2D(normalMap, sampleUV).xyz * 2 - 1;
+            float deltaNormal = dot(sampleNormal,centerNormal);
+
+            if(abs(deltaDepth) > 5.0) continue;
+
+            if(deltaNormal > 0.25) continue;
 
             float angleSample = atan(deltaDepth, stepDist);
 
@@ -195,7 +204,7 @@ float calcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
 
         float occlusionDir = clamp(sin(horizonAngle), 0.0, 1.0);
 
-        ao += 1 - smoothstep(GTAO_THRESHOLD, 1.0, occlusionDir);
+        ao += smoothstep(GTAO_THRESHOLD, 1.0, occlusionDir);
     }
 
     lowp float isFoliage = 1.0 - texture2D(colortex13, UVs).b;

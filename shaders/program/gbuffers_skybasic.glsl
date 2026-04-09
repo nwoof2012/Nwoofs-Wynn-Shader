@@ -56,6 +56,8 @@
 
     uniform float aspectRatio;
 
+    uniform int worldTime;
+
     #include "/lib/dither.glsl"
 
     vec3 dayColorA;
@@ -124,7 +126,7 @@
     layout(location = 0) out vec4 outputColor;
 
     void noonFunc(float time, float timeFactor) {
-        mediump float dayNightLerp = clamp(time/timeFactor,0,1);
+        mediump float dayNightLerp = smoothstep(250.0, 11750.0, float(worldTime));
         if(rainStrength < 0.2f || isBiomeDry) {
             currentColorA = dayColorA;
             currentColorB = mix2(transitionColorB,dayColorB,dayNightLerp);
@@ -135,7 +137,7 @@
     }
 
     void sunsetFunc(float time, float timeFactor) {
-        mediump float sunsetLerp = clamp(time/timeFactor,0,1);
+        mediump float sunsetLerp = smoothstep(11750.0, 12250.0, float(worldTime));
         if(rainStrength < 0.2f || isBiomeDry) {
             currentColorA = mix2(dayColorA, nightColorA, sunsetLerp);
             currentColorB = mix2(dayColorB, transitionColorB, sunsetLerp);
@@ -146,13 +148,14 @@
     }
 
     void nightFunc(float time, float timeFactor) {
-        mediump float dayNightLerp = clamp(time/timeFactor,0,1);
+        mediump float dayNightLerp = smoothstep(12250.0, 23750.0, float(worldTime));
         currentColorA = nightColorA;
         currentColorB = mix2(transitionColorB,nightColorB,dayNightLerp);
     }
 
     void dawnFunc(float time, float timeFactor) {
-        mediump float sunsetLerp = clamp(time/timeFactor,0,1);
+        mediump float sunsetLerp = smoothstep(23750.0, 24250.0, float(worldTime));
+        if(worldTime < 250) sunsetLerp = smoothstep(-250.0, 250.0, float(worldTime));
         if(rainStrength < 0.2f || isBiomeDry) {
             currentColorA = mix2(nightColorA, dayColorA, sunsetLerp);
             currentColorB = mix2(nightColorB, transitionColorB, sunsetLerp);
@@ -321,7 +324,7 @@
         if(moonAngle > moonMaxDistance) outputColorMoon.w = 0.0;
         float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
         vec4 outputSunMoon = vec4(outputColorSun, 1.0);
-        vec4 outputLight = vec4(outputColorSun * smoothstep(0.0, 0.75, sunGradient), smoothstep(0.0, 0.75, sunGradient));
+        vec4 outputLight = vec4(outputColorSun * smoothstep(0.0, 0.75, sunGradient)*2.5, smoothstep(0.0, 0.75, sunGradient));
         if(detectSunMoon > 0.99) {
             outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.25 + 0.5 * moonGradient);
             outputSunMoon = outputColorMoon.xyzw;
@@ -340,7 +343,7 @@
 
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(1.0));
 
-        gl_FragData[3] = vec4((gbufferModelViewInverse * vec4(Normal,1.0)).xyz * 0.5 + 0.5, 1.0);
+        gl_FragData[3] = vec4(transformedDir * 0.5 + 0.5, 1.0);
     }
 #endif
 

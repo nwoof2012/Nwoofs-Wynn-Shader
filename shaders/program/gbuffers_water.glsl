@@ -63,6 +63,8 @@
 
     in float isGlass;
 
+    in float isStainedGlass;
+
     #include "/lib/globalDefines.glsl"
 
     #include "/lib/includes2.glsl"
@@ -83,7 +85,7 @@
         return texXZ + texXY + texZY;
     }
 
-    /* RENDERTARGETS:0,1,2,3,5,10,15*/
+    /* RENDERTARGETS:0,1,2,3,5,10,15,13*/
 
     void main() {
         vec4 depth = texture2D(depthtex1, TexCoords);
@@ -124,16 +126,12 @@
         vec3 newNormal = Normal.xyz;
 
         //if(isWaterBlock == 1) newNormal = tbnMatrix * finalNoise.xyz;
-
-        newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
-
-        albedo.a = 0.75f;
         
         vec4 Lightmap;
 
         if(isWaterBlock > 0.1f) {
             //albedo.a = 0.0f;
-            Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
+            //Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
 
             #if WATER_STYLE == 1
                 newNormal = tbnMatrix * finalNoise.xyz;
@@ -142,15 +140,19 @@
             #endif
         } else {
             albedo = texture2D(colortex0, TexCoords) * Color;
-            Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0f, 1.0f);
+            //Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0f, 1.0f);
+            newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+
+            //albedo.a = min(albedo.a, 0.75f);
         }
         mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
         gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
-        gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, isWaterBlock);
-        gl_FragData[5] = vec4(isGlass, 0.0, 0.0, 1.0);
+        gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, 1.0);
+        gl_FragData[5] = vec4(isGlass, 0.0, isStainedGlass, 1.0);
         gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
+        gl_FragData[7] = vec4(LightmapCoords.xy, 0.0, 1.0);
         #if WATER_STYLE == 1
             if(isWaterBlock > 0.1f) return;
         #endif
@@ -228,6 +230,8 @@
     out float waterShadingHeight;
 
     out float isGlass;
+
+    out float isStainedGlass;
 
     #include "/lib/globalDefines.glsl"
 
@@ -332,6 +336,8 @@
             isWater = 1f;
             isWaterBlock = 0f;
         }
+
+        isStainedGlass = mc_Entity.x == 10002 ? 1.0 : 0.0;
 
         isGlass = mc_Entity.x == 10014? 0.0 : 1.0;
 

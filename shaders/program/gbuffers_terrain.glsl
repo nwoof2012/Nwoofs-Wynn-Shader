@@ -138,21 +138,21 @@
     #include "/lib/post/gaussianBlur.glsl"
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
-    const float TorchBrightness = 1.0;
+    const float TorchBrightness = 25.0;
     const vec3 GlowstoneColor = vec3(1.0f, 0.93f, 0.5f);
-    const float GlowstoneBrightness = 1.5;
+    const float GlowstoneBrightness = 5.0;
     const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
-    const float LampBrightness = 1.0;
+    const float LampBrightness = 25.0;
     const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
-    const float LanternBrightness = 1.0;
+    const float LanternBrightness = 25.0;
     const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
-    const float RedstoneBrightness = 1.0;
+    const float RedstoneBrightness = 5.0;
     const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
-    const float RodBrightness = 1.0;
+    const float RodBrightness = 25.0;
     const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
-    const float PortalBrightness = 1.0;
+    const float PortalBrightness = 25.0;
     const vec3 FireColor = vec3(1.0f, 0.5f, 0.08f);
-    const float FireBrightness = 1.0;
+    const float FireBrightness = 25.0;
 
     //#include "program/generateNormals.glsl"
 
@@ -201,36 +201,36 @@
         vec4 lighting = vec4(vec3(0.0),1.0);
         if(lightmap == 1)
         {
-            lighting.xyz = TorchColor;
+            lighting.xyz = TorchColor * TorchBrightness;
             lighting.w = TorchBrightness;
         }
         else if(lightmap == 2)
         {
-            lighting.xyz = GlowstoneColor;
+            lighting.xyz = GlowstoneColor * GlowstoneBrightness;
             lighting.w = GlowstoneBrightness;
         } else if(lightmap == 3)
         {
-            lighting.xyz = LampColor;
+            lighting.xyz = LampColor * LampBrightness;
             lighting.w = LampBrightness;
         } else if(lightmap == 4)
         {
-            lighting.xyz = LanternColor;
+            lighting.xyz = LanternColor * LanternBrightness;
             lighting.w = LanternBrightness;
         } else if(lightmap == 5)
         {
-            lighting.xyz = RedstoneColor;
+            lighting.xyz = RedstoneColor * RedstoneBrightness;
             lighting.w = RedstoneBrightness;
         } else if(lightmap == 6)
         {
-            lighting.xyz = RodColor;
+            lighting.xyz = RodColor * RodBrightness;
             lighting.w = RodBrightness;
         } else if(lightmap == 7)
         {
-            lighting.xyz = PortalColor;
+            lighting.xyz = PortalColor * PortalBrightness;
             lighting.w = PortalBrightness;
         } else if(lightmap == 8)
         {
-            lighting.xyz = FireColor;
+            lighting.xyz = FireColor * FireBrightness;
             lighting.w = FireBrightness;
         } else {
             lighting.w = 0;
@@ -522,15 +522,17 @@
 
                                 float dist = float((foot_pos + fract(cameraPosition) - block_centered_relative_pos2) * (foot_pos + fract(cameraPosition) - block_centered_relative_pos2));
                                 float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
-                                lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
+                                //lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
+
+                                lighting += decodeLightmap(bytes) * smoothstep(LIGHT_RADIUS, 0, sampleWeight) * LightmapCoords.x;
                                 
-                                weight += sampleWeight * LIGHT_RADIUS * LIGHT_RADIUS;
+                                weight += smoothstep(LIGHT_RADIUS, 0, sampleWeight);
 
                                 lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
                             }
                         }
                         lighting /= max(weight,1.0);
-                        lighting *= 25;
+                        //lighting *= 25;
                         lighting = min(lighting, normalize2(lighting) * MAX_LIGHT);
                     #endif
                 }
@@ -541,10 +543,11 @@
                 float isCave = LightmapCoords.g;
                 gl_FragData[7] = vec4(isCave, 0.0, isLeaves, 1.0);
                 #if LIGHTING_MODE == 1
-                    finalLighting.xyz /= 3;
+                    finalLighting.xyz *= 0.5;
                 #endif
                 vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
-                if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
+                //if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
+                finalLighting2 = max(finalLighting2, vec4(0.0));
                 finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
                 uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
                 gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);

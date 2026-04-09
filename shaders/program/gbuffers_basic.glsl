@@ -65,7 +65,7 @@
     uniform int currentRenderedItemId;
     uniform int entityId;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
@@ -236,7 +236,7 @@
         #endif
 
         #if LIGHTING_MODE > 0
-            vec4 vanilla = vanillaLight(vec2(AdjustLightmap(LightmapCoords).r, 0.0));
+            vec4 vanilla = vanillaLight(vec2(AdjustLightmap(LightmapCoords)));
             vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
             if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
             if(currentRenderedItemId > 0 && entityId == 10007) {
@@ -246,6 +246,7 @@
         #else
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
         #endif
+        gl_FragData[5] = vec4(LightmapCoords, 0.0f, 1.0f);
         gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
         gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
     }

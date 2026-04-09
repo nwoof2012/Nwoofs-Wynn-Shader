@@ -13,37 +13,55 @@
 // Scene Aware Lighting
 #define SCENE_AWARE_LIGHTING 2 // [0 2]
 
-// Ambient Occlusion (0 = Off, 1 = SSAO, 2 = GTAO)
+//<----------------------[Light Colors]---------------------->\\
+// Ambient Occlusion Medthod (0 = Off, 1 = SSAO, 2 = GTAO)
 #define AO 2 // [0 1 2]
+
+#define AO_SCALE 0 // [0 1 2 3]
+
+// Ambient Occlusion Width
+#define AO_WIDTH 0.1 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 //<----------------------[Light Colors]---------------------->\\
 
 // Day
-#define LIGHT_DAY_R 1.1
-#define LIGHT_DAY_G 0.9
-#define LIGHT_DAY_B 0.8
-#define LIGHT_DAY_I 1.0
+#define LIGHT_DAY_R 1.1 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_DAY_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_DAY_B 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_DAY_I 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+
+// Day Natural
+#define NATURAL_LIGHT_DAY_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_B 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_DAY_I 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
 
 // Sunset/Sunrise
-#define LIGHT_SUNSET_R 1.0
-#define LIGHT_SUNSET_G 0.78
-#define LIGHT_SUNSET_B 0.55
+#define LIGHT_SUNSET_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_SUNSET_G 0.78 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_SUNSET_B 0.55 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 
 // Night
-#define LIGHT_NIGHT_R 0.5
-#define LIGHT_NIGHT_G 0.75
-#define LIGHT_NIGHT_B 1.0
-#define LIGHT_NIGHT_I 0.5
+#define LIGHT_NIGHT_R 0.5 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define LIGHT_NIGHT_G 0.75 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define LIGHT_NIGHT_I 0.5 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
+// Night Natural
+#define NATURAL_LIGHT_NIGHT_R 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
 
 // Ambient
-#define AMBIENT_LIGHT_R 0.5 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-#define AMBIENT_LIGHT_G 0.75 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-#define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define AMBIENT_LIGHT_R 0.5 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define AMBIENT_LIGHT_G 0.75 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 
 // Silent Expanse
-#define LIGHT_SE_R 0.55
-#define LIGHT_SE_G 0.50
-#define LIGHT_SE_B 0.85
+#define LIGHT_SE_R 0.55 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_SE_G 0.50 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define LIGHT_SE_B 0.85 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 
 //<----------------------[Light Levels]---------------------->\\
 
@@ -92,6 +110,7 @@
 // Light Sampling
 #define LIGHT_RADIUS 2
 #define LIGHT_SAMPLE_COUNT 64
+#define LIGHTMAP_QUALITY 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128]
 
 // Texture Parameters
 #define VOXEL_AREA 128 //[32 64 128]
@@ -106,9 +125,16 @@
 
 //<-------------------------[Shadows]----------------------->\\
 
+// Filter Samples
 #define SHADOW_SAMPLES 2
+
+// Texture Resolution
 #define SHADOW_RES 4096 // [128 256 512 1024 2048 4096 8192]
+
+// Maximum Distance
 #define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+
+// Variable Penumbra
 #define VARIABLE_PENUMBRA_SHADOWS
 
 //<---------------------------[Misc]------------------------>\\
@@ -116,6 +142,8 @@
 #define LIGHT_UPSAMPLE_FACTOR 0.25
 
 #define LIGHT_RESOLUTION 270
+
+#define PATH_TRACING_GI 0 // [0 1]
 
 /*<==========================================================>*/
 /*|                                                          |*/
@@ -160,6 +188,42 @@
 
 #define BRIGHTNESS 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 
+//<---------------------[Color Grading]---------------------->\\
+
+// Day Tint
+#define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define DAY_B 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define DAY_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+// Night Tint
+#define NIGHT_R 0.9f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define NIGHT_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define NIGHT_B 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define NIGHT_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+// Sunset/Sunrise Tint
+#define SUNSET_R 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SUNSET_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SUNSET_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SUNSET_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+// Silent Expanse Tint
+#define SE_R 0.7f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SE_G 0.4f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SE_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+#define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+
+// Silent Expanse Desaturation Factor (0 = Grayscale, 1 = Fully Saturated)
+#define MIN_SE_SATURATION 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
+// Vibrant Mode (0 = Off, 1 = On, 2 = SE Only, 3 = Regular Only)
+#define VIBRANT_MODE 1 //[0 1 2 3]
+
+// Vibrant Mode LUTs
+#define LUT_NORM 1 // [0 1 2]
+#define LUT_SE 0 // [0 1]
+
 /*<==========================================================>*/
 /*|                                                          |*/
 /*|                          [WATER]                         |*/
@@ -169,6 +233,9 @@
 // Rendering
 #define WATER_REFRACTION
 #define WATER_FOAM
+
+// Displacement
+#define WATER_WAVES
 
 // Style
 #define WATER_STYLE 1 // [0 1]
@@ -189,7 +256,7 @@
         const int colortex2Format = RGBA16F;
     */
 #endif
-
+ 
 // World Curvature
 //#define WORLD_CURVATURE
 
@@ -296,6 +363,21 @@
 #define DH_FOG_CAVE_DIST_MAX 4096.0 // [512.0 768.0 1024.0 2048.0 3072.0 4096.0 5120.0 6144.0 7168.0 8192.0]
 #define FOG_CAVE_INTENSITY 0.1 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
 #define FOG_CAVE_CURVE 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+
+// Fog Color (Mistwoods)
+#define FOG_MISTWOODS_R 0.5 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define FOG_MISTWOODS_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define FOG_MISTWOODS_B 0.3 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
+// Fog Curve (Mistwoods)
+#define FOG_MISTWOODS_DIST_MIN 64.0 // [0.0 64.0 128.0 192.0 256.0 512.0 768.0 1024.0 2048.0 3072.0 4096.0 5120.0 6144.0 7168.0 8192.0]
+#define FOG_MISTWOODS_DIST_MAX 1024.0 // [64.0 128.0 192.0 256.0 512.0 768.0 1024.0 2048.0 3072.0 4096.0 5120.0 6144.0 7168.0 8192.0]
+#define DH_FOG_MISTWOODS_DIST_MAX 4096.0 // [512.0 768.0 1024.0 2048.0 3072.0 4096.0 5120.0 6144.0 7168.0 8192.0]
+#define FOG_MISTWOODS_INTENSITY 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
+#define FOG_MISTWOODS_CURVE 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+
+// Fog Rain Multiplier
+#define FOG_RAIN_MULTIPLIER 1.0
 
 /*<==========================================================>*/
 /*|                                                          |*/

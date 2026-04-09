@@ -2,57 +2,18 @@
 
 #ifdef FRAGMENT_SHADER
     #define PI 3.14159265358979323846f
-    #define DAY_R 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define DAY_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define DAY_B 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define DAY_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
+    #define HALF_PI 1.5707963267948966f
 
-    #define NIGHT_R 0.9f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define NIGHT_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define NIGHT_B 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define NIGHT_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-    #define SUNSET_R 1.1f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SUNSET_G 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SUNSET_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SUNSET_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-    #define SE_R 0.7f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SE_G 0.4f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SE_B 0.8f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define SE_I 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-
-    #define NATURAL_LIGHT_DAY_R 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_DAY_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_DAY_B 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_DAY_I 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
-
-    #define NATURAL_LIGHT_NIGHT_R 0.2 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_NIGHT_G 0.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_NIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define NATURAL_LIGHT_NIGHT_I 0.1 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5]
+    #include "/lib/data/settings.glsl"
 
     #define BLOOM
-
-    #define VIBRANT_MODE 1 //[0 1 2 3]
 
     #define BLOOM_QUALITY 16 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
     #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
     #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 
-    #define PATH_TRACING_GI 0 // [0 1]
-
-    #define RAY_TRACED_SHADOWS 0 // [0 1]
-
-    #define MIN_SE_SATURATION 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
-    #define WATER_WAVES
-
-    //#define POM
-
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
-    #include "/lib/globalDefines.glsl"
 
     layout (rgba8) uniform image2D cimage14;
 
@@ -76,6 +37,7 @@
     uniform sampler2D colortex13;
     uniform sampler2D colortex14;
 
+    uniform sampler2D noises;
     uniform sampler2D noiseb;
 
     uniform float aspectRatio;
@@ -727,6 +689,14 @@
         return worldSpace.xyz;
     }
 
+    vec3 screenToView(vec2 screenPos, float depth) {
+        vec2 ndc = screenPos * 2.0 - 1.0;
+
+        vec4 clipSpace = vec4(ndc, depth, 1.0);
+        vec4 viewSpace = gbufferProjectionInverse * clipSpace;
+        return viewSpace.xyz / viewSpace.w;
+    }
+
     vec3 rgbToHsv(vec3 c) {
         mediump float max = max(c.r, max(c.g, c.b));
         mediump float min = min(c.r, min(c.g, c.b));
@@ -1056,7 +1026,7 @@
     #include "/lib/world/timeCycle.glsl"
     #include "/lib/lighting/ambientOcclusion.glsl"
 
-    /* RENDERTARGETS:0,1,2,3,4,5,6,10 */
+    /* RENDERTARGETS:0,1,2,3,4,5,6,11 */
 
     #define LAYERS 4
     
@@ -1434,9 +1404,13 @@
             gl_FragData[5] = texture2D(colortex5,TexCoords);
         #else
             vec2 TexCoords2 = TexCoords;
+            float pomHeight = 0.0;
             #ifdef POM
                 if(texture2D(colortex12, TexCoords).g != 1.0 && texture2D(colortex5, TexCoords).r != 1.0)
-                TexCoords2 = ParallaxOcclusionMapping(depthtex0, TexCoords, vec2(0.0, length(texture2D(colortex1,TexCoords).xyz * 2 - 1) * 0.1 / (1 + linearizeDepth(texture2D(depthtex0, TexCoords).r,near,far))));
+                {
+                    pomHeight = length(texture2D(colortex1,TexCoords).xyz * 2 - 1) * 0.1;
+                    TexCoords2 = ParallaxOcclusionMapping(depthtex0, TexCoords, vec2(0.0, pomHeight / (1 + linearizeDepth(texture2D(depthtex0, TexCoords).r,near,far))));
+                }
 
                 if(texture2D(colortex12, TexCoords2).g > 0.0 || texture2D(colortex5, TexCoords).r == 1.0) TexCoords2 = TexCoords;
             #endif
@@ -1478,7 +1452,7 @@
             gl_FragData[4] = texture2D(colortex4,TexCoords2);
             gl_FragData[5] = texture2D(colortex5,TexCoords2);
             gl_FragData[6] = texture2D(colortex6,TexCoords2);
-            gl_FragData[7] = texture2D(colortex10,TexCoords2);
+            gl_FragData[7] = vec4(TexCoords2, pomHeight, 1.0);
         #endif
     }
 #endif

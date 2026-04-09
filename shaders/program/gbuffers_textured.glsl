@@ -13,6 +13,12 @@
     uniform float near;
     uniform float far;
 
+    #ifdef DISTANT_HORIZONS
+        uniform float dhFarPlane;
+    #else
+        float dhFarPlane = far;
+    #endif
+
     uniform int viewWidth;
     uniform int viewHeight;
 
@@ -47,7 +53,7 @@
         return lightColor;
     }
 
-    /* RENDERTARGETS:0,1,2,6,5 */
+    /* RENDERTARGETS:0,1,2,6,5,13 */
 
     void main() {
         vec4 albedo = texture2D(texture, TexCoords) * Color;
@@ -55,16 +61,21 @@
         mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
         
         gl_FragData[0] = albedo;
-        gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, 1.0f);
+        gl_FragData[1] = vec4((mat3(gbufferModelViewInverse) * Normal) * 0.5 + 0.5f, albedo.a);
         #if LIGHTING_MODE == 1
             vec4 vanilla = vanillaLight(AdjustLightmap(LightmapCoords));
             vec4 lighting = mix2( pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),clamp(length(max(vec3(1.0) - vanilla.xyz,vec3(0.0))),0,1));
-            gl_FragData[2] = vec4(lighting.xyz, 1.0);
+            gl_FragData[2] = vec4(lighting.xyz, albedo.a);
         #else
-            gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+            gl_FragData[2] = vec4(LightmapCoords, 0.0f, albedo.a);
         #endif
-        gl_FragData[3] = vec4(0.0,0.0,0.0,1.0);
-        gl_FragData[4] = vec4(0.0,1.0,1.0,1.0);
+        #ifdef DISTANT_HORIZONS
+            gl_FragData[3] = vec4(0.0,encodeDist(distanceFromCamera, dhFarPlane),0.0,albedo.a);
+        #else
+            gl_FragData[3] = vec4(0.0,encodeDist(distanceFromCamera, far),0.0,albedo.a);
+        #endif
+        gl_FragData[4] = vec4(0.0,1.0,1.0,albedo.a);
+        gl_FragData[5] = vec4(LightmapCoords, 0.0, albedo.a);
     }
 #endif
 

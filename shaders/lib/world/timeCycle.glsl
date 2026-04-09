@@ -9,21 +9,21 @@
     void timeFunctionVert() {
         timeOfDay = mod(worldTime,24000);
         quadTime = timeOfDay;
-        if(timeOfDay < 500) {
+        if(timeOfDay < 250) {
             timePhase = 3;
-            quadTime += 500;
-        } else if(timeOfDay < 11500) {
+            quadTime += 250;
+        } else if(timeOfDay < 11750) {
             timePhase = 0;
-            quadTime -= 500;
-        } else if(timeOfDay < 12500) {
+            quadTime -= 250;
+        } else if(timeOfDay < 12250) {
             timePhase = 1;
-            quadTime -= 11500;
-        } else if(timeOfDay < 23500) {
+            quadTime -= 11750;
+        } else if(timeOfDay < 23750) {
             timePhase = 2;
-            quadTime -= 12500;
+            quadTime -= 12250;
         } else if(timeOfDay < 24000) {
             timePhase = 3;
-            quadTime -= 23500;
+            quadTime -= 23750;
         }
     }
 
