@@ -91,6 +91,10 @@ option.SKY_SUNSET_B_R=§cStratosphere Red
 option.SKY_SUNSET_B_G=§aStratosphere Green
 option.SKY_SUNSET_B_B=§9Stratosphere Blue
 
+option.FOG_STYLE=§fFog Style
+value.FOG_STYLE.0=§cOff
+value.FOG_STYLE.1=§aBasic
+value.FOG_STYLE.2=§6Fancy
 
 option.FOG_DAY_R=§cRed
 option.FOG_DAY_G=§aGreen
@@ -100,6 +104,7 @@ option.FOG_DAY_DIST_MAX=§7Maximum Distance
 option.DH_FOG_DAY_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_DAY_INTENSITY=§bIntensity
 option.FOG_DAY_CURVE=§eCurve
+option.FOG_DAY_DENSITY=§6Density
 
 option.FOG_NIGHT_R=§cRed
 option.FOG_NIGHT_G=§aGreen
@@ -109,6 +114,7 @@ option.FOG_NIGHT_DIST_MAX=§7Maximum Distance
 option.DH_FOG_NIGHT_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_NIGHT_INTENSITY=§bIntensity
 option.FOG_NIGHT_CURVE=§eCurve
+option.FOG_NIGHT_DENSITY=§6Density
 
 option.FOG_SUNSET_R=§cRed
 option.FOG_SUNSET_G=§aGreen
@@ -118,6 +124,7 @@ option.FOG_SUNSET_DIST_MAX=§7Maximum Distance
 option.DH_FOG_SUNSET_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_SUNSET_INTENSITY=§bIntensity
 option.FOG_SUNSET_CURVE=§eCurve
+option.FOG_SUNSET_DENSITY=§6Density
 
 option.FOG_SE_R=§cRed
 option.FOG_SE_G=§aGreen
@@ -127,6 +134,7 @@ option.FOG_SE_DIST_MAX=§7Maximum Distance
 option.DH_FOG_SE_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_SE_INTENSITY=§bIntensity
 option.FOG_SE_CURVE=§eCurve
+option.FOG_SE_DENSITY=§6Density
 
 option.FOG_DAY_RAIN_R=§cRed
 option.FOG_DAY_RAIN_G=§aGreen
@@ -136,6 +144,7 @@ option.FOG_DAY_RAIN_DIST_MAX=§7Maximum Distance
 option.DH_FOG_DAY_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_DAY_RAIN_INTENSITY=§bIntensity
 option.FOG_DAY_RAIN_CURVE=§eCurve
+option.FOG_DAY_RAIN_DENSITY=§6Density
 
 option.FOG_NIGHT_RAIN_R=§cRed
 option.FOG_NIGHT_RAIN_G=§aGreen
@@ -145,6 +154,7 @@ option.FOG_NIGHT_RAIN_DIST_MAX=§7Maximum Distance
 option.DH_FOG_NIGHT_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_NIGHT_RAIN_INTENSITY=§bIntensity
 option.FOG_NIGHT_RAIN_CURVE=§eCurve
+option.FOG_NIGHT_RAIN_DENSITY=§6Density
 
 option.FOG_SUNSET_RAIN_R=§cRed
 option.FOG_SUNSET_RAIN_G=§aGreen
@@ -154,6 +164,7 @@ option.FOG_SUNSET_RAIN_DIST_MAX=§7Maximum Distance
 option.DH_FOG_SUNSET_RAIN_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_SUNSET_RAIN_INTENSITY=§bIntensity
 option.FOG_SUNSET_RAIN_CURVE=§eCurve
+option.FOG_SUNSET_RAIN_DENSITY=§6Density
 
 option.FOG_CAVE_R=§cRed
 option.FOG_CAVE_G=§aGreen
@@ -163,6 +174,7 @@ option.FOG_CAVE_DIST_MAX=§7Maximum Distance
 option.DH_FOG_CAVE_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_CAVE_INTENSITY=§bIntensity
 option.FOG_CAVE_CURVE=§eCurve
+option.FOG_CAVE_DENSITY=§6Density
 
 option.FOG_MISTWOODS_R=§cRed
 option.FOG_MISTWOODS_G=§aGreen
@@ -172,6 +184,7 @@ option.FOG_MISTWOODS_DIST_MAX=§7Maximum Distance
 option.DH_FOG_MISTWOODS_DIST_MAX=§7Distant Horizons Far Plane
 option.FOG_MISTWOODS_INTENSITY=§bIntensity
 option.FOG_MISTWOODS_CURVE=§eCurve
+option.FOG_MISTWOODS_DENSITY=§6Density
 
 option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
@@ -469,6 +482,13 @@ option.GTAO_NUM_STEPS.comment=§eDefine how many steps to process in each direct
 
 option.GTAO_RADIUS=§9AO Radius
 option.GTAO_RADIUS.comment=§eSet the radius of GTAO sampling
+
+option.AO_SCALE=§9AO Scale
+option.AO_SCALE.comment=§eSet the render resolution of AO
+value.AO_SCALE.0=§a1x
+value.AO_SCALE.1=§a0.75x
+value.AO_SCALE.2=§a0.5x
+value.AO_SCALE.3=§a0.25x
 
 option.AA=§aMode
 value.AA.0=Off

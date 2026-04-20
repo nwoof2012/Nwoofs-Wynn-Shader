@@ -9,37 +9,23 @@
     void timeFunctionVert() {
         timeOfDay = mod(worldTime,24000);
         quadTime = timeOfDay;
-        if(timeOfDay < 250) {
+        if(timeOfDay < 500) {
             timePhase = 3;
-            quadTime += 250;
-        } else if(timeOfDay < 11750) {
+            quadTime += 500;
+        } else if(timeOfDay < 11500) {
             timePhase = 0;
-            quadTime -= 250;
-        } else if(timeOfDay < 12250) {
+            quadTime -= 500;
+        } else if(timeOfDay < 12500) {
             timePhase = 1;
-            quadTime -= 11750;
-        } else if(timeOfDay < 23750) {
+            quadTime -= 11500;
+        } else if(timeOfDay < 23500) {
             timePhase = 2;
-            quadTime -= 12250;
+            quadTime -= 12500;
         } else if(timeOfDay < 24000) {
             timePhase = 3;
-            quadTime -= 23750;
+            quadTime -= 23500;
         }
     }
-
-    #if FOG_STYLE == 2
-        void timeFunctionFrag() {
-            if(timePhase == 0) {
-                noonFunc(quadTime, 1000);
-            } else if(timePhase == 1) {
-                sunsetFunc(quadTime, 1000);
-            } else if(timePhase == 2) {
-                nightFunc(quadTime, 1000);
-            } else if(timePhase == 3) {
-                dawnFunc(quadTime, 1000);
-            }
-        }
-    #endif
 #endif
 #ifdef FRAGMENT_SHADER
     flat in int timePhase;
@@ -47,13 +33,13 @@
     in float timeOfDay;
     void timeFunctionFrag() {
         if(timePhase == 0) {
-            noonFunc(quadTime, 1000);
+            noonFunc(quadTime, smoothstep(500, 11500, timeOfDay));
         } else if(timePhase == 1) {
-            sunsetFunc(quadTime, 1000);
+            sunsetFunc(quadTime, smoothstep(11500, 12500, timeOfDay));
         } else if(timePhase == 2) {
-            nightFunc(quadTime, 1000);
+            nightFunc(quadTime, smoothstep(12500, 23500, timeOfDay));
         } else if(timePhase == 3) {
-            dawnFunc(quadTime, 1000);
+            dawnFunc(quadTime, smoothstep(23500, 24500, timeOfDay));
         }
     }
 #endif

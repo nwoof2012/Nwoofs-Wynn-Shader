@@ -196,7 +196,7 @@
 //<---------------------------[Fog]-------------------------->\\
 
 // Fog Style
-#define FOG_STYLE 1 // [0 1]
+#define FOG_STYLE 2 // [0 1 2]
 
 // Fog Precision
 #define FOG_PRECISION 64 // [4 8 16 32 64 128]

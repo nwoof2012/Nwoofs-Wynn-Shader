@@ -80,7 +80,7 @@ vec4 fastBilateral(sampler2D tex, vec2 uv, float sigma, float threshold) {
     float totalWeight = 0.0;
     vec4 finalColor = vec4(0.0);
 
-    vec2 res = vec2(1080.0 / viewHeight * viewWidth, 1080.0);
+    vec2 res = vec2(1080.0 / viewHeight * viewWidth, 1080.0)/(1 + AO_SCALE);
     
     for(int x = -BLTRL_KERNEL_RADIUS; x < BLTRL_KERNEL_RADIUS; x++) {
         for(int y = -BLTRL_KERNEL_RADIUS; y < BLTRL_KERNEL_RADIUS; y++) {

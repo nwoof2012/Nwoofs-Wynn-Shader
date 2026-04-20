@@ -9,7 +9,7 @@
             
             float aoValue = 1.0;
             #if AO > 0
-                aoValue = mix2(fastBilateral(colortex6,TexCoords,250.0,1.0).z, texture2D(colortex6,TexCoords).z, depthMask);
+                aoValue = mix2(fastBilateral(cSampler15,TexCoords,250.0,1.0).z, texture2D(colortex6,TexCoords).z, depthMask);
                 float detectSky = texture2D(colortex5, TexCoords).g;
                 aoValue = mix2(aoValue, 1.0, detectSky);
                 //aoValue = texture2D(colortex6,TexCoords).z;

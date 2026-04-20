@@ -65,8 +65,10 @@
 
     vec3 dayColorRainA;
     vec3 dayColorRainB;
+
     vec3 nightColorA;
     vec3 nightColorB;
+
     vec3 transitionColorA;
     vec3 transitionColorB;
 
@@ -126,42 +128,42 @@
     layout(location = 0) out vec4 outputColor;
 
     void noonFunc(float time, float timeFactor) {
-        mediump float dayNightLerp = smoothstep(250.0, 11750.0, float(worldTime));
+        mediump float dayNightLerp = timeFactor;
         if(rainStrength < 0.2f || isBiomeDry) {
             currentColorA = dayColorA;
-            currentColorB = mix2(transitionColorB,dayColorB,dayNightLerp);
+            currentColorB = dayColorB;
         } else {
             currentColorA = dayColorRainA;
-            currentColorB = mix2(transitionColorB,dayColorRainB,dayNightLerp);
+            currentColorB = dayColorRainB;
         }
     }
 
     void sunsetFunc(float time, float timeFactor) {
-        mediump float sunsetLerp = smoothstep(11750.0, 12250.0, float(worldTime));
+        mediump float sunsetLerp = timeFactor;
         if(rainStrength < 0.2f || isBiomeDry) {
             currentColorA = mix2(dayColorA, nightColorA, sunsetLerp);
-            currentColorB = mix2(dayColorB, transitionColorB, sunsetLerp);
+            currentColorB = mix3(dayColorB, transitionColorB, nightColorA, sunsetLerp, 0.5);
         } else {
             currentColorA = mix2(dayColorRainA, nightColorA, sunsetLerp);
-            currentColorB = mix2(dayColorRainB, transitionColorB, sunsetLerp);
+            currentColorB = mix3(dayColorRainB, transitionColorB, nightColorB, sunsetLerp, 0.5);
         }
     }
 
     void nightFunc(float time, float timeFactor) {
-        mediump float dayNightLerp = smoothstep(12250.0, 23750.0, float(worldTime));
+        mediump float dayNightLerp = timeFactor;
         currentColorA = nightColorA;
-        currentColorB = mix2(transitionColorB,nightColorB,dayNightLerp);
+        currentColorB = nightColorB;
     }
 
     void dawnFunc(float time, float timeFactor) {
-        mediump float sunsetLerp = smoothstep(23750.0, 24250.0, float(worldTime));
-        if(worldTime < 250) sunsetLerp = smoothstep(-250.0, 250.0, float(worldTime));
+        mediump float sunsetLerp = timeFactor;
+        if(worldTime < 500) sunsetLerp = smoothstep(-500.0, 500.0, float(worldTime));
         if(rainStrength < 0.2f || isBiomeDry) {
             currentColorA = mix2(nightColorA, dayColorA, sunsetLerp);
-            currentColorB = mix2(nightColorB, transitionColorB, sunsetLerp);
+            currentColorB = mix3(nightColorB, transitionColorB, dayColorB, sunsetLerp, 0.5);
         } else {
             currentColorA = mix2(nightColorA, dayColorRainA, sunsetLerp);
-            currentColorB = mix2(nightColorB, transitionColorB, sunsetLerp);
+            currentColorB = mix3(nightColorB, transitionColorB, dayColorRainB, sunsetLerp, 0.5);
         }
     }
 
