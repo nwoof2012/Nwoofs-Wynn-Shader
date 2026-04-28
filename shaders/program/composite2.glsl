@@ -87,8 +87,10 @@
 
     #ifdef DISTANT_HORIZONS
         uniform float dhFarPlane;
+        uniform float dhNearPlane;
     #else
         float dhFarPlane = far;
+        float dhNearPlane = near;
     #endif
 
     vec3 Normal;
@@ -118,11 +120,11 @@
 
     highp float getDepthMask(sampler2D local, sampler2D distant) {
         #ifdef DISTANT_HORIZONS
-            return mix2(linearDepth0 / dhFarPlane, texture2D(colortex13, TexCoords).z * 0.5, step(1.0, texture2D(depthtex0, TexCoords).x)) * 32;
+            return mix2(linearDepth0 / dhFarPlane, texture2D(colortex13, texCoord).z * 0.5, step(1.0, texture2D(depthtex0, texCoord).x)) * 32;
         #elif defined VOXY
             return linearDepth0/far;
         #else
-            return texture2D(depthtex0, TexCoords).x;
+            return texture2D(depthtex0, texCoord).x;
         #endif
     }
 
@@ -138,11 +140,11 @@
 
     highp float getDepthMask1(sampler2D local, sampler2D distant) {
         #ifdef DISTANT_HORIZONS
-            return mix2(linearDepth1 / dhFarPlane, texture2D(colortex13, TexCoords).z * 0.5, step(1.0, texture2D(depthtex0, TexCoords).x)) * 32;
+            return mix2(linearDepth1 / dhFarPlane, texture2D(colortex13, texCoord).z * 0.5, step(1.0, texture2D(depthtex0, texCoord).x)) * 32;
         #elif defined VOXY
             return linearDepth1;
         #else
-            return texture2D(depthtex0, TexCoords).x;
+            return texture2D(depthtex0, texCoord).x;
         #endif
     }
 
@@ -482,28 +484,19 @@
     #define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
     const float GOLDEN_ANGLE = 2.39996323;
 
-    vec3 GetShadow(float depth) {
-        vec3 ClipSpace = vec3(texCoord, depth) * 2.0f - 1.0f;
+    vec3 GetShadow(float depth, vec3 worldPos, vec3 normal, vec3 worldSpaceSunPos, vec3 lightDir) {
+        /*vec3 ClipSpace = vec3(texCoord, depth) * 2.0f - 1.0f;
         vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
         vec3 View = ViewW.xyz / ViewW.w;
-        vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
-        vec4 ShadowSpace = shadowProjection * shadowModelView * World;
+        vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);*/
+        vec4 ShadowSpace = shadowProjection * shadowModelView * vec4(worldPos,1.0);
         ShadowSpace.xy = DistortPosition(ShadowSpace.xy);
-        vec3 worldSpaceSunPos = (gbufferProjection * vec4(sunPosition,1.0)).xyz;
-        vec3 lightDir = normalize2(worldSpaceSunPos);
-        vec3 normal = Normal;
-        normal = tbnNormalTangent(normal, Tangent) * normal;
-        vec3 normalClip = normal * 2.0f - 1.0f;
-        vec4 normalViewW = gbufferProjectionInverse * vec4(normalClip, 1.0);
-        vec3 normalView = normalViewW.xyz/normalViewW.w;
-        vec4 normalWorld = gbufferModelViewInverse * vec4(normalView, 1.0f);
-        vec3 fragPos = texture2D(colortex10, texCoord).rgb;
         vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
         vec3 ShadowAccum = vec3(0.0);
-        float totalWeight = 0.0;
+        float totalWeight = 0.0; 
 
         #ifdef VARIABLE_PENUMBRA_SHADOWS
-            float dist = dot(World.xyz - worldSpaceSunPos, normalize2(worldSpaceSunPos));
+            float dist = dot(worldPos.xyz - worldSpaceSunPos, lightDir);
             float radiusScale = mix2(MIN_PCF_RADIUS, MAX_PCF_RADIUS, smoothstep(0, SHADOW_DIST, dist));
             float effectiveRadius = PCF_RADIUS * radiusScale;
         #else
@@ -518,7 +511,7 @@
             float theta = fi * GOLDEN_ANGLE;
             
             // Per-fragment rotation
-            float rot = fract(sin(dot(World.xy, vec2(12.9898,78.233))) * 43758.5453) * 6.28318;
+            float rot = fract(sin(dot(worldPos.xy, vec2(12.9898,78.233))) * 43758.5453) * 6.28318;
             mat2 rotMat = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
             
             vec2 offset = rotMat * vec2(cos(theta), sin(theta)) * r / SHADOW_RES;
@@ -547,16 +540,12 @@
     }
 
     vec3 screenToFoot(vec2 screenPos, float depth) {
-        vec2 ndc = screenPos * 2.0 - 1.0;
+        vec3 ClipSpace = vec3(texCoord, depth) * 2.0f - 1.0f;
+        vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+        vec3 View = ViewW.xyz / ViewW.w;
+        vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
 
-        vec4 clipSpace = vec4(ndc, depth, 1.0);
-        vec4 viewSpace = gbufferProjectionInverse * clipSpace;
-        viewSpace /= viewSpace.w;
-
-        vec4 worldSpace = gbufferModelViewInverse * viewSpace;
-        worldSpace /= worldSpace.w;
-
-        return worldSpace.xyz;
+        return World.xyz;
     }
 
     vec2 worldToScreen(vec3 worldPos) {
@@ -580,6 +569,8 @@
     #include "/lib/lighting/ambientOcclusion.glsl"
 
     uniform bool isBiomeEnd;
+    uniform float seFactor;
+    uniform float corruptionFactor;
 
     vec3 cloudLight;
     vec3 cloudAmbience;
@@ -593,11 +584,10 @@
     mediump float timeBlendFactor;
 
     void noonFunc(float time, float timeFactor) {
-        if(isBiomeEnd) {
-            sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        } else {
-            sunlightAlbedo = vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B);
-        }
+        vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix2(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunlightAlbedoSE, seFactor);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         mediump float dayNightLerp = timeFactor;
         cloudLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
         cloudAmbience = vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B);
@@ -608,10 +598,11 @@
 
     void sunsetFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
-        if(isBiomeEnd) {
-            sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        } else { sunlightAlbedo = mix3(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunsetLerp, 0.5);
-        }
+        vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix3(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunsetLerp, 0.5);
+        vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         cloudLight = mix3(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), sunsetLerp, 0.5);
         cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), sunsetLerp);
         skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
@@ -620,11 +611,11 @@
     }
 
     void nightFunc(float time, float timeFactor) {
-        if(isBiomeEnd) {
-            sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        } else { 
-            sunlightAlbedo = vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B);
-        }
+        vec3 sunlightAlbedoSE= vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix2(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunlightAlbedoSE, seFactor);
+        vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         mediump float dayNightLerp = timeFactor;
         cloudLight = vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B);
         cloudAmbience = vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B);
@@ -635,12 +626,13 @@
 
     void dawnFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
-        if(worldTime < 500) sunsetLerp = smoothstep(-500.0, 500.0, frameTimeCounter);
-        if(isBiomeEnd) {
-            sunlightAlbedo = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        } else {
-            sunlightAlbedo = mix3(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunsetLerp, 0.5);
-        }
+        if(worldTime < 500) sunsetLerp = smoothstep(-500.0, 500.0, worldTime);
+        vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix3(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunsetLerp, 0.5);
+        vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         cloudLight = mix3(vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), sunsetLerp, 0.5);
         cloudAmbience = mix2(vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
         skyInfluenceColor = mix3(vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
@@ -702,15 +694,12 @@
         #include "/lib/lighting/pathTracing.glsl"
     #endif
 
-    /* RENDERTARGETS:0,1,2,3,4,5,6,14 */
+    /* RENDERTARGETS:0,1,2,6,14 */
     layout(location = 0) out vec4 outcolor;
     layout(location = 1) out vec4 outnormal;
     layout(location = 2) out vec4 outlight;
-    layout(location = 3) out vec4 outbufferA;
-    layout(location = 4) out vec4 outbufferB;
-    layout(location = 5) out vec4 outbufferC;
-    layout(location = 6) out vec4 outbufferD;
-    layout(location = 7) out vec4 outbufferE;
+    layout(location = 3) out vec4 outbufferD;
+    layout(location = 4) out vec4 outbufferE;
 
     void main() {
         timeFunctionFrag();
@@ -720,7 +709,7 @@
         mediump float depth2 = texture2D(depthtex1, texCoord).r;
         mediump float depth3 = getDepthMask1(depthtex1, colortex13);
         globalDepthMask = getDepthMask(depthtex1, colortex13);
-        globalDepthMask2 = getDepthMask1(depthtex1, colortex13);
+        globalDepthMask2 = depth3;
         linearDepth0 = linearizeDepth(depth, near, far);
         linearDepth1 = linearizeDepth(depth2, near, far);
         mediump vec4 texBuffer5 = texture2D(colortex5, texCoord);
@@ -732,7 +721,7 @@
         
         //shadowLightDirection = abs(shadowLightDirection);
 
-        mediump float cloud_time = fract(CLOUD_SPEED * float(worldTime)/12000);
+        mediump float cloud_time = CLOUD_SPEED * float(frameTimeCounter) * 0.75;
 
         vec4 finalLight = vec4(0.0);
 
@@ -741,10 +730,16 @@
         vec3 sunWorldPos = mat3(gbufferModelViewInverse) * sunPosition;
         vec3 sunWorldDir = normalize2(sunWorldPos);
 
+        vec3 footPos = screenToFoot(texCoord, depth);
+
+        vec3 worldPos = footPos + cameraPosition;
+
         mediump float lightMask = dot(shadowLightDirection, Normal);
         lightMask = clamp(lightMask, 0.0, 1.0);
 
-        mediump float isFoliage = 1 - texture2D(colortex13, texCoord).b;
+        vec4 lightTex = texture2D(colortex13, texCoord);
+
+        mediump float isFoliage = 1 - lightTex.b;
 
         mediump float sunlightMask = dot(sunWorldDir, Normal);
         sunlightMask = mix(sunlightMask, abs(sunlightMask), 1 - isFoliage);
@@ -752,7 +747,7 @@
 
         vec3 sunLight = sunlightAlbedo * sunlightMask;
 
-        vec2 lightmap = 1 - texture2D(colortex13, texCoord).rg;
+        vec2 lightmap = 1 - lightTex.rg;
         mediump float isCave = smoothstep(0.0, 0.9, lightmap.g);
 
         vec4 sunClipPos = gbufferProjection * vec4(sunPosition,1.0);
@@ -770,9 +765,9 @@
         mediump float minLight = mix2(MIN_LIGHT, MIN_FOLIAGE_LIGHT, step(isFoliage, 0.5));
         if(isBiomeEnd) minLight = SE_MIN_LIGHT;
 
-        vec3 shadowLerp = mix2(GetShadow(depth2),vec3(0.0),timeBlendFactor);
-        shadowLerp = mix2(shadowLerp, vec3(0.0), rainFactor);
-        if(depth2 >= 1.0) shadowLerp = vec3(1.0 - timeBlendFactor);
+        float shadowLerp = length(mix2(GetShadow(depth2, footPos, Normal, sunWorldPos, sunWorldDir),vec3(0.0),timeBlendFactor));
+        shadowLerp = mix2(shadowLerp, 0.0, rainFactor);
+        shadowLerp = mix2(shadowLerp, 1.0 - timeBlendFactor, step(1.0, depth2));
 
         /*vec3 ambientLight = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*SHADOW_BRIGHTNESS, sunlightAlbedo*1.5, max(vec3(step(isFoliage, 0.5)),shadowLerp));
 
@@ -786,8 +781,8 @@
 
         float isStainedGlass = texture2D(colortex10, texCoord).b;
 
-        vec3 totalSunlight = mix2(sunlightAlbedo*mix2(0.375, 0.25, isStainedGlass), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B)*0.375,timeBlendFactor);
-        totalSunlight = mix2(totalSunlight,vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*SHADOW_BRIGHTNESS*0.625, 1 - clamp(length(shadowLerp),0,1));
+        vec3 totalSunlight = mix2(sunlightAlbedo*mix2(0.6, 0.25, isStainedGlass), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B)*0.375,timeBlendFactor);
+        totalSunlight = mix2(totalSunlight,vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*SHADOW_BRIGHTNESS*0.625, 1 - clamp(shadowLerp,0,1));
         if(detectSky == 1.0 && depth2 == 1.0) {
             totalSunlight = vec3(0);
         }
@@ -798,56 +793,70 @@
         vec3 dynamicLight = vec3(0.0);
 
         vec4 cloudsNormal;
+
+        vec4 pos = vec4(footPos, 1.0);
+        vec3 rayDir = normalize2(pos.xyz);
+
+        vec2 uv = rayDir.xz*0.25/rayDir.y;
+        //vec2 uv2 = pos.xz*0.001+worldTime*0.1;
+
+        vec3 p = vec3(uv, 0);
+
+        //p.xy -= cloud_time;
+        //p.xy = fract(p.xy);
+
+        vec4 clouds = vec4(0.0);
+
+        vec3 light = vec3(0.0);
+
+        float cloudShadows = 0.0;
         
-        if(depth2 == 1.0) {
-            #if CLOUD_STYLE == 1
-                vec4 pos = vec4(texCoord, depth, 1.0) * 2.0 - 1.0;
-                pos.xyz = projectAndDivide(gbufferProjectionInverse,pos.xyz);
-                vec3 view_pos = pos.xyz;
-                pos = gbufferModelViewInverse * vec4(pos.xyz, 1.0);
-                vec3 rayDir = normalize2(pos.xyz);
+        vec3 color2 = color.rgb;
 
-                vec2 uv = rayDir.xz*0.25/rayDir.y;
-                vec2 uv2 = pos.xz*0.001+frameTimeCounter*0.1;
+        vec4 finalLight3 = vec4(0.0);
 
-                vec3 p = vec3(uv, 0);
+        vec4 lightColorTex = texture2D(colortex2, texCoord);
 
-                p.xy -= cloud_time;
-                p.xy = fract(p.xy);
+        vec3 decodedLight = decodeLight(lightColorTex.xyz,MAX_LIGHT);
+        
+        #if CLOUD_STYLE == 1
+            clouds = renderVolumetricClouds(p, rayDir, sunWorldPos, cloud_time);
 
-                vec4 clouds = vec4(0.0);
+            light = decodeLight(lightCalc.xyz,MAX_LIGHT);
 
-                vec3 light = vec3(0.0);
+            if(detectSky == 1.0) {
+                color2 = mix2(color2, clouds.rgb,clouds.a);
+            }
 
-                vec3 sunWorldPos = normalize2((gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz);
-
-                clouds = renderVolumetricClouds(p, rayDir, sunWorldPos);
-
-                light = decodeLight(lightCalc.xyz,MAX_LIGHT);
-
-                if(detectSky == 1.0) {
-                    color.rgb = mix2(color.rgb, clouds.rgb,clouds.a);
-                }
-
-                #if LIGHTING_MODE > 0
-                    if(detectSky == 1.0) {
-                        #ifdef VOLUMETRIC_LIGHTING
-                            finalLight = vec4(mix2(light, decodeLight(texture2D(colortex2, texCoord).xyz,MAX_LIGHT)*texture2D(colortex2, texCoord).a + light, 1 - clouds.a),texture2D(colortex2, texCoord).a);
-                        #else
-                            finalLight = vec4(mix2(vec3(0.0), decodeLight(texture2D(colortex2, texCoord).xyz,MAX_LIGHT), 1 - clouds.a),1.0);
-                        #endif
-                    }
+            #if LIGHTING_MODE > 0
+                #ifdef VOLUMETRIC_LIGHTING
+                    finalLight3 = vec4(mix2(light, decodedLight*lightColorTex.a + light, 1 - clouds.a),lightColorTex.a);
                 #else
-                    finalLight = vec4(texture2D(colortex2, texCoord).xyz*2.5, texture2D(colortex2, texCoord).a);
+                    finalLight3 = vec4(mix2(vec3(0.0), decodeLight(lightColorTex.xyz,MAX_LIGHT), 1 - clouds.a),1.0);
                 #endif
+            #else
+                finalLight = vec4(lightColorTex.xyz*2.5, lightColorTex.a);
             #endif
-        } else {
-            #if LIGHTING_MODE == 1
-                dynamicLight = pow2(decodeLight(texture2D(colortex2, texCoord).xyz,MAX_LIGHT), vec3(GAMMA)) * 0.5 * AdjustLightmap(texture2D(colortex13, texCoord).xy).x;
-                if(waterTest > 0) dynamicLight *= GAMMA * GAMMA;
-                if(detectEntity > 0.0) dynamicLight = min(dynamicLight, vec3(MAX_LIGHT*0.1));
-            #endif
+            finalLight3 = mix2(vec4(0.0), finalLight3, detectSky);
+        #endif
+        if(detectSky > 0.0) {
+            color.xyz = color2;
+            finalLight = finalLight3;
+            outcolor = vec4(pow2(color.xyz, vec3(1/GAMMA)), 1.0);
+            outlight = encodeLight(finalLight,MAX_LIGHT);
+            return;
         }
+        #if LIGHTING_MODE == 1
+            dynamicLight = pow2(decodedLight, vec3(GAMMA)) * 0.5 * AdjustLightmap(1 - lightmap).x;
+            dynamicLight = mix2(dynamicLight, dynamicLight * GAMMA * GAMMA, waterTest);
+            dynamicLight = mix2(dynamicLight, min(dynamicLight, vec3(MAX_LIGHT*0.1)), detectEntity);
+
+            dynamicLight = mix2(dynamicLight, vec3(0.0), step(1.0, depth2));
+        #endif
+
+        #if CLOUD_STYLE == 1
+            //cloudShadows = getCloudShadow(pos.xzy, rayDir, sunWorldDir, cloud_time);
+        #endif
 
         /*for(float t = 0.0; t < 1.0; t += stepSize) {
             vec2 sampleUV = clamp(texCoord + worldToScreen(scatterDir) * t,0,1);
@@ -870,7 +879,7 @@
             mediump float shadowBright = SHADOW_BRIGHTNESS;
             
             //vec4 vanilla = vanillaLight(1 - lightmap);
-            mediump float shadowSize = length(shadowLerp);
+            mediump float shadowSize = shadowLerp;
             if(depth >= 1.0) shadowSize = 1.0 - timeBlendFactor;
             //mediump float dynamicLightBlend = 1 - smoothstep(minLight, 1.0, length(vanilla) - length(finalLight));
             //dynamicLightBlend = mix2(dynamicLightBlend * isCave,1.0, step(isFoliage, 0.5));
@@ -884,15 +893,14 @@
 
             //if(texture2D(depthtex1, texCoord).x >= 1.0 && texture2D(depthtex0, texCoord).x < 1.0) finalLight.xyz = vec3(0.0);
 
-            vec3 viewNormal = normalize2((gbufferModelView * vec4(Normal.xyz, 1.0)).xyz);
-            vec3 viewPos = screenToView(texCoord, depth);
-            vec3 viewDir = normalize2(viewPos);
+            //vec3 viewNormal = normalize2((gbufferModelView * vec4(Normal.xyz, 1.0)).xyz);
+            //vec3 viewPos = screenToView(texCoord, depth);
+            //vec3 viewDir = normalize2(viewPos);
 
-            vec3 sunViewDir = normalize2(sunPosition);
-
-            vec3 worldPos = screenToWorld(texCoord, depth);
+            //vec3 sunViewDir = normalize2(sunPosition);
 
             //float distanceFromCamera = distance(cameraPosition*2.0, worldPos);
+
 
             float haze = clamp(pow2(getDistMask(colortex6) /70.0,0.75), 0.0, 1.0);
 
@@ -924,15 +932,15 @@
 
             finalLight2.w = 1.0;
 
-            vec3 LightmapColor3 = calcRim(viewDir, viewNormal, finalLight2.xyz, vec3(1.0, 0.9, 0.8));
+            //vec3 LightmapColor3 = calcRim(viewDir, viewNormal, finalLight2.xyz, vec3(1.0, 0.9, 0.8));
 
-            LightmapColor3 = calcSpec(viewDir, normalize2(sunPosition), viewNormal, LightmapColor3, vec3(1.0, 0.9, 0.8), 1.25);
+            //LightmapColor3 = calcSpec(viewDir, normalize2(sunPosition), viewNormal, LightmapColor3, vec3(1.0, 0.9, 0.8), 1.25);
 
-            float specAmount = specFactor(normalize2(worldPos - cameraPosition), normalize2(sunWorldPos), Normal, 2.0, 1.0) * shadowLerp.x;
+            //float specAmount = specFactor(normalize2(worldPos - cameraPosition), normalize2(sunWorldPos), Normal, 2.0, 1.0) * shadowLerp;
 
-            specAmount = clamp(specAmount, 0, 2.5);
+            //specAmount = clamp(specAmount, 0, 1.0);
 
-            finalLight2.xyz = mix2(finalLight2.xyz, vec3(1.0), specAmount);
+            //finalLight2.xyz = mix2(finalLight2.xyz, vec3(1.0), specAmount);
 
             //if(depth2 == 1.0) finalLight *= (1 - texture2D(colortex10, texCoord).x);
 
@@ -947,7 +955,7 @@
 
             //if(texture2D(colortex12, texCoord).b == 1.0 && depth2 != 1.0) finalLight.xyz = vec3(0.0);
 
-            if(!isBiomeEnd) color.xyz = mix2(color.xyz, skyInfluenceColor, haze*0.05);
+            color.xyz = mix2(mix2(color.xyz, skyInfluenceColor, haze*0.05), color.xyz, seFactor);
 
             if(detectSky == 1.0 && depth2 == 1.0) finalLight2.xyz = decodeLight(dynamicLight,MAX_LIGHT);
 
@@ -957,9 +965,10 @@
 
             //finalLight.xyz *= mix2(0.75, 1.25, aoHash(texCoord/vec2(1.0,viewPos.z)));
 
-            finalLight2.xyz += min(dynamicLight*2, vec3(MAX_LIGHT));
+            finalLight2.xyz += min(dynamicLight*2, vec3(MAX_LIGHT)) * mix2(1.0, 0.1, waterTest * seFactor);
 
             finalLight = mix2(finalLight, finalLight2, isLit);
+            finalLight = mix2(finalLight, finalLight3, detectSky);
             /*mediump float lightBlend2 = max(1 - length(shadowLerp),timeBlendFactor);
             if(depth == 1.0 && detectSky == 0.0) lightBlend2 = 0.0;
             finalLight += vec4(mix2(totalSunlight*1.25, ambientLight*shadowBright * 0.75,lightBlend2),1.0);
@@ -981,9 +990,10 @@
             //finalLight.xyz *= 0.99 + lightVariationNoise(texCoord) * 0.05;
             //if(waterTest > 0) finalLight.xyz = texture2D(colortex2, texCoord).xyz*16;
 
+            color.xyz = mix2(color.xyz, color2, detectSky);
+            
             color.xyz = blindEffect(color.xyz, texCoord);
         #elif LIGHTING_MODE == 2
-            vec3 worldPos = screenToWorld(texCoord, depth);
             vec3 throughput = color.xyz;
             vec3 radiance = vec3(0.0);
 
@@ -1019,15 +1029,12 @@
 
         outcolor = vec4(pow2(color.xyz, vec3(1/GAMMA)), 1.0);
         outlight = encodeLight(finalLight,MAX_LIGHT);
-        outbufferA = texture2D(colortex3, texCoord);
-        outbufferB = texture2D(colortex4, texCoord);
-        outbufferC = texBuffer5;
         outbufferD = texture2D(colortex6, texCoord);
+        outbufferD.x = outbufferD.z;
         #if AO > 0
-            vec3 foot_pos = screenToFoot(texCoord, depth);
             float aoAmount = 1.0;
             float depthTest = step(1.0, depth);
-            aoAmount = mix2(calcAO(texCoord, foot_pos, 25, depthtex0, colortex1),DHcalcAO(texCoord, foot_pos, 25, colortex6, colortex1),depthTest);
+            aoAmount = mix2(calcAO(texCoord, footPos, 25, depthtex0, colortex1),DHcalcAO(texCoord, footPos, 25, colortex6, colortex1),depthTest);
             #ifdef POM
                 float aoHeight = pow2(texture2D(colortex11, texCoord).z * 15.0,2.2);
                 aoAmount *= 2.0 - clamp(aoHeight,0,2);
@@ -1035,7 +1042,7 @@
             outbufferD.z = aoAmount;
             imageStore(cimage15, ivec2(texCoord * imageSize(cimage15)), vec4(aoAmount));
         #endif
-        outbufferE = vec4(length(shadowLerp), encodeDist(linearDepth0,far), encodeDist(linearDepth1,far), 1.0);
+        outbufferE = vec4(length(shadowLerp), cloudShadows, encodeDist(linearDepth1,far), 1.0);
     }
 #endif
 

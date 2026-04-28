@@ -58,7 +58,7 @@
 
 // Shadow Brightness
 
-#define SHADOW_BRIGHTNESS 0.4f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+#define SHADOW_BRIGHTNESS 0.5f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
 
 //<-------------[Light Levels (Silent Expanse)]-------------->\\
 

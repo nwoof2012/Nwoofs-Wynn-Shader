@@ -351,6 +351,14 @@ float decodeDist(float x, float maxDist) {
     return (exp2(x * log2(1.0 + maxDist)) - 1.0);
 }
 
+vec3 encodePos(vec3 d, float maxDist) {
+    return log2(1.0 + d) / log2(1.0 + maxDist);
+}
+
+vec3 decodePos(vec3 x, float maxDist) {
+    return (exp2(x * log2(1.0 + maxDist)) - 1.0);
+}
+
 vec3 encodeLight(vec3 light, float maxLight) {
     return log2(light + 1.0) / log2(maxLight + 1.0);
 }

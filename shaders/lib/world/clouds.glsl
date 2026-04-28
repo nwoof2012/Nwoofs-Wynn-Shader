@@ -13,6 +13,22 @@
 
 vec4 lightCalc;
 
+float cloudCoverage;
+
+vec3 warp(vec3 uv) {
+    float w1 = texture2D(noiseb, uv.xz * 0.5).x;
+    float w2 = texture2D(noiseb, uv.xz * 0.5 + 17.3).x;
+
+    return vec3(w1, 0.0, w2) * 2.0 - 1.0;
+}
+
+vec3 heightWarp(float height) {
+    float w1 = texture2D(noiseb, vec2(0.0, height * 0.5)).r;
+    float w2 = texture2D(noiseb, vec2(0.0, height * 0.5 + 17.3)).r;
+
+    return vec3(w1, 0.0, w2) * 2.0 + 1.0;
+}
+
 vec3 getNormalFrom2DMap(vec2 uv, float scale) {
     float eps = 1.0 / textureSize(cloudtex, 0).x; // one texel
 
@@ -125,7 +141,41 @@ vec3 getCloudNormal(vec3 pos) {
     return normalize2(vec3(dx, dy, dz));
 }
 
-vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
+#define SHADOW_STEPS 8
+#define SHADOW_STEP_SIZE (CLOUD_TOP - CLOUD_BASE)/float(SHADOW_STEPS)
+
+float getCloudShadow(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float cloudTime) {
+    vec3 dir = normalize2(sunDir);
+
+    float shadow = 1.0;
+
+    float t = max((CLOUD_BASE - rayOrigin.y)/rayDir.y,0.0);
+    vec3 pos = rayOrigin + rayDir * t;
+
+    // Convert world position into "skybox sampling space"
+    vec3 skyDir = normalize2(pos); // important!
+
+    for(int i = 0; i < SHADOW_STEPS; i++) {
+        vec3 sampleDir = normalize2(pos + dir * (float(i) * 0.02));
+
+        vec3 movePos = sampleDir * 0.075 + vec3(cloudTime * 0.01, 0.0, cloudTime * 0.01);
+        vec3 movePos2 = sampleDir * 0.075 - vec3(cloudTime * 0.01, 0.0, cloudTime * 0.01);
+
+        // SAMPLE SKYBOX CLOUD FIELD (NOT WORLD SPACE)
+        float density0 = texture2D(cloudtex, movePos.xz * 0.5 + 0.5).r;
+        float density1 = texture2D(cloudtex, movePos2.xz * 0.5 + 0.5).r;
+
+        float density = min(density0, density1);
+        
+        shadow *= exp(-density * 0.6);
+
+        pos += rayDir * SHADOW_STEP_SIZE;
+    }
+
+    return shadow;
+}
+
+vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float cloudTime) {
     float t = max((CLOUD_BASE - rayOrigin.y)/rayDir.y,0.0);
     vec3 pos = rayOrigin + rayDir * t;
 
@@ -154,6 +204,9 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
     float centerPos = CLOUD_BASE + (CLOUD_TOP - CLOUD_BASE)/2;
     float cloudHeight = (CLOUD_TOP - CLOUD_BASE);
 
+    vec3 ambientLight = vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B);
+    vec3 volumetricLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
+
     for(int i = 0; i < CLOUD_STEPS; i++) {
         if(rayDir.y < 0.0) continue;
 
@@ -161,21 +214,21 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
 
         vec2 uv = pos.xz * 0.00075;
 
-        uv += vec2(frameTimeCounter * 0.001);
+        //uv += vec2(frameTimeCounter * 0.001);
 
-        uv = fract(uv);
+        //uv = fract(uv);
 
         //vec3 offset = texture2D(clouddis, uv).rgb * 2 - 1;
 
-        vec3 movePos = pos * 0.075 + vec3(frameTimeCounter,0.0,frameTimeCounter);
-        vec3 movePos2 = pos * 0.075 + vec3(frameTimeCounter, 0.0,frameTimeCounter);
+        vec3 movePos = (pos + warp(pos * 0.00025) * 100) * 0.075 + vec3(cloudTime,0.0,cloudTime);
+        //vec3 movePos2 = pos * 0.075 + vec3(cloudTime, 0.0,cloudTime);
 
-        float density = cloudBilinear(movePos, vec3(STEP_SIZE));
-        float density2 = cloudBilinear(movePos2, vec3(STEP_SIZE));
-        density = min(density, density2);
+        float density = smoothstep(clamp(abs((pos.y - centerPos)/cloudHeight),0, 0.9), 1, cloudBilinear(movePos, vec3(STEP_SIZE)));
+        //float density2 = calcDensity(movePos);
+        //density = min(density, density2);
         //density *= (1.0 - abs(pos.y - centerPos))/cloudHeight;
         //density = pow2(density,(1.0 - abs(pos.y - centerPos))/cloudHeight);
-        float densityRain = smoothstep(0.5 * clamp(1 - rainFactor*1.75,0,1), 0.7,texture2D(cloudtex, uv).r);
+        //float densityRain = smoothstep(0.5 * clamp(1 - rainFactor*1.75,0,1), 0.7,cloudBilinear(movePos, vec3(STEP_SIZE)));
         //density = smoothstep(i/CLOUD_STEPS * 2 - 1, 1.0, density);
         //density = mix2(density, densityRain, rainFactor);
         /*if(length(texture2D(cloudnormal, uv).xyz) > 0.1) {
@@ -206,7 +259,7 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
         float depth = density;
         depthMask = min(depth, depthMask);
 
-        #ifdef VOLUMETRIC_LIGHTING
+        /*#ifdef VOLUMETRIC_LIGHTING
             lighting = vec3(1.0);
             float cloud_time = frameTimeCounter * 0.001;
             float sun_dot = dot(sunDir, normalize2(vec3(0, 1, 0)));
@@ -224,8 +277,22 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
             lighting = lighting.r * vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
             lighting = mix2(vec3(0.0), lighting, smoothstep(0.2, 0.9, length(lighting)));
             lighting = mix2(lighting * 0.55, lighting, 1 - smoothstep(0.75, 1.0, alphaAcc));
+        #endif*/
+        #ifdef VOLUMETRIC_LIGHTING
+            float lightLevel = 0.0;
+            float transmittance = 1.0;
+            for(int i = 0; i < 4; i++) {
+                float h = density;
+                float hLight = cloudBilinear(movePos + sunDir * i * 0.01, vec3(STEP_SIZE));
+
+                float verticalEffect = sunDir.y * (1.0 - h);
+                float horizontalEffect = hLight - h;
+                lightLevel += (horizontalEffect + verticalEffect) * transmittance;
+                transmittance *= 0.7;
+            }
+            lighting += volumetricLight * lightLevel/8;
         #endif
-        lighting = mix2(lighting, vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B) * MIN_LIGHT, rainFactor);
+        //lighting = mix2(lighting, vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B) * MIN_LIGHT, rainFactor);
         //colorAcc = mix2(colorAcc, colorAcc * lighting, (1 - dot(sunDir, normalize2((gbufferModelView * gbufferProjection * vec4(getNormalFrom2DMap(uv, 1.0),1.0)).xyz))) * 0.25);
 
         pos += rayDir * STEP_SIZE;
@@ -237,36 +304,27 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
             calcDensity(movePos + vec3(0, STEP_SIZE, 0)) - calcDensity(movePos - vec3(0, STEP_SIZE, 0))
         )) / float(CLOUD_STEPS);*/
 
-        vec3 uvX_A = movePos + vec3(STEP_SIZE, 0, 0);
+        /*vec3 uvX_A = movePos + vec3(STEP_SIZE, 0, 0);
         vec3 uvX_B = movePos - vec3(STEP_SIZE, 0, 0);
 
-        vec3 uvX_C = movePos2 + vec3(STEP_SIZE, 0, 0);
-        vec3 uvX_D = movePos2 - vec3(STEP_SIZE, 0, 0);
-
-        vec3 uvY_A = movePos + vec3(0, STEP_SIZE, 0);
-        vec3 uvY_B = movePos - vec3(0, STEP_SIZE, 0);
-
-        vec3 uvY_C = movePos2 + vec3(0, STEP_SIZE, 0);
-        vec3 uvY_D = movePos2 - vec3(0, STEP_SIZE, 0);
+        vec3 uvY_A = movePos + vec3(0,STEP_SIZE,0);
+        vec3 uvY_B = movePos - vec3(0,STEP_SIZE,0);
         
         vec3 uvZ_A = movePos + vec3(0, 0, STEP_SIZE);
-        vec3 uvZ_B = movePos - vec3(0, 0, STEP_SIZE);
-
-        vec3 uvZ_C = movePos2 + vec3(0, 0, STEP_SIZE);
-        vec3 uvZ_D = movePos2 - vec3(0, 0, STEP_SIZE);
+        vec3 uvZ_B = movePos - vec3(0, 0, STEP_SIZE);*/
         
         /*float dX = min(cloudBilinear(uvX_A, vec3(STEP_SIZE)),cloudBilinear(uvX_C, vec3(STEP_SIZE))) - min(cloudBilinear(uvX_B, vec3(STEP_SIZE)),cloudBilinear(uvX_D, vec3(STEP_SIZE)));
         float dY = min(cloudBilinear(uvY_A, vec3(STEP_SIZE)),cloudBilinear(uvY_C, vec3(STEP_SIZE))) - min(cloudBilinear(uvY_B, vec3(STEP_SIZE)),cloudBilinear(uvY_D, vec3(STEP_SIZE)));
         float dZ = min(cloudBilinear(uvZ_A, vec3(STEP_SIZE)),cloudBilinear(uvZ_C, vec3(STEP_SIZE))) - min(cloudBilinear(uvZ_B, vec3(STEP_SIZE)),cloudBilinear(uvZ_D, vec3(STEP_SIZE)));*/
 
-        float dX = min(cloudBilinear(uvX_A, vec3(STEP_SIZE)),cloudBilinear(uvX_C, vec3(STEP_SIZE)))- density;
-        float dY = density;
-        float dZ = min(cloudBilinear(uvZ_A, vec3(STEP_SIZE)),cloudBilinear(uvZ_C, vec3(STEP_SIZE))) - density;
-        normalMap += normalize2(vec3(dX, dY, dZ) * 2 - 1);
+        //float dX = cloudBilinear(uvX_A, vec3(STEP_SIZE)) - cloudBilinear(uvX_B, vec3(STEP_SIZE));
+        //float dY = cloudBilinear(uvY_A, vec3(STEP_SIZE)) - cloudBilinear(uvY_B, vec3(STEP_SIZE));
+        //float dZ = cloudBilinear(uvZ_A, vec3(STEP_SIZE)) - cloudBilinear(uvZ_B, vec3(STEP_SIZE));
+        //normalMap += normalize2(vec3(dX, dY + STEP_SIZE/CLOUD_STEPS, dZ) * 2 - 1);
     }
 
-    mat3 tbn = tbnNormalTangent(VertNormal, Tangent);
-    normalMap /= CLOUD_STEPS;
+    //mat3 tbn = tbnNormalTangent(VertNormal, Tangent);
+    //normalMap /= CLOUD_STEPS;
     //normalMap.y = 1.0;
     //normalMap = normalize2(normalMap);
     
@@ -281,6 +339,7 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
 
     #ifdef VOLUMETRIC_LIGHTING
         //lighting = mix2(cloudAmbience, cloudLight, clamp(dot(sunDir.xyz, normalize2(normalMap)),0,1));
+        //lighting *= light;
     #endif
 
     colorAcc = pow2(colorAcc/CLOUD_STEPS,vec3(1/8.0));
@@ -289,21 +348,35 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) {
 
     alphaAcc *= mix2(0.25,1.0,rainFactor);
 
+    cloudCoverage = alphaAcc;
+
     normalMap.y *= alphaAcc;
 
     normalMap = normalize2(normalMap);
 
     normalMap *= smoothstep(0, 0.1, alphaAcc);
 
-    colorAcc = colorAcc * mix2(cloudAmbience, cloudLight, clamp(dot(sunDir, normalize2(normalMap)),0,1) * (1 - rainFactor));
+    //colorAcc = colorAcc * mix2(cloudAmbience, cloudLight, clamp(dot(sunDir, normalize2(normalMap)),0,1) * (1 - rainFactor));
+
+    //colorAcc *= cloudAmbience;
+
+    //colorAcc *= mix2(cloudAmbience, cloudLight, light/CLOUD_STEPS);
 
     vec3 sunColor = mix2(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B),vec3(0.0), rainFactor);
+    
+    #ifdef VOLUMETRIC_LIGHTING
+        lighting = max(lighting, vec3(0.0));
+        lighting = mix2(ambientLight + lighting/(CLOUD_STEPS * 16), ambientLight, rainFactor);
+        vec3 nightLighting = mix2(ambientLight, cloudLight, densitySum/CLOUD_STEPS);
+        lighting = mix2(lighting, nightLighting, timeBlendFactor);
+        colorAcc *= lighting;
+    #endif
 
     //lightCalc = vec4(texture2D(colortex2, texCoord).xyz + sunColor*texture2D(colortex2, texCoord).x,1.0)*(1-rainFactor)*smoothstep(0.25, 1, 1 - pow2(alphaAcc/2,0.5) * 2);
 
-    //return vec4(normalMap, 1.0);
+    //return vec4(abs(normalMap), 1.0);
 
-    //return vec4(vec3(dot(-sunDir, normalMap)),1.0);
+    //return vec4(mix2(vec3(1,0,0), vec3(0,0,1), dot(-sunDir, normalMap)) * alphaAcc,1.0);
 
     //return vec4(lighting, 1.0);
 

@@ -524,11 +524,13 @@
                                 float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
                                 //lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
 
-                                lighting += decodeLightmap(bytes) * smoothstep(LIGHT_RADIUS, 0, sampleWeight) * LightmapCoords.x;
-                                
-                                weight += smoothstep(LIGHT_RADIUS, 0, sampleWeight);
+                                float weightSampled = smoothstep(LIGHT_RADIUS, 0, sampleWeight);
 
-                                lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
+                                lighting += decodeLightmap(bytes) * weightSampled * LightmapCoords.x;
+
+                                weight += weightSampled;
+
+                                //lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
                             }
                         }
                         lighting /= max(weight,1.0);
@@ -548,7 +550,7 @@
                 vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
                 //if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
                 finalLighting2 = max(finalLighting2, vec4(0.0));
-                finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(float(any(notEqual(clamp(voxel_pos,0,VOXEL_AREA), voxel_pos))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
+                finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(1 - step(length(voxel_pos), length(vec2(VOXEL_AREA))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
                 uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
                 gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);
             #endif
@@ -570,13 +572,22 @@
     #include "/lib/globalDefines.glsl"
     #include "/lib/includes2.glsl"
 
+    #define DEG_2_RAD 0.01745329251
+    #define RAD_2_DEG 1.0/DEG_2_RAD
+
     #define PATH_TRACING_GI 0 // [0 1]
 
     #define WAVING_FOLIAGE
+    
+    #define WIND_DIRECTION_TYPE 1 // [0 1]
+
+    #define WIND_DIRECTION_STATIC 45.0 // [0.0 22.5 45.0 67.5 90 112.5 135.0 180.0 202.5 225.0 247.5 270.0 292.5 315 337.5]
+
+    #define WIND_DIR_STATIC WIND_DIRECTION_STATIC * DEG_2_RAD
 
     #define WAVING_GRASS
     #define GRASS_SPEED 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
-    #define GRASS_INTENSITY 1.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    #define GRASS_INTENSITY 2.0f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 
     #define WAVING_LEAVES
     #define LEAVES_SPEED 0.5f // [0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
@@ -647,6 +658,8 @@
 
     flat out uint lightData;
 
+    uniform int worldDay;
+
     mediump float bottomY = at_midBlock.y - 0.5;
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
@@ -657,6 +670,14 @@
     const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
     const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
     const vec3 FireColor = vec3(1.0f, 0.25f, 0.08f);
+
+    float rand(float n) {
+        return fract(sin(n) * 43758.5453123);
+    }
+
+    float normSine(float x) {
+        return sin(x) * 0.5 + 0.5;
+    }
 
     vec3 GetRawWave(in vec3 pos, float wind) {
         mediump float magnitude = sin(wind * 0.0027 + pos.z + pos.y) * 0.04 + 0.04;
@@ -673,10 +694,32 @@
 
     vec4 foliageWave(vec3 world, vec3 view, float speed, float intensity) {
         float windPhase = world.x * 0.2 + world.z * 0.2;
-        float wind = sin(windPhase * 50 + frameTimeCounter * 1.2 * speed) + 0.5 * sin(windPhase * 115 + frameTimeCounter * 2.0 * speed);
+        float wind = normSine(windPhase * 50 + frameTimeCounter * 1.2 * speed) + 0.5 * normSine(windPhase * 115 + frameTimeCounter * 2.0 * speed);
+        #if WIND_DIRECTION_TYPE == 0
+            vec2 windDir = vec2(cos(WIND_DIR_STATIC), sin(WIND_DIR_STATIC));
+        #else
+            float windAngle = (45.0 + float(int(rand(frameTimeCounter/2400000.0) * 16))) * DEG_2_RAD;
+            vec2 windDir = vec2(cos(windAngle), sin(windAngle));
+        #endif
         float heightMask = clamp(1 - bottomY, 0.0, 1.0);
         float swayAmount = intensity * 0.1;
-        vec2 offsetXZ = vec2(wind * swayAmount * heightMask);
+        vec2 offsetXZ = vec2(wind * swayAmount * heightMask) * windDir;
+        vec3 offset = vec3(offsetXZ.x, 0.0, offsetXZ.y);
+        vec4 wavePos = vec4(view + (gbufferModelView * vec4(offset,0.0)).xyz,1.0);
+        return gbufferProjection * wavePos;
+    }
+
+    vec4 leavesWave(vec3 world, vec3 view, float speed, float intensity) {
+        float windPhase = world.x * 0.2 + world.z * 0.2;
+        float wind = normSine(windPhase * 50 + frameTimeCounter * 1.2 * speed) + 0.5 * normSine(windPhase * 115 + frameTimeCounter * 2.0 * speed);
+        #if WIND_DIRECTION_TYPE == 0
+            vec2 windDir = vec2(cos(WIND_DIR_STATIC), sin(WIND_DIR_STATIC));
+        #else
+            float windAngle = (45.0 + float(int(rand(frameTimeCounter/2400000.0) * 16))) * DEG_2_RAD;
+            vec2 windDir = vec2(cos(windAngle), sin(windAngle));
+        #endif
+        float swayAmount = intensity * 0.1;
+        vec2 offsetXZ = vec2(wind * swayAmount) * windDir;
         vec3 offset = vec3(offsetXZ.x, 0.0, offsetXZ.y);
         vec4 wavePos = vec4(view + (gbufferModelView * vec4(offset,0.0)).xyz,1.0);
         return gbufferProjection * wavePos;
@@ -826,7 +869,7 @@
                     if(isFoliage == 1.0) gl_Position = foliageWave(world_pos, view_pos, GRASS_SPEED, GRASS_INTENSITY);
                 #endif
                 #ifdef WAVING_LEAVES
-                    if(isLeaves == 1.0) gl_Position = foliageWave(world_pos, view_pos, LEAVES_SPEED, LEAVES_INTENSITY);
+                    if(isLeaves == 1.0) gl_Position = leavesWave(world_pos, view_pos, LEAVES_SPEED, LEAVES_INTENSITY);
                 #endif
                 //vec3 waving = vec3(GRASS_INTENSITY * sin(frameTimeCounter * GRASS_SPEED));
                 //gl_Position += gbufferProjection * gbufferModelView * (vec4(waving.x,0.0,waving.x,0.0)*(clamp(pow(1 - bottomY,1.5),0,1)) * 0.125);

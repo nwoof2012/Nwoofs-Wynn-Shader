@@ -136,6 +136,16 @@ option.FOG_SE_INTENSITY=§bIntensity
 option.FOG_SE_CURVE=§eCurve
 option.FOG_SE_DENSITY=§6Density
 
+option.FOG_CORRUPTION_R=§cRed
+option.FOG_CORRUPTION_G=§aGreen
+option.FOG_CORRUPTION_B=§9Blue
+option.FOG_CORRUPTION_DIST_MIN=§7Minimum Distance
+option.FOG_CORRUPTION_DIST_MAX=§7Maximum Distance
+option.DH_FOG_CORRUPTION_DIST_MAX=§7Distant Horizons Far Plane
+option.FOG_CORRUPTION_INTENSITY=§bIntensity
+option.FOG_CORRUPTION_CURVE=§eCurve
+option.FOG_CORRUPTION_DENSITY=§6Density
+
 option.FOG_DAY_RAIN_R=§cRed
 option.FOG_DAY_RAIN_G=§aGreen
 option.FOG_DAY_RAIN_B=§9Blue
@@ -634,6 +644,8 @@ screen.FOG_SUNSET = §6Sunrise§7/§6Sunset
 screen.FOG_SUNSET_RAIN = §9Rain
 
 screen.FOG_SE = §dSilent Expanse
+
+screen.FOG_CORRUPTION = §cRoots of Corruption
 
 screen.FOG_CAVE = §7Cave
 

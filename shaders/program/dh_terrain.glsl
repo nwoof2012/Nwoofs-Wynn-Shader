@@ -376,7 +376,7 @@
 
         float distanceFromCamera = distance(viewSpaceFragPosition, vec3(0.0));
 
-        fogOut = vec4(0.0, encodeDist(distanceFromCamera, dhFarPlane), remapDHDepth(dhDepth, near, far, dhFarPlane), 1.0);
+        fogOut = vec4(0.0, distanceFromCamera/dhFarPlane, dhDepth, 1.0);
 
         if(alpha >= 0.1 && depth >= dhDepth && depth == 1) {
 

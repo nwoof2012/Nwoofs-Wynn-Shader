@@ -35,6 +35,7 @@
     uniform vec3 skyColor;
 
     uniform bool isBiomeEnd;
+    uniform bool isBiomeNether;
     uniform bool isBiomeDry;
 
     uniform sampler2D colortex11;
@@ -81,7 +82,7 @@
 
     in vec3 Normal;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
 
@@ -252,6 +253,16 @@
             nightColorB = vec3(SKY_SE_NIGHT_B_R,SKY_SE_NIGHT_B_G,SKY_SE_NIGHT_B_B);
             transitionColorA = vec3(SKY_SE_SUNSET_A_R,SKY_SE_SUNSET_A_G,SKY_SE_SUNSET_A_B);
             transitionColorB = vec3(SKY_SE_SUNSET_B_R,SKY_SE_SUNSET_B_G,SKY_SE_SUNSET_B_B);
+        } else if(isBiomeNether) {
+            dayColorA = vec3(SKY_CORRUPTION_DAY_A_R,SKY_CORRUPTION_DAY_A_G,SKY_CORRUPTION_DAY_A_B);
+            dayColorB = vec3(SKY_CORRUPTION_DAY_B_R,SKY_CORRUPTION_DAY_B_G,SKY_CORRUPTION_DAY_B_B);
+
+            dayColorRainA = vec3(SKY_CORRUPTION_DAY_A_R,SKY_CORRUPTION_DAY_A_G,SKY_CORRUPTION_DAY_A_B);
+            dayColorRainB = vec3(SKY_CORRUPTION_DAY_B_R,SKY_CORRUPTION_DAY_B_G,SKY_CORRUPTION_DAY_B_B);
+            nightColorA = vec3(SKY_CORRUPTION_NIGHT_A_R,SKY_CORRUPTION_NIGHT_A_G,SKY_CORRUPTION_NIGHT_A_B);
+            nightColorB = vec3(SKY_CORRUPTION_NIGHT_B_R,SKY_CORRUPTION_NIGHT_B_G,SKY_CORRUPTION_NIGHT_B_B);
+            transitionColorA = vec3(SKY_CORRUPTION_SUNSET_A_R,SKY_CORRUPTION_SUNSET_A_G,SKY_CORRUPTION_SUNSET_A_B);
+            transitionColorB = vec3(SKY_CORRUPTION_SUNSET_B_R,SKY_CORRUPTION_SUNSET_B_G,SKY_CORRUPTION_SUNSET_B_B);
         } else {
             dayColorA = vec3(SKY_DAY_A_R,SKY_DAY_A_G,SKY_DAY_A_B);
             dayColorB = vec3(SKY_DAY_B_R,SKY_DAY_B_G,SKY_DAY_B_B);

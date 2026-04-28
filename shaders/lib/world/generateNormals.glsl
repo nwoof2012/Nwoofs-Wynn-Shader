@@ -19,31 +19,34 @@ vec4 normalFromDepth(vec2 uv, sampler2D tex, vec2 resolution, float scale) {
     return vec4(normalize2(vec3(dxy * scale / stepSize, 1.0)),height);
 }
 
-mediump float GetDif(float lOriginalAlbedo, vec2 offsetCoord, sampler2D tex) {
-    #ifndef GBUFFERS_WATER
-        mediump float lNearbyAlbedo = length(texture2D(tex, offsetCoord).rgb);
-    #else
-        vec4 textureSample = texture2D(tex, offsetCoord);
-        mediump float lNearbyAlbedo = length(textureSample.rgb * textureSample.a * 1.5);
-    #endif
+float getCloudShadow(vec3 worldPos, vec3 sunDir) {
+    vec3 lightDir = normalize(-sunDir);
 
-    #ifdef GBUFFERS_ENTITIES
-        lOriginalAlbedo = abs(lOriginalAlbedo - 1.0);
-        lNearbyAlbedo = abs(lNearbyAlbedo - 1.0);
-    #endif
+    if (abs(lightDir.y) < 0.01) return 1.0;
 
-    mediump float dif = lOriginalAlbedo - lNearbyAlbedo;
+    float t = (CLOUD_BASE - worldPos.y) / lightDir.y;
+    if (t < 0.0) return 1.0;
 
-    #ifdef GBUFFERS_ENTITIES
-        dif = -dif;
-    #endif
+    vec3 pos = worldPos + lightDir * t;
 
-    #ifndef GBUFFERS_WATER
-        if (dif > 0.0) dif = max(dif - normalThreshold, 0.0);
-        else           dif = min(dif + normalThreshold, 0.0);
-    #endif
+    float shadow = 1.0;
 
-    return clamp(dif, -normalClamp, normalClamp);
+    float stepSize = (CLOUD_TOP - CLOUD_BASE) / float(SHADOW_STEPS);
+
+    for (int i = 0; i < SHADOW_STEPS; i++) {
+        if (pos.y < CLOUD_BASE || pos.y > CLOUD_TOP)
+            break;
+
+        vec3 movePos = pos * 0.075 + vec3(frameTimeCounter, 0.0, frameTimeCounter);
+
+        float density = cloudBilinear(movePos, vec3(STEP_SIZE));
+
+        shadow *= exp(-density * 0.5);
+
+        pos += lightDir * stepSize;
+    }
+
+    return clamp(shadow, 0.0, 1.0);
 }
 
 void GenerateNormals(inout vec3 normal, vec3 color, sampler2D tex, mat3 tbnMatrix) {

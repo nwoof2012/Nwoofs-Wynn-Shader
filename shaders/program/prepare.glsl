@@ -72,10 +72,10 @@
         return lighting;
     }
 
-    layout (local_size_x = 8, local_size_y = 16, local_size_z = 1) in;
+    layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
     void main() {
-        #if LIGHTING_MODE > 0 && SCENE_AWARE_LIGHTING == 2
+        #if LIGHTING_MODE > 0 && SCENE_AWARE_LIGHTING > 0
             ivec3 origin_voxel_pos = ivec3(gl_GlobalInvocationID.xyz);
             ivec3 camshift = cameraPositionInt-previousCameraPositionInt;
 
@@ -101,11 +101,12 @@
                 
                 if(neighbor == ivec3(0)) continue;
 
-                vec4 light = imageLoad(cimage2, origin_voxel_pos+neighbor);
+                uint sampleValue = imageLoad(cimage1, origin_voxel_pos+neighbor).r;
+                vec4 light = decodeLightmap(sampleValue);
                 totalLight += light;
             }
 
-            imageStore(cimage2, voxel_pos_new, vec4(encodeLight(totalLight.xyz,MAX_LIGHT),totalLight.w));
+            imageStore(cimage2, voxel_pos_new, totalLight);
         #endif
     }
 #endif
