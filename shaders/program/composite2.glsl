@@ -5,6 +5,7 @@
     #define HALF_PI 1.5707963267948966f
 
     #define CLOUD_STYLE 1 // [0 1]
+    #define BKG_CLOUDS 1 // [0 1]
     #define CLOUD_FOG 0.5 // [0.0 0.25 0.5 0.75 1.0]
     #define CLOUD_DENSITY 0.5 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
     #define CLOUD_DENSITY_RAIN 0.75 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
@@ -806,6 +807,8 @@
         //p.xy = fract(p.xy);
 
         vec4 clouds = vec4(0.0);
+        
+        vec4 clouds2 = vec4(0.0);
 
         vec3 light = vec3(0.0);
 
@@ -819,8 +822,14 @@
 
         vec3 decodedLight = decodeLight(lightColorTex.xyz,MAX_LIGHT);
         
+        #if BKG_CLOUDS == 1
+            clouds2 = renderBackgroundClouds(p, rayDir, sunWorldPos, cloud_time);
+        #endif
+        
         #if CLOUD_STYLE == 1
             clouds = renderVolumetricClouds(p, rayDir, sunWorldPos, cloud_time);
+            
+            clouds = mix2(clouds2, clouds, clouds.a);
 
             light = decodeLight(lightCalc.xyz,MAX_LIGHT);
 

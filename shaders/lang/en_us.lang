@@ -280,6 +280,11 @@ value.CLOUD_STYLE.0 = §cOff
 value.CLOUD_STYLE.1 = §aOn
 option.CLOUD_STYLE.comment = §9Enables 3-Dimensional Volumetric Clouds. §6§lMedium-High Performance Impact
 
+option.BKG_CLOUDS = §fBackground Clouds
+value.BKG_CLOUDS.0 = §cOff
+value.BKG_CLOUDS.1 = §aOn
+option.BKG_CLOUDS.comment = §9Enables distant clouds in the background. §aLow Performance Impact
+
 option.CLOUD_FOG = §fDistant Fog
 option.CLOUD_FOG.comment = §9Distant Fog amount on Volumetric Clouds.
 
@@ -505,7 +510,8 @@ value.AA.0=Off
 value.AA.1=Basic
 value.AA.2=SMAA
 value.AA.3=TAA
-option.AA.comment=§6Toggle between Antialiasing modes§7:. §7 - §9Off. §7 - §9Basic. §7 - §9SMAA. §7 - §9TAA
+value.AA.4=SIAA
+option.AA.comment=§6Toggle between Antialiasing modes§7:. §7 - §9Off. §7 - §9Basic. §7 - §9SMAA. §7 - §9TAA. §7 - §9SIAA
 
 option.BAA_SHARPEN_AMOUNT=§6Basic Sharpness
 option.BAA_SHARPEN_AMOUNT.comment=§9Adjust how much sharpening is applied to Basic AA

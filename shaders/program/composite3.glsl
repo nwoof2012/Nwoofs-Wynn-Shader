@@ -24,6 +24,10 @@
     uniform sampler2D colortex7;
     uniform sampler2D colortex13;
     uniform sampler2D colortex14;
+    uniform mat4 gbufferPreviousModelView;
+    uniform mat4 gbufferPreviousProjection;
+    uniform mat4 gbufferPreviousModelViewInverse;
+    uniform mat4 gbufferPreviousProjectionInverse;
 
     uniform sampler2D depthtex0;
     uniform sampler2D depthtex1;
@@ -1171,11 +1175,15 @@
         #include "/lib/antialiasing/smaa.glsl"
     #elif AA == 3
         #include "/lib/antialiasing/taa.glsl"
+    #elif AA == 4
+        #include "/lib/antialiasing/siaa.glsl"
     #endif
 
     mediump vec3 antialiasing(vec2 UVs, sampler2D tex) {
         mediump vec3 finalColor = texture2D(tex, UVs).rgb;
-        #if AA == 3
+        #if AA == 4
+            finalColor = applySIAA(UVs, tex);
+        #elif AA == 3
             finalColor = applyTAA(UVs, tex);
         #elif AA == 2
             mediump float edge = edgeFactor(UVs, tex);
@@ -1481,7 +1489,7 @@
             
             #ifdef BLOOM
                 mediump vec4 bloomAmount = vec4(0.0);
-                if(detectSky < 1.0) bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha),refractionUVs);
+                bloomAmount = bloom(waterTest, worldTexCoords.xy/vec2(500f) + refractionFactor, Normal, vec4(Albedo,albedoAlpha),refractionUVs);
                 LightmapColor = bloomAmount;
                 lightBrightness2 = bloomAmount.a;
             #else
@@ -1689,9 +1697,9 @@
                     Diffuse.xyz = blindEffect(Diffuse.xyz, TexCoords);
                     outcolor = vec4(pow2(Diffuse.xyz,vec3(1/GAMMA)), 1.0f);
                 } else {
-                    LightmapColor = decodeLight(fastBilateral(colortex2,TexCoords,250.0,1.0),MAX_LIGHT);
+                    //LightmapColor = decodeLight(fastBilateral(colortex2,TexCoords,250.0,1.0),MAX_LIGHT);
                     #ifdef BLOOM
-                        Albedo.xyz = mix2(Albedo.xyz, LightmapColor.xyz, clamp(length(LightmapColor.xyz), 0.0, 1.0));
+                        Albedo.xyz += LightmapColor.xyz;
                     #endif
                     #ifdef AUTO_EXPOSURE
                         //if(isBiomeEnd) Albedo.xyz = autoExposure(Albedo.xyz, 1.2, 5.0);

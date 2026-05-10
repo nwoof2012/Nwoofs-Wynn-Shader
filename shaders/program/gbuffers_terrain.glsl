@@ -368,7 +368,7 @@
 
     void main() {
         vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
-        vec4 albedo = texture2D(gtexture, TexCoords) * Color;
+        vec4 albedo = texture2D(gtexture, TexCoords) * vec4(Color.xyz,1.0);
         albedo.xyz = pow2(albedo.xyz, vec3(GAMMA));
 
         mediump float depth = texture2D(depthtex0, TexCoords).r;
@@ -710,7 +710,7 @@
     }
 
     vec4 leavesWave(vec3 world, vec3 view, float speed, float intensity) {
-        float windPhase = world.x * 0.2 + world.z * 0.2;
+        float windPhase = world.x * 0.2 + world.y * 0.2 + world.z * 0.2;
         float wind = normSine(windPhase * 50 + frameTimeCounter * 1.2 * speed) + 0.5 * normSine(windPhase * 115 + frameTimeCounter * 2.0 * speed);
         #if WIND_DIRECTION_TYPE == 0
             vec2 windDir = vec2(cos(WIND_DIR_STATIC), sin(WIND_DIR_STATIC));

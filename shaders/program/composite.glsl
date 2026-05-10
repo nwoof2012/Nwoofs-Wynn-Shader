@@ -36,6 +36,10 @@
     uniform sampler2D colortex7;
     uniform sampler2D colortex13;
     uniform sampler2D colortex14;
+    uniform mat4 gbufferPreviousModelView;
+    uniform mat4 gbufferPreviousProjection;
+    uniform mat4 gbufferPreviousModelViewInverse;
+    uniform mat4 gbufferPreviousProjectionInverse;
 
     uniform sampler2D noises;
     uniform sampler2D noiseb;
@@ -1146,32 +1150,36 @@
         #include "/lib/antialiasing/smaa.glsl"
     #elif AA == 3
         #include "/lib/antialiasing/taa.glsl"
+    #elif AA == 4
+        #include "/lib/antialiasing/siaa.glsl"
     #endif
 
-    vec3 antialiasing(vec2 UVs, sampler2D tex) {
-        vec3 finalColor = texture2D(tex, UVs).rgb;
-        #if AA == 3
+    mediump vec3 antialiasing(vec2 UVs, sampler2D tex) {
+        mediump vec3 finalColor = texture2D(tex, UVs).rgb;
+        #if AA == 4
+            finalColor = applySIAA(UVs, tex);
+        #elif AA == 3
             finalColor = applyTAA(UVs, tex);
         #elif AA == 2
-            float edge = edgeFactor(UVs, tex);
-            float blendStrength = computeBlendStrength(UVs);
+            mediump float edge = edgeFactor(UVs, tex);
+            mediump float blendStrength = computeBlendStrength(UVs);
 
-            vec3 blended = blendSMAA(UVs, tex);
-            vec3 original = texture2D(tex, UVs).rgb;
-            vec3 aaColor = mix2(original, blended, blendStrength);
+            mediump vec3 blended = blendSMAA(UVs, tex);
+            mediump vec3 original = texture2D(tex, UVs).rgb;
+            mediump vec3 aaColor = mix2(original, blended, blendStrength);
             finalColor = mix2(aaColor, original, step(edge, 0.0));
         #elif AA == 1
-            float u  =  floor(UVs.x * viewWidth) / viewWidth;
-            float v  = (floor(UVs.y * viewHeight) / viewHeight);
+            mediump float u  =  floor(UVs.x * viewWidth) / viewWidth;
+            mediump float v  = (floor(UVs.y * viewHeight) / viewHeight);
 
-            vec3 left = texture2D(tex, vec2(u, v)).rgb;
+            mediump vec3 left = texture2D(tex, vec2(u, v)).rgb;
 
             u  =  ceil(UVs.x* viewWidth) / viewWidth;
             v  = (ceil(UVs.y * viewHeight) / viewHeight);
 
-            vec3 right = texture2D(tex, vec2(u, v)).rgb;
+            mediump vec3 right = texture2D(tex, vec2(u, v)).rgb;
 
-            vec3 color = texture2D(tex, UVs).rgb;
+            mediump vec3 color = texture2D(tex, UVs).rgb;
 
             color.r = mix2(left.r, right.r, clamp(fract(color.r),0,1));
             color.g = mix2(left.g, right.g, clamp(fract(color.g),0,1));
