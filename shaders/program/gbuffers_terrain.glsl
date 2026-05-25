@@ -103,6 +103,8 @@
     flat in vec2 absMidCoordPos;
     flat in vec2 midCoord;
 
+    flat in int matType;
+
     in float isFoliage;
     in float isGrass;
 
@@ -132,7 +134,7 @@
 
     flat in uint lightData;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
     #include "/lib/post/gaussianBlur.glsl"
@@ -380,6 +382,9 @@
 
             albedo.xyz = pow2(albedo.xyz, vec3(1/GAMMA));
             mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+
+            float roughness = 0.0;
+            float specStrength = 0.0;
             
             #ifdef POM
                 float noiseMap = texture2D(noisec, TexCoords * 16).r;
@@ -427,6 +432,9 @@
                     vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
                     light_color = bytes.xyz;
                 }
+
+                roughness = matType == 1? STONE_ROUGHNESS : matType == 2? SMOOTH_ROUGHNESS : matType == 3? METAL_ROUGHNESS : NATURAL_ROUGHNESS;
+                specStrength = matType == 1? STONE_SPECULAR : matType == 2? SMOOTH_SPECULAR : matType == 3? METAL_SPECULAR : NATURAL_SPECULAR;
                 
                 vec4 lighting = vec4(0.0);
                 float lightBrightness = 0.0;
@@ -464,9 +472,9 @@
                 mediump float fogAmount = (length(view_pos)*(far/dhRenderDistance) - fogStart)/(fogEnd - fogStart);
 
                 #ifdef DISTANT_HORIZONS
-                    gl_FragData[6] = vec4(depth, encodeDist(distanceFromCamera, dhFarPlane), length(foot_pos)/(dhRenderDistance*16), 1.0);
+                    gl_FragData[6] = vec4(depth, encodeDist(distanceFromCamera, dhFarPlane), specStrength, 1.0);
                 #else
-                    gl_FragData[6] = vec4(depth, encodeDist(distanceFromCamera, far), length(foot_pos)/(renderDistance*16), 1.0);
+                    gl_FragData[6] = vec4(depth, encodeDist(distanceFromCamera, far), specStrength, 1.0);
                 #endif
 
                 vec3 lightNormal = vec3(0.0);
@@ -556,7 +564,7 @@
             #endif
             gl_FragData[3] = vec4(LightmapCoords, isGrass, 1.0);
             gl_FragData[4] = vec4(0.0, 0.0, isReflective, 1.0);
-            gl_FragData[5] = vec4(1.0, 0.0, 0.0, 1.0);
+            gl_FragData[5] = vec4(1.0, encodeDist(roughness,128), 0.0, 1.0);
         }
     }
 
@@ -569,7 +577,7 @@
 /*<==========================================================>*/
 
 #ifdef VERTEX_SHADER
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
     #include "/lib/includes2.glsl"
 
     #define DEG_2_RAD 0.01745329251
@@ -649,6 +657,8 @@
     out vec3 view_pos;
 
     out vec3 worldPos;
+    
+    flat out int matType;
 
     out vec2 signMidCoordPos;
     flat out vec2 absMidCoordPos;
@@ -874,6 +884,10 @@
                 //vec3 waving = vec3(GRASS_INTENSITY * sin(frameTimeCounter * GRASS_SPEED));
                 //gl_Position += gbufferProjection * gbufferModelView * (vec4(waving.x,0.0,waving.x,0.0)*(clamp(pow(1 - bottomY,1.5),0,1)) * 0.125);
             }
+        #endif
+
+        #if LIGHTING_MODE > 0
+            matType = mc_Entity.x == 10015? 1 : mc_Entity.x == 10016? 2 : mc_Entity.x == 10011? 3 : 0;
         #endif
 
         #if (SCENE_AWARE_LIGHTING > 0 && LIGHTING_MODE > 0) || LIGHTING_MODE == 2

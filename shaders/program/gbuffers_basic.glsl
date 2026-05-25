@@ -96,7 +96,7 @@
         return lightColor;
     }
 
-    /* RENDERTARGETS:0,1,2,15,5,13,6,12 */
+    /* RENDERTARGETS:0,1,2,13,5,10,6,12 */
 
     void noonFunc(float time, float timeFactor) {
         if(isBiomeEnd) {

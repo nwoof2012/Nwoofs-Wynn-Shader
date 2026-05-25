@@ -58,7 +58,7 @@
 
 // Shadow Brightness
 
-#define SHADOW_BRIGHTNESS 0.5f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f]
+#define SHADOW_BRIGHTNESS 0.4f // [0.0f 0.05f 0.1f 0.15f 0.2f 0.25f 0.3f 0.35f 0.4f 0.45f 0.5f 0.55f 0.6f 0.65f 0.7f 0.75f 0.8f 0.85f 0.9f 0.95f 1.0f]
 
 //<-------------[Light Levels (Silent Expanse)]-------------->\\
 
@@ -129,12 +129,12 @@
 #define AUTO_EXPOSURE
 
 // Exposure (Normal)
-#define NORM_EXP 2.0 // [0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0]
+#define NORM_EXP 2.5 // [0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0]
 
-#define NORM_EXP_BLEND 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define NORM_EXP_BLEND 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 // Exposure (Silent Expanse)
-#define SE_EXP 14.0 // [0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0]
+#define SE_EXP 10.0 // [0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0]
 
 #define SE_EXP_BLEND 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
@@ -396,8 +396,8 @@
 // Debug Toggle (0 = Off, 1 = On)
 #define DEBUG 0 // [0 1]
 
-// Debug Mode (0 = Base Color, 1 = Normal, 2 = Lighting, 3 = Buffer A, 4 = Buffer B, 5 = Buffer C, 6 = Depth, 7 = Distance From Camera, 8 = Water Depth)
-#define DEBUG_MODE 0 // [0 1 2 3 4 5 6 7 8]
+// Debug Mode (0 = Base Color, 1 = Normal, 2 = Lighting, 3 = Buffer A, 4 = Buffer B, 5 = Buffer C, 6 = Depth, 7 = Distance From Camera, 8 = Water Depth, 9 = Anti-Aliasing, 10 = Directional Light, 11 = Shadow, 12 = NdotL, 13 = Ambient Occlusion, 14 = Diffuse Final)
+#define DEBUG_MODE 0 // [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14]
 
 /*<==========================================================>*/
 /*|                                                          |*/

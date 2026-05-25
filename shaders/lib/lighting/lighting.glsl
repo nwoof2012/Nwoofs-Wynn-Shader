@@ -19,6 +19,8 @@
                 shadowLerp = vec3(1.0 - timeBlendFactor);
                 LightmapColor.xyz *= mix2(1.0, 0.5, timeBlendFactor);
             }
+
+            //if(isBiomeEnd) LightmapColor.xyz *= 0.25;
             
             vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
             mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);

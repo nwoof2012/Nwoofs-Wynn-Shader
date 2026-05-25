@@ -29,7 +29,7 @@
             vec3 worldSpaceVertexPosition = cameraPosition + (gbufferModelViewInverse * projectionMatrix * modelViewMatrix * vec4(vaPosition,1)).xyz;
             mediump float distanceFromCamera = distance(worldSpaceVertexPosition, cameraPosition);
             
-            if(distanceFromCamera > SHADOW_DIST * 16) {
+            if(distanceFromCamera < SHADOW_DIST * 16) {
                 #ifndef ENTITY_SHADOWS
                     /*if(entityId == 10006 || mc_Entity.x == 10005) {
                         discard;

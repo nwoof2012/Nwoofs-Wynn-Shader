@@ -33,6 +33,10 @@ vec3 applySIAA(vec2 UVs, sampler2D currentTex) {
     float motionFactor = depthAccum;
     float blend = clamp(motionFactor, 0.0, 1.0);
 
+    #if DEBUG == 1 && DEBUG_MODE == 9
+        return vec3(blend);
+    #endif
+
     vec2 uv = UVs * viewSize;
 
     vec2 uv_f = fract(uv);

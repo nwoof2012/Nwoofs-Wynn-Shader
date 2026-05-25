@@ -196,6 +196,22 @@ option.FOG_MISTWOODS_INTENSITY=§bIntensity
 option.FOG_MISTWOODS_CURVE=§eCurve
 option.FOG_MISTWOODS_DENSITY=§6Density
 
+option.NATURAL_ROUGHNESS=§aNatural Roughness
+
+option.NATURAL_SPECULAR=§aNatural Strength
+
+option.STONE_ROUGHNESS=§7Stone Roughness
+
+option.STONE_SPECULAR=§7Stone Strength
+
+option.SMOOTH_ROUGHNESS=§eSmooth Roughness
+
+option.SMOOTH_SPECULAR=§eSmooth Strength
+
+option.METAL_ROUGHNESS=§6Metal Roughness
+
+option.METAL_SPECULAR=§6Metal Strength
+
 option.MIN_LIGHT=§bMinimum Light
 value.MIN_LIGHT.0.0f=Dark
 
@@ -616,6 +632,12 @@ value.DEBUG_MODE.5=§fBuffer C
 value.DEBUG_MODE.6=§fDepth
 value.DEBUG_MODE.7=§fDistance From Camera
 value.DEBUG_MODE.8=§fWater Depth
+value.DEBUG_MODE.9=§fAnti-Aliasing
+value.DEBUG_MODE.10=§fDirectional Light
+value.DEBUG_MODE.11=§fShadow
+value.DEBUG_MODE.12=§fNdotL
+value.DEBUG_MODE.13=§fAmbient Occlusion
+value.DEBUG_MODE.14=§fDiffuse Final
 
 option.PARTICLE_RAIN_SUPPORT=§bParticle Rain Support
 option.PARTICLE_RAIN_SUPPORT.comment=§6Patches particle light rendering to work better with Particle Rain
@@ -676,6 +698,8 @@ screen.FANCY_LIGHTING = §5Fancy Lighting Settings
 screen.SHADOW_SETTINGS = §7Shadows
 
 screen.SILENT_EXPANSE = §dSilent Expanse
+
+screen.SPECULAR = §fSpecular
 
 screen.ANTIALIASING = §aAntialiasing
 

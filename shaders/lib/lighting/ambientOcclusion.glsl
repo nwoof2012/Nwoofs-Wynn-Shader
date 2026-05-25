@@ -72,11 +72,14 @@ float gaussianWeight(float dist, float sigma) {
     return exp(-(dist * dist) / (2.0 * sigma * sigma));
 }
 
-#define BLTRL_KERNEL 64
+#define BLTRL_KERNEL 64 // [0 4 16 36 64 100 144 196 256]
 #define BLTRL_KERNEL_RADIUS int(sqrt(BLTRL_KERNEL)/2)
 
 vec4 fastBilateral(sampler2D tex, vec2 uv, float sigma, float threshold) {
     vec4 centerColor = texture2D(tex, uv);
+    #if BLTRL_KERNEL == 0
+        return centerColor;
+    #endif
     float centerDepth = linearizeDepth(texture2D(depthtex0, uv).r, near, far);
     float totalWeight = 0.0;
     vec4 finalColor = vec4(0.0);
@@ -105,6 +108,44 @@ vec4 fastBilateral(sampler2D tex, vec2 uv, float sigma, float threshold) {
     }
 
     return finalColor / totalWeight;
+}
+
+float blurDepth(vec2 UVs, sampler2D depthMask) {
+    float centerDepth = calcLinearDepth(texture2D(depthMask, UVs).r, near, far);
+    float depthAcc = 0.0;
+    float weight = 0.0;
+    vec2 res = vec2(1080.0 / viewHeight * viewWidth, 1080.0);
+    vec2 scaledUVs = UVs * res;
+    for(int x = -3; x <= 3; x++) {
+        for(int y = -3; y <= 3; y++) {
+            vec2 offset = vec2(x, y)/centerDepth;
+            vec2 samplePos = scaledUVs + offset;
+
+            vec2 f = fract(samplePos);
+            
+            vec2 uv_00 = floor(samplePos);
+            vec2 uv_10 = vec2(ceil(samplePos.x), floor(samplePos.y));
+            vec2 uv_01 = vec2(floor(samplePos.x), ceil(samplePos.y));
+            vec2 uv_11 = ceil(samplePos);
+
+            float s_00 = calcLinearDepth(texture2D(depthMask, uv_00/res).r, near, far);
+            float s_10 = calcLinearDepth(texture2D(depthMask, uv_10/res).r, near, far);
+            float s_01 = calcLinearDepth(texture2D(depthMask, uv_01/res).r, near, far);
+            float s_11 = calcLinearDepth(texture2D(depthMask, uv_11/res).r, near, far);
+
+            float s_0 = mix2(s_00, s_10, f.x);
+            float s_1 = mix2(s_01, s_11, f.x);
+
+            float depthSample = mix2(s_0, s_1, f.y);
+
+            float sampleWeight = clamp(1 - length(offset)/3.0, 0, 1);
+            weight += sampleWeight;
+
+            depthAcc += depthSample * sampleWeight;
+        }
+    }
+
+    return depthAcc/weight;
 }
 
 float calcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {
@@ -168,7 +209,7 @@ float calcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
 }
 
 float calcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sampler2D normalMap) {
-    mediump float centerDepth = calcLinearDepth(texture2D(depthMask, UVs).r, near, far);
+    mediump float centerDepth = blurDepth(UVs, depthMask);
     mediump float skyTest = texture2D(colortex5, UVs).g;
     if(skyTest > 0.0) return 1.0;
     vec3 centerNormal = texture2D(normalMap, UVs).xyz * 2 - 1;
@@ -216,7 +257,7 @@ float calcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
     lowp float isHand = 1.0 - texture2D(colortex12, UVs).b;
     mediump float aoStrength = mix2(AO_STRENGTH, AO_STRENGTH_PLANT, max(step(isFoliage, 0.5),step(isLeaves, 0.5))) * isHand;
 
-    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 0.5) * aoStrength;
+    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 1.0) * aoStrength * mix2(0.25, 1.5, isFoliage);
     return clamp(ao, GTAO_MIN_INTENSITY, 1.0);
 }
 
@@ -339,7 +380,7 @@ float DHcalcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sa
     lowp float isHand = 1.0 - texture2D(colortex12, UVs).b;
     mediump float aoStrength = AO_STRENGTH;
 
-    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 0.5) * aoStrength;
+    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 1.0) * aoStrength * 1.5;
     return clamp(ao, GTAO_MIN_INTENSITY, 1.0);
 }
 

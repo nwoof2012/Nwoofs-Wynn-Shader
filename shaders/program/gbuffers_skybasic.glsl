@@ -324,7 +324,7 @@
         mediump float distToMoon = length((moonScreenPos - texCoord) * vec2(aspectRatio, 1.0));
         float moonAngle = acos(dot(viewDir, moonDirection));
         mediump float moonGradient = 1.0 - smoothstep(0.0, moonMaxDistance, moonAngle);
-        vec3 sunColor = vec3(1.0, 0.9, 0.8);
+        vec3 sunColor = vec3(1.0, 0.8, 0.7);
         vec3 sunColor2 = vec3(1.0, 0.7, 0.5);
         vec3 moonColor = vec3(1.0, 1.0, 1.1);
         vec3 finalSunColor = sunColor;

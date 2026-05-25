@@ -397,10 +397,10 @@
             #else
                 ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
                 vec3 light_color = vec3(0.0);
-                if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+                /*if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
                     vec4 bytes = unpackUnorm4x8(texture3D(cSampler3,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
                     light_color = bytes.xyz;
-                }
+                }*/
 
                 outColor2 = vec4(light_color, 1.0);
             #endif
