@@ -1,10 +1,10 @@
-#Nwoof's Wynn Shader License
+Nwoof's Wynn Shader License
 
 Version 1.0
 
 Copyright (c) 2026 Trolly Studios
 
-##1. Definitions
+1. Definitions
 
 “Software” refers to the source code, compiled files, assets, configuration files, documentation, and any other materials distributed as part of the [Shader Name] project.
 
@@ -12,7 +12,7 @@ Copyright (c) 2026 Trolly Studios
 
 “Derivative Work” refers to any modification, adaptation, fork, extension, or other work based upon the Software.
 
-##2. Permissions
+2. Permissions
 
 Subject to the conditions of this License, any person obtaining a copy of the Software is permitted to:
 
@@ -23,7 +23,7 @@ Subject to the conditions of this License, any person obtaining a copy of the So
 * Distribute Derivative Works.
 * Contribute modifications back to the project.
 
-##3. Attribution Requirements
+3. Attribution Requirements
 
 Any distribution of the Software or a Derivative Work must:
 
@@ -32,7 +32,7 @@ Any distribution of the Software or a Derivative Work must:
 * Clearly identify any modifications made.
 * Credit the original Author in accompanying documentation, release notes, or distribution materials.
 
-##4. Commercial Distribution Restrictions
+4. Commercial Distribution Restrictions
 
 The Software and any Derivative Work may not be:
 
@@ -44,7 +44,7 @@ without prior written permission from the Author.
 
 For clarity, use of the Software in commercial content creation (including videos, livestreams, screenshots, demonstrations, reviews, and promotional materials) is permitted.
 
-##5. Branding and Representation
+5. Branding and Representation
 
 The names, logos, trademarks, branding, and project identity associated with Nwoof's Wynn Shader remain the property of the Author.
 
@@ -57,23 +57,23 @@ A distributor of the Software or a Derivative Work may not:
 
 Derivative Works should be clearly identified as unofficial modifications.
 
-##6. Source Availability
+6. Source Availability
 
 Any distributed Derivative Work must make its modified source code available to recipients under the terms of this License.
 
-##7. Revocation
+7. Revocation
 
 Failure to comply with the terms of this License immediately terminates all rights granted under it.
 
-##8. Disclaimer of Warranty
+8. Disclaimer of Warranty
 
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
 
-##9. Limitation of Liability
+9. Limitation of Liability
 
 IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM OR RELATED TO THE SOFTWARE OR ITS USE.
 
-##10. Contact
+10. Contact
 
 Requests for commercial licensing permission may be directed to:
 
