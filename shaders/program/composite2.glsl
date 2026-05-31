@@ -843,8 +843,9 @@
 
         vec4 pos = vec4(footPos, 1.0);
         vec3 rayDir = normalize2(pos.xyz);
+        float rayY = rayDir.y >= 0.0 ? max(rayDir.y, 0.001) : min(rayDir.y, -0.001);
 
-        vec2 uv = rayDir.xz*0.25/rayDir.y;
+        vec2 uv = rayDir.xz*0.25/rayY;
         //vec2 uv2 = pos.xz*0.001+worldTime*0.1;
 
         vec3 p = vec3(uv, 0);
