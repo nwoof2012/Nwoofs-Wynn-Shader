@@ -12,9 +12,13 @@
 #define CLOUD_TOP_BKG 1000.0
 #define STEP_SIZE_BKG (CLOUD_TOP_BKG - CLOUD_BASE_BKG)/CLOUD_STEPS_BKG
 
-vec4 lightCalc;
+vec4 lightCalc = vec4(0.0);
 
 float cloudCoverage;
+
+float safeRayY(vec3 rayDir) {
+    return rayDir.y >= 0.0 ? max(rayDir.y, 0.001) : min(rayDir.y, -0.001);
+}
 
 vec3 warp(vec3 uv) {
     float w1 = texture2D(noiseb, uv.xz * 0.5).x;
@@ -150,7 +154,7 @@ float getCloudShadow(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float cloudTime) 
 
     float shadow = 1.0;
 
-    float t = max((CLOUD_BASE - rayOrigin.y)/rayDir.y,0.0);
+    float t = max((CLOUD_BASE - rayOrigin.y)/safeRayY(rayDir),0.0);
     vec3 pos = rayOrigin + rayDir * t;
 
     // Convert world position into "skybox sampling space"
@@ -177,7 +181,7 @@ float getCloudShadow(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float cloudTime) 
 }
 
 vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float cloudTime) {
-    float t = max((CLOUD_BASE - rayOrigin.y)/rayDir.y,0.0);
+    float t = max((CLOUD_BASE - rayOrigin.y)/safeRayY(rayDir),0.0);
     vec3 pos = rayOrigin + rayDir * t;
 
     vec3 colorAcc = vec3(0.0);
@@ -267,7 +271,7 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float clou
 }
 
 vec4 renderBackgroundClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float cloudTime) {
-    float t = max((CLOUD_BASE_BKG - rayOrigin.y)/rayDir.y,0.0);
+    float t = max((CLOUD_BASE_BKG - rayOrigin.y)/safeRayY(rayDir),0.0);
     vec3 pos = rayOrigin + rayDir * t;
 
     vec3 colorAcc = vec3(0.0);

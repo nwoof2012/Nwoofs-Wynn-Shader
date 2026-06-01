@@ -1,26 +1,33 @@
+const float NORMALIZE_EPSILON = 1e-8;
+const float POW_EPSILON = 1e-6;
+
 vec2 normalize2(vec2 a) {
-    return a * inversesqrt(dot(a,a));
+    float len2 = dot(a,a);
+    return len2 > NORMALIZE_EPSILON ? a * inversesqrt(len2) : vec2(0.0);
 }
 vec3 normalize2(vec3 a) {
-    return a * inversesqrt(dot(a,a));
+    float len2 = dot(a,a);
+    return len2 > NORMALIZE_EPSILON ? a * inversesqrt(len2) : vec3(0.0);
 }
 vec4 normalize2(vec4 a) {
-    return a * inversesqrt(dot(a,a));
+    float len2 = dot(a,a);
+    return len2 > NORMALIZE_EPSILON ? a * inversesqrt(len2) : vec4(0.0);
 }
 
 mediump float pow2(float a, float b) {
-    return exp2(log2(a) * b);
+    if(a <= 0.0) return 0.0;
+    return pow(max(a, b < 0.0 ? POW_EPSILON : 0.0), b);
 }
 
 vec2 pow2(vec2 a, vec2 b) {
-    return exp2(log2(a) * b);
+    return vec2(pow2(a.x, b.x), pow2(a.y, b.y));
 }
 
 vec3 pow2(vec3 a, vec3 b) {
-    return exp2(log2(a) * b);
+    return vec3(pow2(a.x, b.x), pow2(a.y, b.y), pow2(a.z, b.z));
 }
 vec4 pow2(vec4 a, vec4 b) {
-    return exp2(log2(a) * b);
+    return vec4(pow2(a.x, b.x), pow2(a.y, b.y), pow2(a.z, b.z), pow2(a.w, b.w));
 }
 
 mediump float mix2(float a, float b, float c) {

@@ -318,11 +318,11 @@
         outputColor = vec4(mix2(pow2(calcSkyColor(normalize(pos), currentColorA, currentColorB, noise),vec3(1/GAMMA)),vec3(0),blindness),1.0);
         mediump float sunMaxDistance = 0.135;
         mediump float distToSun = pow2(length((texCoord - sunScreenPos) * vec2(aspectRatio, 1.0)), 4.0);
-        float sunAngle = acos(dot(viewDir, sunDirection));
+        float sunAngle = acos(clamp(dot(viewDir, sunDirection), -1.0, 1.0));
         mediump float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, sunAngle);
         mediump float moonMaxDistance = 0.08;
         mediump float distToMoon = length((moonScreenPos - texCoord) * vec2(aspectRatio, 1.0));
-        float moonAngle = acos(dot(viewDir, moonDirection));
+        float moonAngle = acos(clamp(dot(viewDir, moonDirection), -1.0, 1.0));
         mediump float moonGradient = 1.0 - smoothstep(0.0, moonMaxDistance, moonAngle);
         vec3 sunColor = vec3(1.0, 0.8, 0.7);
         vec3 sunColor2 = vec3(1.0, 0.7, 0.5);
