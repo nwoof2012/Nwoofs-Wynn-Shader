@@ -72,7 +72,7 @@ float gaussianWeight(float dist, float sigma) {
     return exp(-(dist * dist) / (2.0 * sigma * sigma));
 }
 
-#define BLTRL_KERNEL 64 // [0 4 16 36 64 100 144 196 256]
+#define BLTRL_KERNEL 16 // [0 4 16 36 64 100 144 196 256]
 #define BLTRL_KERNEL_RADIUS int(sqrt(BLTRL_KERNEL)/2)
 
 vec4 fastBilateral(sampler2D tex, vec2 uv, float sigma, float threshold) {
@@ -186,8 +186,9 @@ float calcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
         vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2.0 - 1.0;
 
         mediump float dd = abs(centerDepth - offsetDepth) / depthScale;
+        float normalDiff = length((centerNormal - offsetNormal));
 
-        if(dd > 5.0) continue;
+        if(dd > 0.25 || normalDiff == 0.0) continue;
 
         mediump float weight = 1.0 - smoothstep(AO_THRESHOLD, 1.0, dd);
 
@@ -309,8 +310,9 @@ float DHcalcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sa
         vec3 offsetNormal = texture2D(normalMap, UVs + offset).rgb * 2.0 - 1.0;
 
         mediump float dd = abs(centerDepth - offsetDepth) / depthScale;
+        float normalDiff = length((centerNormal - offsetNormal));
 
-        if(dd > 5.0) continue;
+        if(dd > 0.25 || normalDiff == 0.0) continue;
 
         mediump float weight = 1.0 - smoothstep(AO_THRESHOLD, 1.0, dd);
 

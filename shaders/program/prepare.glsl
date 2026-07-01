@@ -8,7 +8,7 @@
     #define LIGHT_DIAMETER (LIGHT_RADIUS * 2)
 
     layout (r32ui) uniform uimage3D cimage1;
-    layout (rgba8) uniform image3D cimage2;
+    layout (rgba16f) uniform image3D cimage2;
 
     uniform ivec3 cameraPositionInt;
 	uniform ivec3 previousCameraPositionInt;

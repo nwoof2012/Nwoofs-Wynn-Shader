@@ -223,10 +223,6 @@
 
     uniform float screenBrightness;
 
-    #define AMBIENT_LIGHT_R 0.8 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define AMBIENT_LIGHT_G 0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-    #define AMBIENT_LIGHT_B 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-
     float getDepthMask(sampler2D local, sampler2D distant) {
         return mix2(linearizeDepth(texture2D(depthtex0, TexCoords).x,near,far) / dhFarPlane, texture2D(colortex13, TexCoords).z * 0.475, step(1.0, texture2D(depthtex0, TexCoords).x)) * 32;
     }
@@ -749,7 +745,7 @@
 
     void dawnFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
-        if(worldTime < 250) sunsetLerp = smoothstep(-500.0, 500.0, worldTime);
+        if(worldTime <= 500) sunsetLerp = smoothstep(-500.0, 500.0, worldTime);
         fogIntensity = mix3(FOG_NIGHT_INTENSITY, FOG_SUNSET_INTENSITY, FOG_DAY_INTENSITY, sunsetLerp, 0.5);
         fogCurve = mix3(FOG_NIGHT_CURVE, FOG_SUNSET_CURVE, FOG_DAY_CURVE, sunsetLerp, 0.5);
         baseDiffuseModifier = mix3(vec3(NIGHT_I), vec3(SUNSET_I), vec3(DAY_I), sunsetLerp, 0.5);

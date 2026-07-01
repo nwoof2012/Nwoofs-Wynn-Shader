@@ -59,3 +59,19 @@ vec3 desaturate(vec3 color, float amount) {
     vec3 gray = vec3(lum);
     return mix2(color, gray, amount);
 }
+
+// Color from Temperature
+vec3 colorTemperatureToRGB(float k) {
+    float t = clamp(k, 1000.0, 40000.0) / 100.0;
+    vec3 col;
+    
+    // Red approximation
+    col.r = (t <= 66.0) ? 1.0 : clamp(pow(t - 60.0, -0.1332047592) * 1.29293618606, 0.0, 1.0);
+    // Green approximation
+    col.g = (t <= 66.0) ? clamp(log(t) * 0.39008157877 - 0.63184144379, 0.0, 1.0) 
+                        : clamp(pow(t - 60.0, -0.0755148492) * 1.1298908609, 0.0, 1.0);
+    // Blue approximation
+    col.b = (t >= 66.0) ? 1.0 : ((t <= 19.0) ? 0.0 : clamp(log(t - 10.0) * 0.5432067891 - 1.1962540823, 0.0, 1.0));
+    
+    return col;
+}

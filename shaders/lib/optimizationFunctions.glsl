@@ -382,6 +382,19 @@ vec4 decodeLight(vec4 encodedLight, float maxLight) {
     return vec4(exp2(encodedLight.xyz * log2(maxLight + 1.0)) - 1.0,encodedLight.w);
 }
 
+vec3 softCapLight(vec3 x, float cap) {
+    return cap * (1.0 - exp(-x / cap));
+}
+
+vec3 softCapLuma(vec3 light, float cap) {
+    float luma = max(max(light.r, light.g), light.b);
+
+    if (luma <= 0.0001) return light;
+
+    float capped = cap * (1.0 - exp(-luma / cap));
+    return light * (capped / luma);
+}
+
 #define BASE 256.0
 #define MAX_PACKED_VEC4 (BASE*BASE*BASE*BASE)
 

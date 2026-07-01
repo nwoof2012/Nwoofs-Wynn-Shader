@@ -642,6 +642,49 @@ value.DEBUG_MODE.14=§fDiffuse Final
 option.PARTICLE_RAIN_SUPPORT=§bParticle Rain Support
 option.PARTICLE_RAIN_SUPPORT.comment=§6Patches particle light rendering to work better with Particle Rain
 
+option.TEMPERATURE_COLOR=§fTemperature§7-§fBased Color
+
+option.SUN_TEMP=§eSun Temperature
+suffix.SUN_TEMP=k
+
+option.SUNSET_TEMP=§6Sunset Temperature
+suffix.SUNSET_TEMP=k
+
+option.MOON_TEMP=§9Moon Temperature
+suffix.MOON_TEMP=k
+
+option.NIGHT_SKY_TEMP=§bSkylight Temperature
+suffix.NIGHT_SKY_TEMP=k
+
+option.LIGHT_DAY_R=§cRed
+option.LIGHT_DAY_G=§aGreen
+option.LIGHT_DAY_B=§9Blue
+option.LIGHT_DAY_I=§fIntensity
+
+option.LIGHT_NIGHT_R=§cRed
+option.LIGHT_NIGHT_G=§aGreen
+option.LIGHT_NIGHT_B=§9Blue
+option.LIGHT_NIGHT_I=§fIntensity
+
+option.LIGHT_SUNSET_R=§cRed
+option.LIGHT_SUNSET_G=§aGreen
+option.LIGHT_SUNSET_B=§9Blue
+
+option.AMBIENT_LIGHT_R=§cRed
+option.AMBIENT_LIGHT_G=§aGreen
+option.AMBIENT_LIGHT_B=§9Blue
+option.AMBIENT_LIGHT_I=§fIntensity
+
+option.LIGHT_SE_R=§cRed
+option.LIGHT_SE_G=§aGreen
+option.LIGHT_SE_B=§9Blue
+option.LIGHT_SE_I=§fIntensity
+
+option.LIGHT_CORRUPTION_R=§cRed
+option.LIGHT_CORRUPTION_G=§aGreen
+option.LIGHT_CORRUPTION_B=§9Blue
+option.LIGHT_CORRUPTION_I=§fIntensity
+
 screen.PERFORMANCE=§cPerformance
 
 screen.SSAO = §9Screen Space Ambient Occlusion §7(§9SSAO§7)
@@ -706,6 +749,23 @@ screen.ANTIALIASING = §aAntialiasing
 screen.DEBUG = §fDebug Mode
 
 screen.MISC = §6Miscellaneous
+
+
+screen.LIGHTING_COLORS = §6Light Colors
+
+
+screen.LIGHT_DAY = §bDay
+
+screen.LIGHT_NIGHT =§9Night
+
+screen.LIGHT_SUNSET = §6Sunrise§7/§6Sunset
+
+screen.LIGHT_AMBIENT = §8Ambient
+
+screen.LIGHT_SE = §dSilent Expanse
+
+screen.LIGHT_CORRUPTION = §4Roots of Corruption
+
 
 profile.TOASTER=§7Toaster
 profile.POTATO=§3Potato

@@ -90,6 +90,8 @@
 
     in float isReflective;
 
+    uniform float seFactor;
+
     uniform vec3 cameraPosition;
 
     in vec3 worldSpaceVertexPosition;
@@ -385,6 +387,7 @@
 
             float roughness = 0.0;
             float specStrength = 0.0;
+            float soakFactor = 0.0;
             
             #ifdef POM
                 float noiseMap = texture2D(noisec, TexCoords * 16).r;
@@ -435,8 +438,10 @@
 
                 roughness = matType == 1? STONE_ROUGHNESS : matType == 2? SMOOTH_ROUGHNESS : matType == 3? METAL_ROUGHNESS : NATURAL_ROUGHNESS;
                 specStrength = matType == 1? STONE_SPECULAR : matType == 2? SMOOTH_SPECULAR : matType == 3? METAL_SPECULAR : NATURAL_SPECULAR;
+                soakFactor = matType == 1? STONE_SOAK : matType == 2? SMOOTH_SOAK : matType == 3? METAL_SOAK : NATURAL_SOAK;
                 
                 vec4 lighting = vec4(0.0);
+                vec4 dynLighting = vec4(0.0);
                 float lightBrightness = 0.0;
 
                 vec3 SkyColor = vec3(0.05f, 0.15f, 0.3f);
@@ -472,9 +477,9 @@
                 mediump float fogAmount = (length(view_pos)*(far/dhRenderDistance) - fogStart)/(fogEnd - fogStart);
 
                 #ifdef DISTANT_HORIZONS
-                    gl_FragData[6] = vec4(depth, encodeDist(distanceFromCamera, dhFarPlane), specStrength, 1.0);
+                    gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, dhFarPlane), specStrength, 1.0);
                 #else
-                    gl_FragData[6] = vec4(depth, encodeDist(distanceFromCamera, far), specStrength, 1.0);
+                    gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, far), specStrength, 1.0);
                 #endif
 
                 vec3 lightNormal = vec3(0.0);
@@ -532,18 +537,33 @@
                                 float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
                                 //lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
 
-                                float weightSampled = smoothstep(LIGHT_RADIUS, 0, sampleWeight);
+                                vec4 light = decodeLightmap(bytes);
 
-                                lighting += decodeLightmap(bytes) * weightSampled * LightmapCoords.x;
+                                float intensity = clamp(length(light.xyz)/(MAX_LIGHT*6), 0.0, 1.0);
 
-                                weight += weightSampled;
+                                float effectiveRadius = LIGHT_RADIUS * mix2(0.35, 1.0, pow2(intensity, 0.65));
+
+                                float x = clamp(sampleWeight/max(effectiveRadius, 0.001), 0.0, 1.0);
+                                float falloff = exp(-x * x * 3.5) * (1.0 - smoothstep(0.82, 1.0, x));
+
+                                falloff = pow2(falloff, LIGHT_FALLOFF);
+
+                                light.xyz = mix2(light.xyz, light.xyz * vec3(1.08, 0.92, 0.72), x * 0.25);
+
+                                //float weightSampled = smoothstep(LIGHT_RADIUS, 0, sampleWeight);
+
+                                dynLighting += light * falloff * LightmapCoords.x;
+
+                                weight += falloff;
 
                                 //lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
                             }
                         }
-                        lighting /= max(weight,1.0);
+                        dynLighting /= max(weight,1.0);
                         //lighting *= 25;
-                        lighting = min(lighting, normalize2(lighting) * MAX_LIGHT);
+                        dynLighting = min(dynLighting, normalize2(dynLighting) * MAX_LIGHT);
+                        dynLighting = mix2(dynLighting, max(exp(dynLighting),vec4(0.0)), seFactor);
+                        lighting += dynLighting;
                     #endif
                 }
                 #if LIGHTING_MODE > 0 && SCENE_AWARE_LIGHTING == 0
@@ -551,7 +571,7 @@
                 #endif
                 vec4 finalLighting = lighting;
                 float isCave = LightmapCoords.g;
-                gl_FragData[7] = vec4(isCave, 0.0, isLeaves, 1.0);
+                gl_FragData[7] = vec4(length(encodeLight(dynLighting,MAX_LIGHT)), 0.0, isLeaves, 1.0);
                 #if LIGHTING_MODE == 1
                     finalLighting.xyz *= 0.5;
                 #endif

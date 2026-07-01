@@ -5,49 +5,77 @@
 #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 
 #if LIGHTING_MODE > 0
+    vec2 vogelDisk(int i, int count) {
+        float fi = float(i) + 0.5;
+        float r = sqrt(fi / float(count));
+        float a = fi * 2.39996323;
+        return vec2(cos(a), sin(a)) * r;
+    }
+
+    vec3 extractBloom(vec3 color) {
+        float lum = dot(color, vec3(0.2126, 0.7152, 0.0722));
+        float mask = smoothstep(BLOOM_THRESHOLD, BLOOM_THRESHOLD * 1.5, lum);
+        return color * mask;
+    }
+
     vec4 bloom(float waterTest, vec2 specularCoord, vec3 Normal, vec4 Albedo, vec2 refractionFactor) {
         mediump float radius = 2f;
-        mediump vec2 blur = vec2(radius)/vec2(1080/viewHeight * viewWidth, 1080);
+        vec2 resolution = vec2(1080/viewHeight * viewWidth, 1080);
+        mediump vec2 blur = vec2(radius)/resolution;
 
         mediump vec2 sampleSize = blur/vec2(BLOOM_QUALITY);
 
         vec2 uv = gl_FragCoord.xy/vec2(viewWidth,viewHeight) + refractionFactor;
-
-        vec3 sum = vec3(0.0);
         
         //vec3 baseLight = decodeLight(fastBilateral(colortex2,uv,250.0,1.0).rgb,MAX_LIGHT);
         vec3 baseLight = decodeLight(texture2D(colortex2,uv).rgb,MAX_LIGHT);
 
         float totalWeight = 0.0;
+        vec3 sum = vec3(0.0);
         
         int bloomSampleDiameter = int(sqrt(BLOOM_QUALITY));
         int bloomSampleRadius = bloomSampleDiameter/2;
+
         for(int i = 0; i < BLOOM_QUALITY; i++) {
-            int x = i/bloomSampleDiameter - bloomSampleRadius;
-            int y = int(mod(i, BLOOM_QUALITY)) - bloomSampleRadius;
+            //int x = i/bloomSampleDiameter - bloomSampleRadius;
+            //int y = int(mod(i, BLOOM_QUALITY)) - bloomSampleRadius;
+
+            vec2 disk = vogelDisk(i, BLOOM_QUALITY);
+            float r = length(disk);
+
+            if(r > 1.0) continue;
             
-            vec2 offset = vec2(x, y) * sampleSize;
+            vec2 offset = disk * blur;
 
-            float weight = length(offset/blur);
+            vec3 sampleLight = decodeLight(texture2D(colortex2,uv + offset).rgb,MAX_LIGHT);
+            //sampleLight = extractBloom(sampleLight);
 
-            if(weight > 1.0) continue;
+            float w = exp(-r * r * 2.5);
 
             //sum += decodeLight(fastBilateral(colortex2,uv + offset,250.0,1.0).rgb,MAX_LIGHT);
-            sum += decodeLight(texture2D(colortex2,uv + offset).rgb,MAX_LIGHT);
-            totalWeight += weight;
+            sum += sampleLight * w;
+            totalWeight += w;
         }
 
-        sum /= totalWeight;
+        sum /= max(totalWeight,0.001);
 
-        vec3 outLight = sum;
+        vec3 blurredLight = sum;
 
-        mediump float bloomLerp = smoothstep(0.0,BLOOM_THRESHOLD, length(outLight));
+        float baseLum = dot(baseLight, vec3(0.2126, 0.7152, 0.0722));
+        float blurLum = dot(blurredLight, vec3(0.2126, 0.7152, 0.0722));
 
-        outLight = mix2(baseLight, outLight*BLOOM_INTENSITY, bloomLerp);
+        float bloomMask = smoothstep(BLOOM_THRESHOLD, BLOOM_THRESHOLD * 1.5, blurLum);
 
-        float brightness = mix2(length(baseLight), length(outLight)*BLOOM_INTENSITY,bloomLerp);
+        //mediump float bloomLerp = smoothstep(0.0,BLOOM_THRESHOLD, length(outLight));
 
-        return vec4(outLight,brightness*15);
+        //outLight = mix2(baseLight, outLight*BLOOM_INTENSITY, bloomLerp);
+
+        vec3 outLight = baseLight + blurredLight * bloomMask * BLOOM_INTENSITY;
+        float brightness = baseLum + blurLum * bloomMask * BLOOM_INTENSITY;
+
+        //float brightness = mix2(length(baseLight), length(outLight)*BLOOM_INTENSITY,bloomLerp);
+
+        return vec4(outLight,brightness*100);
     }
 #elif LIGHTING_MODE == 0
     vec3 getLightColor(vec3 lightmap) {

@@ -15,6 +15,8 @@
 
     uniform int entityId;
 
+    uniform float rainFactor;
+
     in vec3 vaPosition;
 
     #include "/lib/globalDefines.glsl"
@@ -34,9 +36,9 @@
                     /*if(entityId == 10006 || mc_Entity.x == 10005) {
                         discard;
                     }*/
-                    gl_FragData[0] = texture2D(texture, TexCoords) * Color;
+                    gl_FragData[0] = texture2D(texture, TexCoords) * Color * (1 - rainFactor);
                 #else
-                    gl_FragData[0] = texture2D(texture, TexCoords) * Color;
+                    gl_FragData[0] = texture2D(texture, TexCoords) * Color * (1 - rainFactor);
                 #endif
             }
         #endif

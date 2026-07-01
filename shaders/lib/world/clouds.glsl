@@ -210,23 +210,39 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float clou
     vec3 ambientLight = vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B);
     vec3 volumetricLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
 
+    float cloudStep = 0.0;
+
+    vec3 warpPos = (warp(pos * 0.00075) + warp(pos * 0.00025))/2;
+
+    float heightAcc = 1.0;
+
     for(int i = 0; i < CLOUD_STEPS; i++) {
         if(rayDir.y < 0.0) continue;
 
+        //if(transmittance < 0.02) continue;
+
         vec2 uv = pos.xz * 0.00075;
 
-        vec3 movePos = (pos + warp(pos * 0.00025) * 250) * 0.25 + vec3(cloudTime,0.0,cloudTime);
+        vec3 movePos = (pos + warpPos * 250) * 0.25 + vec3(cloudTime,0.0,cloudTime);
 
         float density = smoothstep(clamp(abs((pos.y - centerPos)/cloudHeight),0, 0.9), 1, cloudBilinear(movePos, vec3(STEP_SIZE)));
+
+        //float density = getCloudDensity(pos, cloudTime);
         
-        float light = clamp(dot(sunDir, normalize2(vec3(0, 1, 0))) * 0.5 + 0.5, 0.3, 1.0) * (1 - rainFactor);
-        vec3 sampleCol = mix2(vec3(0.8, 0.85, 0.9) * (1 - rainFactor*0.5),vec3(1.0), light);
+        //float light = clamp(dot(sunDir, normalize2(vec3(0, 1, 0))) * 0.5 + 0.5, 0.3, 1.0) * (1 - rainFactor);
+        //vec3 sampleCol = mix2(vec3(0.8, 0.85, 0.9) * (1 - rainFactor*0.5),vec3(1.0), light);
+
+        vec3 sampleCol = vec3(1.0);
 
         float alpha = density * 0.1 * (1.0 - alphaAcc);
+        alpha = smoothstep((float(i)/CLOUD_STEPS) * 2 - 1, 1.0, alpha);
         alpha = smoothstep(mix2(-0.2, 0.1, 1 - rainFactor), 1.0, (alpha + pow2(density,1/1.75))/2);
-        colorAcc += sampleCol * clamp(alphaAcc * 0.25,0.05,1) * clamp(pow2(1 - (pos.y - CLOUD_BASE)/(CLOUD_TOP - CLOUD_BASE),1/2.2),0,1);
+        //colorAcc += sampleCol * clamp(alphaAcc * 0.25,0.05,1) * clamp(pow2(1 - (pos.y - CLOUD_BASE)/(CLOUD_TOP - CLOUD_BASE),1/2.2),0,1);
+        float heightFactor = clamp(pow2(alpha,6) * 6,0,1);
+        colorAcc += sampleCol * mix2(0.5, 16.0, heightFactor);
         alphaAcc += alpha;
         densitySum += density;
+        heightAcc += heightFactor;
 
         float depth = density;
         depthMask = min(depth, depthMask);
@@ -242,6 +258,7 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float clou
                 float horizontalEffect = hLight - h;
                 lightLevel += (horizontalEffect + verticalEffect) * transmittance;
                 transmittance *= 0.7;
+                cloudStep += lightLevel/8;
             }
             lighting += volumetricLight * lightLevel/8;
         #endif
@@ -250,6 +267,8 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float clou
     }
 
     colorAcc = pow2(colorAcc/CLOUD_STEPS,vec3(1/8.0));
+
+    heightAcc /= CLOUD_STEPS;
 
     colorAcc *= mix2(1.0, 0.5, rainFactor);
 
@@ -260,10 +279,17 @@ vec4 renderVolumetricClouds(vec3 rayOrigin, vec3 rayDir, vec3 sunDir, float clou
     vec3 sunColor = mix2(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B),vec3(0.0), rainFactor);
     
     #ifdef VOLUMETRIC_LIGHTING
-        lighting = max(lighting, vec3(0.0));
-        lighting = mix2(ambientLight + lighting/(CLOUD_STEPS * 16), ambientLight, rainFactor);
+        //lighting /= CLOUD_STEPS * 4;
+        //lighting = max(lighting, ambientLight);
+        //lighting = min(lighting, vec3(MAX_LIGHT));
+        cloudStep = clamp(cloudStep/(CLOUD_STEPS * 32),0,1);
+        float densityStep = densitySum/CLOUD_STEPS;
+        /*lighting = mix2(ambientLight + lighting/(CLOUD_STEPS * 16), ambientLight, rainFactor);
         vec3 nightLighting = mix2(ambientLight, cloudLight, densitySum/CLOUD_STEPS);
-        lighting = mix2(lighting, nightLighting, timeBlendFactor);
+        lighting = mix2(lighting, nightLighting, timeBlendFactor);*/
+        //lighting = mix2(ambientLight, lighting * 0.75, cloudStep);
+        vec3 nightLighting = mix2(ambientLight * 0.5, ambientLight, heightAcc);
+        lighting = mix2(vec3(1.0), nightLighting, timeBlendFactor);
         colorAcc *= lighting;
     #endif
 

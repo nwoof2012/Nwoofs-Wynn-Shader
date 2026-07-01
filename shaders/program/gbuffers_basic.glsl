@@ -220,7 +220,13 @@
             albedo.xyz = mix2(albedo.xyz, (glintColor), glintMask);
         }
 
-        gl_FragData[6] = vec4(0.0, encodeDist(distanceFromCamera,dhFarPlane), depth, 1.0);
+        #ifdef HAND
+            gl_FragData[6] = vec4(0.0, encodeDist(distanceFromCamera,dhFarPlane), depth, 1.0);
+        #elif ENTITY
+            gl_FragData[6] = vec4(0.0, encodeDist(distanceFromCamera,dhFarPlane), 1.0, 1.0);
+        #else
+            gl_FragData[6] = vec4(0.0, encodeDist(distanceFromCamera,dhFarPlane), 0.1, 1.0);
+        #endif
 
         gl_FragData[0] = albedo;
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
@@ -228,26 +234,36 @@
         float isCave = LightmapCoords.g;
         vec2 LightmapCoords2 = LightmapCoords;
         if(isBiomeEnd) LightmapCoords2 *= 0.25;
-        gl_FragData[5] = vec4(LightmapCoords2, 0.0, 1.0);
+        //gl_FragData[5] = vec4(LightmapCoords2, 0.0, 1.0);
         #ifdef ENTITY
-            gl_FragData[7] = vec4(isCave, 1.0, 0.0, 1.0);
+            gl_FragData[7] = vec4(0.0, 1.0, 0.0, 1.0);
         #else
-            gl_FragData[7] = vec4(isCave, 0.0, 0.0, 1.0);
+            gl_FragData[7] = vec4(0.0, 0.0, 0.0, 1.0);
         #endif
 
         #if LIGHTING_MODE > 0
-            vec4 vanilla = vanillaLight(vec2(AdjustLightmap(LightmapCoords)));
+            vec4 vanilla = vanillaLight(vec2(AdjustLightmap(LightmapCoords)) * vec2(0.1, 1.0));
             vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
             if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
             if(currentRenderedItemId > 0 && entityId == 10007) {
                 lighting.xyz = mix2(lighting.xyz, 1 - texture2D(texture, TexCoords).xyz, glintMask);
             }
-            gl_FragData[2] = encodeLight(vanilla,MAX_LIGHT);
+            #if defined HAND || defined ENTITY
+                gl_FragData[2] = encodeLight(vanilla,MAX_LIGHT);
+            #else
+                if(entityId == 10006) gl_FragData[2] = encodeLight(vanilla,MAX_LIGHT);
+                else gl_FragData[2] = encodeLight(vanilla * 0.75,MAX_LIGHT);
+            #endif
         #else
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
         #endif
-        gl_FragData[5] = vec4(LightmapCoords, 0.0f, 1.0f);
-        gl_FragData[3] = vec4(distanceFromCamera, depth, 0.0, 1.0);
+        #if defined HAND || defined ENTITY
+            gl_FragData[5] = vec4(LightmapCoords, 0.0, 1.0f);
+        #else
+            //if(entityId == 10007) gl_FragData[5] = vec4(LightmapCoords, 0.0, 1.0f);
+            gl_FragData[5] = vec4(LightmapCoords, encodeDist(128, 128), 1.0f);
+        #endif
+        gl_FragData[3] = vec4(LightmapCoords, 0.0, 1.0);
         gl_FragData[4] = vec4(0.0,0.0,0.0,1.0);
     }
 #endif

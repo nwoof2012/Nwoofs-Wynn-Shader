@@ -99,6 +99,13 @@ vec3 volumetricFog(vec3 rayDir, vec3 worldPos, float maxDist, vec3 sunColor, vec
     return scattering;
 }
 
+#define FOG_LIGHT_SAMPLE_DIAMETER sqrt(FOG_LIGHT_SAMPLES)
+#define FOG_LIGHT_SAMPLE_RADIUS (FOG_LIGHT_SAMPLE_DIAMETER/2.0)
+
+#define FOG_LIGHT_SCREEN_RADIUS (1000.0/FOG_LIGHT_SAMPLE_RADIUS)
+
+const vec2 normalizedScreenSize = vec2(1080.0/viewHeight * viewWidth, 1080.0);
+
 vec3 calcFog(vec3 sceneColor, vec3 fogColor, vec3 sunColor, vec3 skyColor, float density, float heightDensity, vec3 viewPos, vec3 worldPos) {
     float dist = length(viewPos)/far;
     float heightFactor = exp(-worldPos.y * heightDensity);
@@ -109,7 +116,68 @@ vec3 calcFog(vec3 sceneColor, vec3 fogColor, vec3 sunColor, vec3 skyColor, float
     float noise = texture2D(noiseb, worldPos.xz * 0.001).r;
     fogFactor += noise * 0.2 - 0.1;
 
-    vec3 fogColorShift = mix2(fogColor, skyColor, clamp(dist, 0.0, 1.0));
+    float centerDepth = linearizeDepth(texture2D(depthtex0, TexCoords).r,near,far);
+
+    float lightWorldRadius = FOG_LIGHT_SCREEN_RADIUS/(centerDepth * 1.5);
+
+    vec3 lightColor = vec3(0.0);
+    float lightStrength = 0.0;
+    
+    float lightWeight = 0.0;
+
+    #if FOG_LIGHTING == 1
+        for(int i = 0; i < FOG_LIGHT_SAMPLES; i++) {
+            float idx = mod(i, FOG_LIGHT_SAMPLE_DIAMETER) - FOG_LIGHT_SAMPLE_RADIUS;
+            float idy = mod(i/FOG_LIGHT_SAMPLE_DIAMETER, FOG_LIGHT_SAMPLE_DIAMETER) - FOG_LIGHT_SAMPLE_RADIUS;
+
+            vec2 sampleOffset = vec2(idx, idy);
+            vec2 i00 = lightWorldRadius * floor(sampleOffset)/normalizedScreenSize;
+            vec2 i10 = lightWorldRadius * vec2(ceil(sampleOffset.x), floor(sampleOffset.y))/normalizedScreenSize;
+            vec2 i01 = lightWorldRadius * vec2(floor(sampleOffset.x), ceil(sampleOffset.y))/normalizedScreenSize;
+            vec2 i11 = lightWorldRadius * ceil(sampleOffset)/normalizedScreenSize;
+
+            vec2 f = fract(sampleOffset);
+
+            float sampleDepth = linearizeDepth(texture2D(depthtex0, TexCoords + lightWorldRadius * sampleOffset/normalizedScreenSize).r,near,far);
+
+            if(sampleDepth > centerDepth) continue;
+            
+            vec3 c_00 = texture2D(colortex2, TexCoords + i00).rgb;
+            float s_00 = texture2D(colortex14,TexCoords + i00).g;
+
+            vec3 c_10 = texture2D(colortex2, TexCoords + i10).rgb;
+            float s_10 = texture2D(colortex14,TexCoords + i10).g;
+
+            vec3 c_01 = texture2D(colortex2, TexCoords + i01).rgb;
+            float s_01 = texture2D(colortex14,TexCoords + i01).g;
+
+            vec3 c_11 = texture2D(colortex2, TexCoords + i11).rgb;
+            float s_11 = texture2D(colortex14,TexCoords + i11).g;
+
+            vec3 cx_0 = mix2(c_00, c_10, f.x);
+            vec3 cx_1 = mix2(c_01, c_11, f.x);
+
+            float sx_0 = mix2(s_00, s_10, f.x);
+            float sx_1 = mix2(s_01, s_11, f.x);
+
+            vec3 colorSample = mix2(cx_0, cx_1, f.y);
+            float strengthSample = mix2(sx_0, sx_1, f.y);
+
+            float sampleWeight = max(1 - length(lightWorldRadius * sampleOffset/normalizedScreenSize)/1000.0,0.0);
+            
+            lightColor += colorSample;
+            lightStrength += strengthSample;
+
+            lightWeight += sampleWeight;
+        }
+
+        lightColor /= FOG_LIGHT_SAMPLES;
+        lightStrength /= FOG_LIGHT_SAMPLES;
+
+        fogFactor = mix2(fogFactor, DYNAMIC_FOG_LIGHT_STRENGTH, lightStrength);
+    #endif
+
+    //vec3 fogColorShift = mix2(fogColor, skyColor, clamp(dist, 0.0, 1.0));
 
     if(detectSky >= 1.0) fogFactor = mix2(smoothstep(0.25, 1.0, 1 - dot(Normal, vec3(0.0, 1.0, 0.0))), 1.0, mistwoodsFactor);
 
@@ -135,6 +203,10 @@ vec3 calcFog(vec3 sceneColor, vec3 fogColor, vec3 sunColor, vec3 skyColor, float
 
         //fogLit = max(fogLit, fogSunColor);
     }
+
+    #if FOG_LIGHTING == 1
+        fogLit = mix2(fogLit, clamp(lightColor,0,1), smoothstep(0, 0.05, lightStrength));
+    #endif
     
     return mix2(sceneColor, fogLit, fogFactor);
 }

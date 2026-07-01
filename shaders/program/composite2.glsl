@@ -19,9 +19,12 @@
 
     #define SE_MAX_LIGHT 2.0f // [1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f 3.1f 3.2f 3.3f 3.4f 3.5f 3.6f 3.7f 3.8f 3.9f 4.0f 4.1f]
 
+    #define SHADOWS_ENABLED
+
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
+    #include "/lib/colorFunctions.glsl"
 
     uniform float frameTimeCounter;
     uniform float frameTime;
@@ -57,6 +60,7 @@
     uniform float rainStrength;
     uniform float rainFactor;
     uniform vec3 sunPosition;
+    uniform vec3 moonPosition;
 
     uniform float viewWidth;
     uniform float viewHeight;
@@ -482,13 +486,22 @@
     }
 
     #define SHADOW_TAPS 4
-    #define PCF_RADIUS 2.0
+    #define PCF_RADIUS 4.0
     #define MIN_PCF_RADIUS 0.5
     #define MAX_PCF_RADIUS 2.0
     #define SHADOW_DIST 12 // [4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
     const float GOLDEN_ANGLE = 2.39996323;
 
+    vec4 getNoise(vec2 coord){
+        ivec2 screenCoord = ivec2(coord * vec2(viewWidth, viewHeight)); // exact pixel coordinate onscreen
+        ivec2 noiseCoord = screenCoord % 64; // wrap to range of noiseTextureResolution
+        return texelFetch(noisetex, noiseCoord, 0);
+    }
+
     vec3 GetShadow(float depth, vec3 worldPos, vec3 normal, vec3 worldSpaceSunPos, vec3 lightDir) {
+        #ifndef SHADOWS_ENABLED
+            return vec3(1.0);
+        #endif
         /*vec3 ClipSpace = vec3(texCoord, depth) * 2.0f - 1.0f;
         vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
         vec3 View = ViewW.xyz / ViewW.w;
@@ -522,9 +535,9 @@
             
             vec3 sampleCoord = vec3(SampleCoords.xy + offset, SampleCoords.z);
             ShadowAccum += TransparentShadow(sampleCoord);
-            totalWeight += 1.0;
+            //totalWeight += 1.0;
         }
-        ShadowAccum /= totalWeight;
+        ShadowAccum /= SHADOW_TAPS;
         
         return ShadowAccum;
     }
@@ -590,7 +603,12 @@
     void noonFunc(float time, float timeFactor) {
         vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
         vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        sunlightAlbedo = mix2(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunlightAlbedoSE, seFactor);
+        #ifdef TEMPERATURE_COLOR
+            sunlightAlbedo = colorTemperatureToRGB(SUN_TEMP);
+        #else
+            sunlightAlbedo = vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B);
+        #endif
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         mediump float dayNightLerp = timeFactor;
         cloudLight = vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B);
@@ -603,43 +621,68 @@
     void sunsetFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
         vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        sunlightAlbedo = mix3(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunsetLerp, 0.5);
         vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        #ifdef TEMPERATURE_COLOR
+            sunlightAlbedo = mix3(colorTemperatureToRGB(SUN_TEMP), colorTemperatureToRGB(SUNSET_TEMP), colorTemperatureToRGB(MOON_TEMP), sunsetLerp, 0.5);
+        #else
+            sunlightAlbedo = mix3(vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunsetLerp, 0.5);
+        #endif
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         cloudLight = mix3(vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), sunsetLerp, 0.5);
         cloudAmbience = mix2(vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), sunsetLerp);
-        skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
+        #ifdef TEMPERATURE_COLOR
+            skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), colorTemperatureToRGB(NIGHT_SKY_TEMP), sunsetLerp, 0.5);
+        #else
+            skyInfluenceColor = mix3(vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), sunsetLerp, 0.5);
+        #endif
         lightIntensity = mix2(LIGHT_DAY_I, LIGHT_NIGHT_I, sunsetLerp);
         timeBlendFactor = sunsetLerp;
     }
 
     void nightFunc(float time, float timeFactor) {
-        vec3 sunlightAlbedoSE= vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        sunlightAlbedo = mix2(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), sunlightAlbedoSE, seFactor);
+        vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
         vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        #ifdef TEMPERATURE_COLOR
+            sunlightAlbedo = colorTemperatureToRGB(MOON_TEMP);
+        #else
+            sunlightAlbedo = vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B);
+        #endif
+        sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         mediump float dayNightLerp = timeFactor;
         cloudLight = vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B);
         cloudAmbience = vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B);
-        skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
+        #ifdef TEMPERATURE_COLOR
+            skyInfluenceColor = colorTemperatureToRGB(NIGHT_SKY_TEMP);
+        #else
+            skyInfluenceColor = vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B);
+        #endif
         lightIntensity = LIGHT_NIGHT_I;
         timeBlendFactor = 1.0;
     }
 
     void dawnFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
-        if(worldTime < 500) sunsetLerp = smoothstep(-500.0, 500.0, worldTime);
+        //if(worldTime <= 500) sunsetLerp = smoothstep(-500.0, 500.0, worldTime);
         vec3 sunlightAlbedoSE = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
-        sunlightAlbedo = mix3(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunsetLerp, 0.5);
         vec3 sunlightAlbedoCorruption = vec3(LIGHT_SE_R, LIGHT_SE_G, LIGHT_SE_B);
+        #ifdef TEMPERATURE_COLOR
+            sunlightAlbedo = mix3(colorTemperatureToRGB(MOON_TEMP), colorTemperatureToRGB(SUNSET_TEMP), colorTemperatureToRGB(SUN_TEMP), sunsetLerp, 0.5);
+        #else
+            sunlightAlbedo = mix3(vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B), vec3(LIGHT_SUNSET_R, LIGHT_SUNSET_G, LIGHT_SUNSET_B), vec3(LIGHT_DAY_R, LIGHT_DAY_G, LIGHT_DAY_B), sunsetLerp, 0.5);
+        #endif
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoCorruption, corruptionFactor);
         sunlightAlbedo = mix2(sunlightAlbedo, sunlightAlbedoSE, seFactor);
         cloudLight = mix3(vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), sunsetLerp, 0.5);
         cloudAmbience = mix2(vec3(CLOUD_AMBIENCE_R, CLOUD_AMBIENCE_G, CLOUD_AMBIENCE_B), vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B), sunsetLerp);
-        skyInfluenceColor = mix3(vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
+        #ifdef TEMPERATURE_COLOR
+            skyInfluenceColor = mix3(colorTemperatureToRGB(NIGHT_SKY_TEMP), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
+        #else
+            skyInfluenceColor = mix3(vec3(SKY_NIGHT_A_R, SKY_NIGHT_A_G, SKY_NIGHT_A_B), vec3(SKY_SUNSET_A_R, SKY_SUNSET_A_G, SKY_SUNSET_A_B), vec3(SKY_DAY_A_R, SKY_DAY_A_G, SKY_DAY_A_B), sunsetLerp, 0.5);
+        #endif
         lightIntensity = mix2(LIGHT_NIGHT_I, LIGHT_DAY_I, sunsetLerp);
         timeBlendFactor = 1 - sunsetLerp;
     }
@@ -741,6 +784,9 @@
         vec3 sunWorldPos = mat3(gbufferModelViewInverse) * sunPosition;
         vec3 sunWorldDir = normalize2(sunWorldPos);
 
+        vec3 moonWorldPos = mat3(gbufferModelViewInverse) * moonPosition;
+        vec3 moonWorldDir = normalize2(moonWorldPos);
+
         vec3 footPos = screenToFoot(texCoord, depth);
 
         vec3 worldPos = footPos + cameraPosition;
@@ -752,12 +798,13 @@
 
         mediump float isFoliage = 1 - lightTex.b;
 
-        mediump float sunlightMask = dot(sunWorldDir, Normal);
+        mediump float sunlightMask = max(dot(sunWorldDir, Normal),0.0);
         sunlightMask = clamp((sunlightMask + 0.35) / 1.35, 0.0, 1.0);
-        //sunlightMask = mix(sunlightMask, max(abs(sunlightMask),0.25), 1 - isFoliage);
-        sunlightMask = max(sunlightMask, 0.0);
-
         sunlightMask = pow2(sunlightMask, 0.65);
+
+        mediump float moonNdotL = max(dot(moonWorldDir, Normal),0.0);
+        moonNdotL = pow2(moonNdotL, 0.8);
+        moonNdotL = clamp(moonNdotL, 0.0, 1.0);
 
         #if DEBUG == 1 && DEBUG_MODE == 12
             outcolor = vec4(sunlightMask);
@@ -765,6 +812,9 @@
         #endif
 
         vec3 sunLight = sunlightAlbedo * sunlightMask;
+
+        vec3 moonDirect = sunlightAlbedo * moonNdotL;
+        vec3 nightLight = moonDirect * 0.52 + skyInfluenceColor * 0.4;
 
         vec2 lightmap = 1 - lightTex.rg;
         mediump float isCave = smoothstep(0.0, 0.9, lightmap.g);
@@ -824,7 +874,7 @@
 
         shadowColor = mix2(shadowColor, normalize2(ambient), 0.5);
 
-        vec3 totalSunlight = mix2(sunlightAlbedo*mix2(0.6, 0.35, isStainedGlass), vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G, LIGHT_NIGHT_B)*0.375,timeBlendFactor);
+        vec3 totalSunlight = mix2(sunlightAlbedo*mix2(0.6, 0.35, isStainedGlass), nightLight*0.375,timeBlendFactor);
         totalSunlight = mix2(totalSunlight,shadowColor*SHADOW_BRIGHTNESS, 1 - clamp(shadowLerp,0,1));
         if(detectSky == 1.0 && depth2 == 1.0) {
             totalSunlight = vec3(0);
@@ -904,7 +954,7 @@
         }
         #if LIGHTING_MODE == 1
             dynamicLight = pow2(decodedLight, vec3(GAMMA)) * 0.5 * AdjustLightmap(1 - lightmap).x;
-            dynamicLight = mix2(dynamicLight, dynamicLight * GAMMA * GAMMA, waterTest);
+            dynamicLight = mix2(dynamicLight, dynamicLight * 10, waterTest);
             dynamicLight = mix2(dynamicLight, min(dynamicLight, vec3(MAX_LIGHT*0.1)), detectEntity);
 
             dynamicLight = mix2(dynamicLight, vec3(0.0), step(1.0, depth2));
@@ -949,9 +999,9 @@
 
             //if(texture2D(depthtex1, texCoord).x >= 1.0 && texture2D(depthtex0, texCoord).x < 1.0) finalLight.xyz = vec3(0.0);
 
-            //vec3 viewNormal = normalize2((gbufferModelView * vec4(Normal.xyz, 1.0)).xyz);
+            vec3 viewNormal = normalize2((gbufferModelView * vec4(Normal.xyz, 1.0)).xyz);
             vec3 viewPos = screenToView(texCoord, depth);
-            //vec3 viewDir = normalize2(viewPos);
+            vec3 viewDir = normalize2(viewPos);
 
             //vec3 sunViewDir = normalize2(sunPosition);
 
@@ -977,7 +1027,7 @@
 
             finalLight2.xyz += mix2(totalSunlight, vec3(0.0), lightBlend2);
 
-            finalLight2.xyz = mix2(finalLight2.xyz, vec3(LIGHT_NIGHT_R, LIGHT_NIGHT_G,LIGHT_NIGHT_B)*LIGHT_NIGHT_I * 0.65, timeBlendFactor);
+            finalLight2.xyz = mix2(finalLight2.xyz, nightLight*LIGHT_NIGHT_I, timeBlendFactor);
 
             if(depth >= 1.0) finalLight2.xyz *= mix2(1.0, 0.5, timeBlendFactor);
 
@@ -992,9 +1042,21 @@
 
             //LightmapColor3 = calcSpec(viewDir, normalize2(sunPosition), viewNormal, LightmapColor3, vec3(1.0, 0.9, 0.8), 1.25);
 
-            float roughness = decodeDist(texture2D(colortex10, texCoord).y,128);
+            vec4 texBuffer6 = texture2D(colortex6, texCoord);
 
-            float specIntensity = texture2D(colortex6, texCoord).z;
+            float upward = smoothstep(0.35, 0.9, Normal.y);
+            float rainWetness = rainFactor * upward * texBuffer6.x;
+            rainWetness *= 1 - smoothstep(0.05, 0.1, lightmap.g);
+
+            float luma = dot(color.xyz, vec3(0.299, 0.587, 0.114));
+            color.xyz *= mix2(1.0, 0.55, rainWetness);
+            color.xyz = mix2(vec3(luma), color.xyz, mix2(1.0, 1.15, rainWetness));
+
+            float roughness = decodeDist(texture2D(colortex10, texCoord).y,128);
+            float specIntensity = texBuffer6.z;
+
+            //roughness = mix2(roughness, max(roughness * 0.35, 0.08), rainWetness);
+            //specIntensity = mix2(specIntensity, specIntensity * 2.0 + 0.08, rainWetness);
 
             float noiseValue = triplanarTexture(worldPos, Normal, randnoisea, 0.015).x;
             float noiseMod = clamp(pow2(triplanarTexture(worldPos, Normal, noiseb, 0.005).x * 2.0,2.0),0,1);
@@ -1003,14 +1065,21 @@
 
             float specAmount = specFactor(normalize2(worldPos - cameraPosition), normalize2(sunWorldPos), Normal, roughness, specIntensity) * shadowLerp;
 
-            float fresnel = pow2(1.0 - max(dot(normalize2(viewPos.xyz), Normal), 0.0), 5.0);
+            float fresnel = pow2(1.0 - max(dot(viewDir, viewNormal), 0.0), 5.0);
+
+            float wetSpec = pow2(max(dot(reflect(-viewDir, viewNormal), vec3(0, -1, 0)), 0.1), 0.1);
+            wetSpec = max(wetSpec * mix2(1.0, 4.0, noiseValue * (pow2(1 - noiseMod, 0.5) * 0.75 + 0.25)), 0.5);
+
+            specAmount += wetSpec * rainWetness * 0.5;
 
             specAmount *= mix2(0.04, 1.0, fresnel);
 
             specAmount = clamp(specAmount, 0, 1.0);
 
+            vec3 specColor = sunlightAlbedo * specAmount;
+
             //finalLight2.xyz = mix2(finalLight2.xyz, vec3(1.0), specAmount);
-            finalLight2.xyz += vec3(specAmount);
+            finalLight2.xyz += specColor;
 
             //if(depth2 == 1.0) finalLight *= (1 - texture2D(colortex10, texCoord).x);
 
@@ -1038,7 +1107,9 @@
             finalLight2.xyz *= mix2(1.0, 0.75, waterTest);
             
 
-            finalLight2.xyz += mix2(min(dynamicLight*2, vec3(MAX_LIGHT)), min(dynamicLight*55, vec3(MAX_LIGHT)), seFactor);
+            finalLight2.xyz += dynamicLight*2;
+
+            finalLight = mix2(finalLight, finalLight * 1.5, detectEntity);
 
             finalLight = mix2(finalLight, finalLight2, isLit);
             finalLight = mix2(finalLight, finalLight3, detectSky);
@@ -1126,7 +1197,7 @@
             outbufferD.z = aoAmount;
             imageStore(cimage15, ivec2(texCoord * imageSize(cimage15)), vec4(aoAmount));
         #endif
-        outbufferE = vec4(length(shadowLerp), cloudShadows, encodeDist(linearDepth1,far), 1.0);
+        outbufferE = vec4(length(shadowLerp), texture2D(colortex12, texCoord).r, encodeDist(linearDepth1,far), 1.0);
     }
 #endif
 
