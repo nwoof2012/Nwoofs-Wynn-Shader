@@ -177,6 +177,12 @@ vec4 smoothstep1(vec4 x) {
     return x * x * (3.0 - 2.0 * x);
 }
 
+vec3 rightVector(vec3 forward) {
+    vec3 worldUp = vec3(0.0, 1.0, 0.0);
+
+    return normalize2(cross(forward, worldUp));
+}
+
 float cubicBezier(float t, vec2 p1, vec2 p2) {
     // Cubic Bézier curve: P0 = (0,0), P1 = p1, P2 = p2, P3 = (1,1)
     // Solve for y given t (where t is the x-axis progress)
@@ -341,6 +347,31 @@ vec3 blurLight(sampler2D tex, sampler2D depthTex, vec2 UVs, float radius, int sa
         return sceneLum;
     }
 #endif
+
+const vec3 lumVector = vec3(0.2126, 0.7152, 0.0722);
+const vec4 lumVector4 = vec4(0.2126, 0.7152, 0.0722, 1.0);
+
+vec3 SoftKneeLight(vec3 light, float maxLight, float knee)
+{
+    vec3 low = min(light, vec3(knee));
+    vec3 high = max(light - knee, 0.0);
+
+    high = (maxLight - knee) *
+           high / (high + (maxLight - knee));
+
+    return low + high;
+}
+
+vec4 SoftKneeLight(vec4 light, float maxLight, float knee)
+{
+    vec4 low = min(light, vec4(knee));
+    vec4 high = max(light - knee, 0.0);
+
+    high = (maxLight - knee) *
+           high / (high + (maxLight - knee));
+
+    return low + high;
+}
 
 vec3 contrastBoost(vec3 color, float contrast) {
     return ((color - 0.5) * contrast + 0.5);

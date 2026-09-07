@@ -36,6 +36,8 @@
     vec3 nightColor = vec3(NIGHT_R,NIGHT_G,NIGHT_B);
     vec3 transitionColor = vec3(SUNSET_R,SUNSET_G,SUNSET_B);
 
+    uniform sampler3D cSampler2;
+
     uniform int worldTime;
 
     vec3 currentColor;
@@ -64,6 +66,8 @@
 
     uniform int currentRenderedItemId;
     uniform int entityId;
+
+    flat in ivec3 voxel_pos;
 
     #include "/lib/data/settings.glsl"
 
@@ -243,16 +247,18 @@
 
         #if LIGHTING_MODE > 0
             vec4 vanilla = vanillaLight(vec2(AdjustLightmap(LightmapCoords)) * vec2(0.1, 1.0));
+            vec4 dynLighting = texture3D(cSampler2, vec3(voxel_pos)/vec3(VOXEL_AREA)) * LightmapCoords.x;
             vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
+            lighting = max(lighting, dynLighting);
             if(isBiomeEnd) lighting.xyz = max(lighting.xyz, vec3(SE_MIN_LIGHT * 0.1)); else lighting.xyz = max(lighting.xyz, vec3(MIN_LIGHT * 0.1));
             if(currentRenderedItemId > 0 && entityId == 10007) {
                 lighting.xyz = mix2(lighting.xyz, 1 - texture2D(texture, TexCoords).xyz, glintMask);
             }
             #if defined HAND || defined ENTITY
-                gl_FragData[2] = encodeLight(vanilla,MAX_LIGHT);
+                gl_FragData[2] = encodeLight(lighting,MAX_LIGHT);
             #else
-                if(entityId == 10006) gl_FragData[2] = encodeLight(vanilla,MAX_LIGHT);
-                else gl_FragData[2] = encodeLight(vanilla * 0.75,MAX_LIGHT);
+                if(entityId == 10006) gl_FragData[2] = encodeLight(lighting,MAX_LIGHT);
+                else gl_FragData[2] = encodeLight(lighting,MAX_LIGHT);
             #endif
         #else
             gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
@@ -269,13 +275,21 @@
 #endif
 
 #ifdef VERTEX_SHADER
+    #include "/lib/data/settings.glsl"
     varying vec2 TexCoords;
     varying vec3 Normal;
     varying vec4 Color;
 
+    uniform mat4 gbufferModelViewInverse;
+    uniform vec3 cameraPosition;
+
+    uniform vec4 at_midBlock;
+
     varying vec2 LightmapCoords;
 
     out vec3 viewSpaceFragPosition;
+
+    flat out ivec3 voxel_pos;
 
     void main() {
         gl_Position = ftransform();
@@ -283,6 +297,12 @@
         LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;
 
         viewSpaceFragPosition = (gl_ModelViewMatrix * gl_Vertex).xyz;
+
+        vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
+        vec3 foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
+        vec3 world_pos = foot_pos + cameraPosition;
+        vec3 block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
+        voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
 
         TexCoords = gl_MultiTexCoord0.st;
         Normal = gl_NormalMatrix * gl_Normal;

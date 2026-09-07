@@ -9,31 +9,33 @@
         c /= 16;
         return c;
     }
-    vec3 calcHDR_experimental(vec3 color, float targetLum, float speed, int samples, float sampleRatio) {
-        vec3 sampleColor = averageColor(colortex0);
-        float averageBrightness = 0.7;
-        
-        float previousExposure = imageLoad(cimage3, ivec2(0, 0)).r;
-
-        float exposure = mix2(previousExposure, targetLum/averageBrightness, 0.35);
-        
-        return color * exposure * (exposure/MAX_LIGHT+1.0)/(exposure + 1.0);
-
-        imageStore(cimage3, ivec2(0, 0), vec4(exposure));
-    }
     vec3 calcHDR(vec3 color, float targetLum, float speed, int samples, float sampleRatio) {
-        return calcHDR_experimental(color, targetLum, speed, samples, sampleRatio);
-        float minLum = targetLum/sampleRatio;
-        float maxLum = targetLum * sampleRatio;
+        vec4 dataTex = imageLoad(cimage3, ivec2(0, 0));
+        float previousExposure = decodeDist(dataTex.r, MAX_LIGHT);
 
-        vec3 sum = vec3(0.0);
+        float measuredLum = max(previousExposure, 0.0001);
 
-        for(int i = 0; i < samples; i++) {
-            float lum = mix2(minLum, maxLum, clamp(float(i + 1)/float(samples),0.0,1.0));
-            vec3 sampleCol = autoExposure(color, lum, speed);
-            sum += sampleCol;
+        float targetExposure = targetLum / measuredLum;
+
+        targetExposure = clamp(targetExposure, 0.1, 4.0);
+
+        float adaptationSpeed = speed * 0.01;
+        
+        if(targetExposure > previousExposure) {
+            adaptationSpeed *= 1.5;
         }
 
-        return sum/samples;
+        float lerpCounter = dataTex.g + frameTime * adaptationSpeed;
+
+        float exposure = mix2(previousExposure, targetExposure, clamp(1.0 - exp(-lerpCounter), 0, 1));
+
+        imageStore(cimage3, ivec2(0,0),vec4(encodeDist(exposure, MAX_LIGHT), clamp(lerpCounter, 0, 1), 0.0, 1.0));
+
+        vec3 exposedColor = color * exposure;
+
+        exposedColor = exposedColor * (1.0 + exposedColor / MAX_LIGHT) / (1.0 + exposedColor);
+
+        return exposedColor;
     }
+    
 #endif

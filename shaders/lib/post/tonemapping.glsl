@@ -1,5 +1,5 @@
-#define TONEMAP_NORM 8 // [0 1 2 3 4 5 6 7 8 9 10]
-#define TONEMAP_SAL 8 // [0 1 2 3 4 5 6 7 8 9 10]
+#define TONEMAP_NORM 8 // [0 1 2 3 4 5 6 7 8 9 10 11]
+#define TONEMAP_SAL 6 // [0 1 2 3 4 5 6 7 8 9 10 11]
 
 const mat3 LINEAR_REC2020_TO_LINEAR_SRGB = mat3(
   1.6605, -0.1246, -0.0182,
@@ -135,6 +135,10 @@ vec3 nwoofb(vec3 x) {
     return mix2(tonea, toneb, 0.25);
 }
 
+vec3 nwoofc(vec3 x) {
+    return mix2(agx(x), agxPunchy(x), 0.75);
+}
+
 vec3 reinhard(vec3 color) {
     return color / (color + vec3(1.0));
 }
@@ -189,4 +193,6 @@ vec3 calcTonemap(vec3 x) {
     if(tonemap == 9) return nwoofa(x);
 
     if(tonemap == 10) return nwoofb(x);
+
+    if(tonemap == 11) return nwoofc(x);
 }

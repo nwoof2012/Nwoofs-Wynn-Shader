@@ -148,7 +148,7 @@
         mediump float distanceFromCamera = distance(viewSpaceFragPosition,vec3(0));
 
         gl_FragData[1] = vec4(newNormal * 0.5 + 0.5, 1.0);
-        gl_FragData[3] = vec4(1.0,0.0,0.0,1.0);
+        gl_FragData[3] = vec4(0.0,0.0,0.0,1.0);
         gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, 1.0);
         gl_FragData[5] = vec4(isGlass, 0.0, isStainedGlass, 1.0);
         gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);

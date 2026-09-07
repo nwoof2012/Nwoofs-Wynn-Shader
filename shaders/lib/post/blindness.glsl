@@ -14,7 +14,7 @@ vec3 blindEffect(vec3 color) {
 
 vec3 blindEffect(vec3 color, vec2 uv) {
     if(blindness > 0f) {
-        float depth = texture2D(depthtex0, uv).r;
+        float depth = texture2D(depthtex1, uv).r;
         vec2 ndc = uv * 2.0 - 1.0;
 
         vec4 clipSpace = vec4(ndc, depth, 1.0);

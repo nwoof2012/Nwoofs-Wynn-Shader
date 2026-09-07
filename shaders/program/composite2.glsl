@@ -44,6 +44,7 @@
     uniform sampler2D colortex13;
     uniform sampler2D colortex14;
     uniform sampler2D depthtex0;
+    uniform sampler2D depthtex1;
     uniform sampler2D noisetex;
     uniform mat4 gbufferPreviousModelView;
     uniform mat4 gbufferPreviousProjection;
@@ -170,6 +171,10 @@
         return decodeDist(texture2D(local, texCoord).y, dhFarPlane);
     }
 
+    float getDistMask(float local) {
+        return decodeDist(local, dhFarPlane);
+    }
+
     vec3 projectAndDivide(mat4 pm, vec3 p) {
         vec4 hp = pm * vec4(p, 1.0);
         return hp.xyz/hp.w;
@@ -187,6 +192,68 @@
         vec3 p3 = fract(vec3(p.xyx) * 0.1031);
         p3 += dot(p3, p3.yzx + 33.33);
         return fract((p3.x + p3.y) * p3.z);
+    }
+
+    float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+
+    vec2 coordHash(vec2 p) {
+        p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+        return fract(sin(p) * 43758.5453123);
+    }
+
+    vec3 getRainRippleNormal(vec2 uv, float time) {
+        vec2 cell = floor(uv * 5.0);
+        vec2 localUV = fract(uv * 5.0) - 0.5;
+
+        float h = hash(cell);
+        float t = fract(time * 1.5 + h);
+
+        float dist = length(localUV);
+        float radius = t * 0.4;
+
+        float wave = sin((dist - radius) * 30.0) * smoothstep(0.4, 0.0, dist) * smoothstep(0.0, 0.1, t) * (1.0 - t);
+
+        vec2 derivative = normalize2(localUV + 0.001) * wave;
+        return vec3(derivative.x, 0.0, derivative.y) * 0.15;
+    }
+
+    vec3 calcRainNormals(vec2 uv, float time) {
+        vec3 rainNormal = vec3(0.0, 1.0, 0.0);
+        float rippleScale = 8.0;
+
+        vec2 gridId = floor(uv * rippleScale);
+        vec2 gridUv = fract(uv * rippleScale) - 0.5;
+
+        for(int y = -1; y <= 1; y++) {
+            for(int x = -1; x <= 1; x++) {
+                vec2 offset = vec2(x, y);
+
+                for(int d = 0; d < 8; d++) {
+                    vec2 cellHash = coordHash(gridId + offset + coordHash(vec2(
+                    float(d) * 17.13,
+                    float(d) * 31.71
+                    )));
+                
+                    float dropTime = fract(time * 0.7 + cellHash.x);
+                    vec2 dropPos = gridUv - offset - (cellHash - 0.5) * 0.7;
+                    
+                    float dist = length(dropPos);
+
+                    if(dropTime > 0.0 && dist < dropTime) {
+                        float wave = sin(dist * 30.0 - dropTime * 20.0) * (1.0 - dropTime);
+                        float falloff = smoothstep(0.0, 0.1, dropTime) * smoothstep(1.0, 0.4, dropTime);
+                        float amplitude = wave * falloff * 0.15;
+
+                        vec2 nDeriv = normalize2(dropPos) * amplitude * 20.0;
+                        rainNormal.xz += nDeriv;
+                    }
+                }
+            }
+        }
+
+        return normalize2(rainNormal);
     }
 
     mediump float calcRandom(in vec2 p, float time) {
@@ -434,8 +501,6 @@
 
     uniform sampler2D shadowcolor0;
 
-    uniform sampler2D depthtex1;
-
     in vec3 Tangent;
 
     varying vec2 LightmapCoords;
@@ -575,6 +640,13 @@
         return screenSpace;
     }
 
+    vec3 worldToView(vec3 worldPos) {
+        vec4 viewSpace = gbufferModelView * vec4(worldPos, 1.0);
+        viewSpace /= viewSpace.w;
+
+        return viewSpace.xyz;
+    }
+
     vec3 screenToView(vec2 screenPos, float depth) {
         vec2 ndc = screenPos * 2.0 - 1.0;
 
@@ -588,6 +660,7 @@
     uniform bool isBiomeEnd;
     uniform float seFactor;
     uniform float corruptionFactor;
+    uniform float dryFactor;
 
     vec3 cloudLight;
     vec3 cloudAmbience;
@@ -748,12 +821,13 @@
         #include "/lib/lighting/pathTracing.glsl"
     #endif
 
-    /* RENDERTARGETS:0,1,2,6,14 */
+    /* RENDERTARGETS:0,1,2,6,14,11 */
     layout(location = 0) out vec4 outcolor;
     layout(location = 1) out vec4 outnormal;
     layout(location = 2) out vec4 outlight;
     layout(location = 3) out vec4 outbufferD;
     layout(location = 4) out vec4 outbufferE;
+    layout(location = 5) out vec4 naturalLight;
 
     void main() {
         timeFunctionFrag();
@@ -767,6 +841,7 @@
         linearDepth0 = linearizeDepth(depth, near, far);
         linearDepth1 = linearizeDepth(depth2, near, far);
         mediump vec4 texBuffer5 = texture2D(colortex5, texCoord);
+        mediump vec4 texBuffer7 = texture2D(colortex10, texCoord);
         mediump float waterTest = texBuffer5.r;
 
         Normal = normalize2(texture2D(colortex1, texCoord).rgb * 2.0f -1.0f);
@@ -811,13 +886,13 @@
             return;
         #endif
 
-        vec3 sunLight = sunlightAlbedo * sunlightMask;
+        //vec3 sunLight = sunlightAlbedo * sunlightMask;
 
         vec3 moonDirect = sunlightAlbedo * moonNdotL;
-        vec3 nightLight = moonDirect * 0.52 + skyInfluenceColor * 0.4;
+        vec3 nightLight = moonDirect * 0.26 + skyInfluenceColor * 0.2;
 
-        vec2 lightmap = 1 - lightTex.rg;
-        mediump float isCave = smoothstep(0.0, 0.9, lightmap.g);
+        vec2 lightmap = lightTex.rg;
+        mediump float isCave = 1 - smoothstep(0.05, 0.5, lightmap.g);
 
         vec4 sunClipPos = gbufferProjection * vec4(sunPosition,1.0);
         vec3 sunNDC = sunClipPos.xyz / sunClipPos.w;
@@ -837,7 +912,9 @@
         mediump float detectEntity = texture2D(colortex12, texCoord).g;
         sunlightMask = mix2(sunlightMask, 1.0, detectEntity);
 
-        vec3 worldShadow = GetShadow(depth2, footPos, Normal, sunWorldPos, sunWorldDir);
+        //vec3 worldShadow = GetShadow(depth2, footPos, Normal, sunWorldPos, sunWorldDir);
+
+        vec3 worldShadow = max(fastBilateral(colortex14,texCoord,250.0,1.0).xyz, vec3(rainFactor));
 
         float shadowLerp = length(mix2(worldShadow * sunlightMask,vec3(0.0),timeBlendFactor));
         shadowLerp = mix2(shadowLerp, 0.0, rainFactor);
@@ -858,7 +935,7 @@
             totalSunlight = vec3(0);
         }*/
 
-        float isStainedGlass = texture2D(colortex10, texCoord).b;
+        float isStainedGlass = texBuffer7.b;
 
         vec3 shadowColor = max(worldShadow, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B));
 
@@ -872,13 +949,18 @@
         vec3 ambient = mix2(ambientDown, ambientUp, skyFacing);
         ambient = mix2(ambient, ambientSide, sideFacing * 0.35);
 
-        shadowColor = mix2(shadowColor, normalize2(ambient), 0.5);
+        shadowColor *= ambient;
 
-        vec3 totalSunlight = mix2(sunlightAlbedo*mix2(0.6, 0.35, isStainedGlass), nightLight*0.375,timeBlendFactor);
+        vec3 totalSunlight = mix2(sunlightAlbedo*mix2(1.05, 1.0, isStainedGlass), nightLight*0.375,timeBlendFactor);
         totalSunlight = mix2(totalSunlight,shadowColor*SHADOW_BRIGHTNESS, 1 - clamp(shadowLerp,0,1));
         if(detectSky == 1.0 && depth2 == 1.0) {
             totalSunlight = vec3(0);
         }
+
+        //vec3 worldRight = rightVector(footPos);
+        //vec3 viewRight = worldToView(worldRight);
+
+        //vec3 godrayAmount = calcGodrays(texCoord, sunScreenPos, footPos, worldRight, sunWorldPos, sunlightAlbedo) * shadowLerp;
 
         #if DEBUG == 1 && DEBUG_MODE == 10
             outcolor = vec4(totalSunlight,1.0);
@@ -949,19 +1031,22 @@
             color.xyz = color2;
             finalLight = finalLight3;
             outcolor = vec4(pow2(color.xyz, vec3(1/GAMMA)), 1.0);
+
             outlight = encodeLight(finalLight,MAX_LIGHT);
             return;
         }
         #if LIGHTING_MODE == 1
-            dynamicLight = pow2(decodedLight, vec3(GAMMA)) * 0.5 * AdjustLightmap(1 - lightmap).x;
-            dynamicLight = mix2(dynamicLight, dynamicLight * 10, waterTest);
-            dynamicLight = mix2(dynamicLight, min(dynamicLight, vec3(MAX_LIGHT*0.1)), detectEntity);
+            dynamicLight = pow2(decodedLight, vec3(GAMMA)) * 5 * AdjustLightmap(lightmap).x;
+            dynamicLight = mix2(dynamicLight, dynamicLight * 2, waterTest);
+            //dynamicLight = mix2(dynamicLight, min(dynamicLight, vec3(MAX_LIGHT*0.1)), detectEntity);
 
             dynamicLight = mix2(dynamicLight, vec3(0.0), step(1.0, depth2));
         #endif
 
         #if CLOUD_STYLE == 1
-            //cloudShadows = getCloudShadow(pos.xzy, rayDir, sunWorldDir, cloud_time);
+            /*cloudShadows = getCloudShadow(pos.xyz, rayDir, sunWorldDir, cloud_time);
+            shadowLerp *= cloudShadows;
+            godrayAmount *= cloudShadows;*/
         #endif
 
         /*for(float t = 0.0; t < 1.0; t += stepSize) {
@@ -1007,8 +1092,9 @@
 
             //float distanceFromCamera = distance(cameraPosition*2.0, worldPos);
 
+            vec4 texBuffer6 = texture2D(colortex6, texCoord);
 
-            float haze = clamp(pow2(getDistMask(colortex6) /70.0,0.75), 0.0, 1.0);
+            float haze = clamp(pow2(getDistMask(texBuffer6.y) /70.0,0.75), 0.0, 1.0);
 
             //float fresnel = pow2(1.0 - dot(Normal, viewDir),2.0);
 
@@ -1042,18 +1128,16 @@
 
             //LightmapColor3 = calcSpec(viewDir, normalize2(sunPosition), viewNormal, LightmapColor3, vec3(1.0, 0.9, 0.8), 1.25);
 
-            vec4 texBuffer6 = texture2D(colortex6, texCoord);
-
             float upward = smoothstep(0.35, 0.9, Normal.y);
             float rainWetness = rainFactor * upward * texBuffer6.x;
-            rainWetness *= 1 - smoothstep(0.05, 0.1, lightmap.g);
+            rainWetness *= 1 - smoothstep(0.05, 0.1, 1 - lightmap.g);
 
             float luma = dot(color.xyz, vec3(0.299, 0.587, 0.114));
-            color.xyz *= mix2(1.0, 0.55, rainWetness);
-            color.xyz = mix2(vec3(luma), color.xyz, mix2(1.0, 1.15, rainWetness));
+            //color.xyz *= mix2(1.0, 0.55, rainWetness);
+            //color.xyz = mix2(vec3(luma), color.xyz, mix2(1.0, 1.15, rainWetness));
 
-            float roughness = decodeDist(texture2D(colortex10, texCoord).y,128);
-            float specIntensity = texBuffer6.z;
+            float roughness = decodeDist(texBuffer7.y,128);
+            float specIntensity = texBuffer7.z;
 
             //roughness = mix2(roughness, max(roughness * 0.35, 0.08), rainWetness);
             //specIntensity = mix2(specIntensity, specIntensity * 2.0 + 0.08, rainWetness);
@@ -1063,14 +1147,44 @@
             noiseValue *= mix2(0.0, 1.0, noiseMod);
             specIntensity *= mix2(0.65, 1.0, noiseValue);
 
-            float specAmount = specFactor(normalize2(worldPos - cameraPosition), normalize2(sunWorldPos), Normal, roughness, specIntensity) * shadowLerp;
+            vec3 footDir = normalize2(footPos);
+
+            float specAmount = specFactor(footDir, sunWorldDir, Normal, roughness, specIntensity) * shadowLerp;
 
             float fresnel = pow2(1.0 - max(dot(viewDir, viewNormal), 0.0), 5.0);
 
-            float wetSpec = pow2(max(dot(reflect(-viewDir, viewNormal), vec3(0, -1, 0)), 0.1), 0.1);
-            wetSpec = max(wetSpec * mix2(1.0, 4.0, noiseValue * (pow2(1 - noiseMod, 0.5) * 0.75 + 0.25)), 0.5);
+            //float wetSpec = pow2(max(dot(reflect(-viewDir, viewNormal), vec3(0, -1, 0)), 0.1), 0.1);
+            //float wetSpec = specFactor(normalize2(worldPos - cameraPosition), normalize2(sunWorldPos), Normal, roughness * 0.5, 1.0);
+            //wetSpec = max(wetSpec * mix2(1.0, 4.0, noiseValue * (pow2(1 - noiseMod, 0.5) * 0.75 + 0.25)), 0.5);
 
-            specAmount += wetSpec * rainWetness * 0.5;
+            float wetnessMask = max(0.0, Normal.y); 
+
+            vec3 rippleOffset = calcRainNormals(worldPos.xz * 0.3, frameTimeCounter);
+            vec3 wetNormal = normalize2(Normal + vec3(rippleOffset.x, 0.0, rippleOffset.y) * wetnessMask);
+
+            color *= 0.6 + 0.4 * (1 - rainFactor);
+
+            float wetSpecIntensity = 384.0;
+            float wetShininess = 8.0;
+
+            vec3 L = sunWorldDir;
+            vec3 V = -footDir;
+            vec3 H = normalize2(L + V);
+
+            vec3 halfwayPoint = normalize2(floor(worldPos.xyz * 0.8) + V);
+
+            float NdotH = max(dot(wetNormal, halfwayPoint), 0.25) * clamp(dot(Normal, wetNormal),0,1);
+            vec3 R = reflect(footDir, wetNormal);
+            float LdotH = max(dot(R, V), 0.0);
+            LdotH = pow2(LdotH, 0.5);
+            NdotH += LdotH * 0.05;
+            float wetSpec = pow2(NdotH, wetShininess) * wetSpecIntensity;
+
+            float wetBiomeFactor = (1.0 - dryFactor) * (1.0 - seFactor) * (1.0 - corruptionFactor);
+
+            wetSpec *= 0.04 + 0.96 * fresnel * wetBiomeFactor;
+
+            specAmount += wetSpec * rainWetness;
 
             specAmount *= mix2(0.04, 1.0, fresnel);
 
@@ -1079,7 +1193,7 @@
             vec3 specColor = sunlightAlbedo * specAmount;
 
             //finalLight2.xyz = mix2(finalLight2.xyz, vec3(1.0), specAmount);
-            finalLight2.xyz += specColor;
+            finalLight2.xyz += specColor * step(depth2, depth);
 
             //if(depth2 == 1.0) finalLight *= (1 - texture2D(colortex10, texCoord).x);
 
@@ -1100,13 +1214,16 @@
 
             //if(detectEntity == 1.0) finalLight.xyz *= mix2(1.0, 0.75/MAX_LIGHT, smoothstep(0.5, 0.55, 1 - lightmap.r));
 
-            finalLight2.xyz = mix2(finalLight2.xyz, vec3(AMBIENT_LIGHT_R, AMBIENT_LIGHT_G, AMBIENT_LIGHT_B)*minLight, isCave);
+            finalLight2.xyz = mix2(finalLight2.xyz, vec3(0.0), isCave);
 
             //finalLight.xyz *= mix2(0.75, 1.25, aoHash(texCoord/vec2(1.0,viewPos.z)));
 
             finalLight2.xyz *= mix2(1.0, 0.75, waterTest);
-            
 
+            //finalLight2.xyz += godrayAmount;
+
+            naturalLight = mix2(finalLight, finalLight * 1.5, detectEntity);
+            
             finalLight2.xyz += dynamicLight*2;
 
             finalLight = mix2(finalLight, finalLight * 1.5, detectEntity);
@@ -1184,7 +1301,7 @@
 
         outcolor = vec4(pow2(color.xyz, vec3(1/GAMMA)), 1.0);
         outlight = encodeLight(finalLight,MAX_LIGHT);
-        outbufferD = texture2D(colortex6, texCoord);
+        outbufferD = texBuffer6;
         outbufferD.x = outbufferD.z;
         #if AO > 0
             float aoAmount = 1.0;

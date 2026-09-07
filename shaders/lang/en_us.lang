@@ -289,6 +289,16 @@ option.WAVE_AMPLITUDE.comment=Adjusts the height of waves in the water
 option.TILTED_RAIN=§9Tilted Rain
 option.TILTED_RAIN.comment=Adjusts the angle of rain to be more slanted for added realism
 
+option.SUN_STYLE=§6Sun Style
+option.SUN_STYLE.comment=Toggles between vanilla sun and realistic sun
+value.SUN_STYLE.0=§aVanilla
+value.SUN_STYLE.1=§e§lRealistic
+
+option.SUN_ANGLE=§6Sun Angle
+option.SUN_ANGLE.comment=Adds an angle to the sun's position for realism
+value.SUN_ANGLE.0=§aVanilla
+value.SUN_ANGLE.1=§eAngled
+
 option.SHADER_CLOUDS=Clouds
 
 option.CLOUD_STYLE = §fVolumetric Clouds
@@ -593,6 +603,7 @@ value.TONEMAP_SAL.7=AgX §7(§eGolden§7)
 value.TONEMAP_SAL.8=AgX §7(§ePunchy§7)
 value.TONEMAP_SAL.9=Nwoof
 value.TONEMAP_SAL.10=Nwoof 2
+value.TONEMAP_SAL.11=Nwoof 3
 option.TONEMAP_SAL.comment=§6Changes the screen's tonemapping curve
 
 option.TONEMAP_NORM=§7Tonemap
@@ -607,6 +618,7 @@ value.TONEMAP_NORM.7=AgX §7(§eGolden§7)
 value.TONEMAP_NORM.8=AgX §7(§ePunchy§7)
 value.TONEMAP_NORM.9=Nwoof
 value.TONEMAP_NORM.10=Nwoof 2
+value.TONEMAP_NORM.11=Nwoof 3
 option.TONEMAP_NORM.comment=§6Changes the screen's tonemapping curve
 
 option.BRIGHTNESS=§eBrightness

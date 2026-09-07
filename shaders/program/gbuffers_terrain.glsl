@@ -124,6 +124,8 @@
     uniform float far;
     uniform float near;
 
+    in float isLava;
+
     #ifdef DISTANT_HORIZONS
         uniform float dhFarPlane;
         uniform float dhRenderDistance;
@@ -142,21 +144,21 @@
     #include "/lib/post/gaussianBlur.glsl"
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
-    const float TorchBrightness = 25.0;
+    const float TorchBrightness = 3.0;
     const vec3 GlowstoneColor = vec3(1.0f, 0.93f, 0.5f);
-    const float GlowstoneBrightness = 5.0;
+    const float GlowstoneBrightness = 3.0;
     const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
-    const float LampBrightness = 25.0;
+    const float LampBrightness = 3.0;
     const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
-    const float LanternBrightness = 25.0;
+    const float LanternBrightness = 3.0;
     const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
-    const float RedstoneBrightness = 5.0;
+    const float RedstoneBrightness = 3.0;
     const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
-    const float RodBrightness = 25.0;
+    const float RodBrightness = 3.0;
     const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
-    const float PortalBrightness = 25.0;
+    const float PortalBrightness = 3.0;
     const vec3 FireColor = vec3(1.0f, 0.5f, 0.08f);
-    const float FireBrightness = 25.0;
+    const float FireBrightness = 3.0;
 
     //#include "program/generateNormals.glsl"
 
@@ -366,11 +368,44 @@
         return mix2(cx0, cx1, f.y);
     }
 
+    vec4 lightTrilinear(sampler3D tex, vec3 coords, ivec3 voxel_pos) {
+        vec3 p000 = vec3(voxel_pos)/vec3(VOXEL_AREA);
+        vec3 p100 = (vec3(voxel_pos) + vec3(1, 0, 0))/vec3(VOXEL_AREA);
+        vec3 p010 = (vec3(voxel_pos) + vec3(0, 1, 0))/vec3(VOXEL_AREA);
+        vec3 p001 = (vec3(voxel_pos) + vec3(0, 0, 1))/vec3(VOXEL_AREA);
+        vec3 p110 = (vec3(voxel_pos) + vec3(1, 1, 0))/vec3(VOXEL_AREA);
+        vec3 p101 = (vec3(voxel_pos) + vec3(1, 0, 1))/vec3(VOXEL_AREA);
+        vec3 p011 = (vec3(voxel_pos) + vec3(0, 1, 1))/vec3(VOXEL_AREA);
+        vec3 p111 = (vec3(voxel_pos) + vec3(1, 1, 1))/vec3(VOXEL_AREA);
+
+        vec3 f = fract(coords);
+
+        vec4 c000 = texture3D(tex, p000).rgba;
+        vec4 c100 = texture3D(tex, p100).rgba;
+        vec4 c010 = texture3D(tex, p010).rgba;
+        vec4 c001 = texture3D(tex, p001).rgba;
+        vec4 c110 = texture3D(tex, p110).rgba;
+        vec4 c101 = texture3D(tex, p101).rgba;
+        vec4 c011 = texture3D(tex, p011).rgba;
+        vec4 c111 = texture3D(tex, p111).rgba;
+
+        vec4 c00 = mix2(c000, c100, f.x);
+        vec4 c01 = mix2(c001, c101, f.x);
+        vec4 c10 = mix2(c010, c110, f.x);
+        vec4 c11 = mix2(c011, c111, f.x);
+        
+        vec4 c0 = mix2(c00, c10, f.y);
+        vec4 c1 = mix2(c01, c11, f.y);
+
+        return mix2(c0, c1, f.z);
+    }
+
     #include "/lib/world/timeCycle.glsl"
 
     /* RENDERTARGETS:0,1,2,13,5,10,6,12*/
 
     void main() {
+        timeFunctionFrag();
         vec3 lightColor = texture(lightmap, LightmapCoords).rgb;
         vec4 albedo = texture2D(gtexture, TexCoords) * vec4(Color.xyz,1.0);
         albedo.xyz = pow2(albedo.xyz, vec3(GAMMA));
@@ -417,8 +452,6 @@
                     baseFogDistMin = fogMin;
                     baseFogDistMax = fogMax;
                 }
-                
-                timeFunctionFrag();
 
                 mediump float fogStart = fogMin;
                 mediump float fogEnd = fogMax;
@@ -458,24 +491,6 @@
 
                 baseFog = vec3(0.0);
 
-                fogMin = FOG_DAY_DIST_MIN;
-                fogMax = FOG_DAY_DIST_MAX;
-
-                baseFogDistMin = fogMin;
-                baseFogDistMax = fogMax;
-
-                if(worldTime/(timePhase + 1) < 500f) {
-                    baseFogDistMin = fogMin;
-                    baseFogDistMax = fogMax;
-                }
-
-                timeFunctionFrag();
-
-                mediump float fogStart = fogMin;
-                mediump float fogEnd = fogMax;
-
-                mediump float fogAmount = (length(view_pos)*(far/dhRenderDistance) - fogStart)/(fogEnd - fogStart);
-
                 #ifdef DISTANT_HORIZONS
                     gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, dhFarPlane), specStrength, 1.0);
                 #else
@@ -502,7 +517,7 @@
                     float weight;
 
                     #if SCENE_AWARE_LIGHTING > 0
-                        for (int idx = 0; idx < totalLightRadius; idx++) {
+                        /*for (int idx = 0; idx < totalLightRadius; idx++) {
                             if(isLeaves > 0.5) continue;
 
                             int x = int(idx / (side * side) - LIGHT_RADIUS);
@@ -558,10 +573,11 @@
 
                                 //lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
                             }
-                        }
-                        dynLighting /= max(weight,1.0);
+                        }*/
+                        //dynLighting /= max(weight,1.0);
                         //lighting *= 25;
-                        dynLighting = min(dynLighting, normalize2(dynLighting) * MAX_LIGHT);
+                        dynLighting = decodeLight(lightTrilinear(cSampler2, worldPos, voxel_pos),MAX_LIGHT);
+                        dynLighting = SoftKneeLight(dynLighting, MAX_LIGHT, 0.7);
                         dynLighting = mix2(dynLighting, max(exp(dynLighting),vec4(0.0)), seFactor);
                         lighting += dynLighting;
                     #endif
@@ -578,9 +594,9 @@
                 vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
                 //if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
                 finalLighting2 = max(finalLighting2, vec4(0.0));
-                finalLighting = mix2(finalLighting * 4.0, finalLighting2 * 0.75, max(1 - step(length(voxel_pos), length(vec2(VOXEL_AREA))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
+                finalLighting = mix2(finalLighting*3, finalLighting2 * 0.75, max(1 - step(length(voxel_pos), length(vec2(VOXEL_AREA))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
+                if(isLava > 0.5) gl_FragData[2] = encodeLight(vec4(FireColor * FireBrightness, FireBrightness)/3.25,MAX_LIGHT); else gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);
                 uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
-                gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);
             #endif
             gl_FragData[3] = vec4(LightmapCoords, isGrass, 1.0);
             gl_FragData[4] = vec4(0.0, 0.0, isReflective, 1.0);
@@ -691,6 +707,8 @@
     uniform int worldDay;
 
     mediump float bottomY = at_midBlock.y - 0.5;
+
+    out float isLava;
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
     const vec3 GlowstoneColor = vec3(1.0f, 0.85f, 0.5f);
@@ -911,7 +929,7 @@
         #endif
 
         #if (SCENE_AWARE_LIGHTING > 0 && LIGHTING_MODE > 0) || LIGHTING_MODE == 2
-            if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+            /*if(mod(gl_VertexID,4) == 0 && clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
                 vec4 voxel_data = mc_Entity.x == 10005? vec4(1.0,0.0,0.0,1.0) : mc_Entity.x == 10006? vec4(0.0,1.0,0.0,1.0) : mc_Entity.x == 10007? vec4(0.0,0.0,1.0,1.0) : mc_Entity.x == 10008? vec4(1.0,1.0,0.0,1.0) : mc_Entity.x == 10009? vec4(0.0,1.0,1.0,1.0) : mc_Entity.x == 10010? vec4(1.0,0.0,1.0,1.0) : mc_Entity.x == 10012? vec4(1.0) : mc_Entity.x == 10013? vec4(0.5,0.0,0.0,1.0) : mc_Entity.x == 10003? vec4(0.0) : vec4(vec3(0.0),1.0);
 
                 uint voxel_data2 = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
@@ -926,7 +944,9 @@
                 lightData = voxel_data2;
 
                 imageAtomicMax(cimage1, voxel_pos, voxel_data2);
-            }
+            }*/
+
+            isLava = mc_Entity.x == 10013? 1.0 : 0.0;
 
             #if FOG_STYLE == 2
                 uint intValue = uint(clamp(length(foot_pos),minFog, maxFog) * FOG_PRECISION);

@@ -112,7 +112,11 @@
         float dhNearPlane = near;
     #endif
 
-    const mediump float sunPathRotation = -40.0f;
+    #if SUN_ANGLE == 1
+        const float sunPathRotation = -40.0f;
+    #elif SUN_ANGLE == 0
+        const float sunPathRotation = 0.0f;
+    #endif
 
     const mediump float Ambient = 0.1f;
 

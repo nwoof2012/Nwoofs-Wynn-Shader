@@ -75,3 +75,37 @@ vec3 colorTemperatureToRGB(float k) {
     
     return col;
 }
+
+vec4 lightStepColor(vec4 a, vec4 b) {
+    return mix2(b, a, step(luminance(a.xyz), luminance(b.xyz)));
+}
+
+vec3 lightStepColor(vec3 a, vec3 b) {
+    return mix2(b, a, step(luminance(a.xyz), luminance(b.xyz)));
+}
+
+float lightStep(vec4 a, vec4 b) {
+    return step(luminance(a.xyz), luminance(b.xyz));
+}
+
+float lightStep(vec3 a, vec3 b) {
+    return step(luminance(a.xyz), luminance(b.xyz));
+}
+
+vec4 maxLum(vec4 a, vec4 b) {
+    float a_lum = luminance(a.xyz);
+    float b_lum = luminance(b.xyz);
+
+    if(a_lum > b_lum) return a;
+    
+    return b;
+}
+
+vec3 maxLum(vec3 a, vec3 b) {
+    float a_lum = luminance(a.xyz);
+    float b_lum = luminance(b.xyz);
+
+    if(a_lum > b_lum) return a;
+    
+    return b;
+}

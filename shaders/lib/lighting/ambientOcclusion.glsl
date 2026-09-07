@@ -2,7 +2,7 @@
 #define AO_STRENGTH 1.0 // [0.0 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
 #define AO_STRENGTH_PLANT 0.75 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
 #define AO_RADIUS 10 // [5 10 15 20 25]
-#define AO_SAMPLES 16 // [4 9 16 25 36 49 64]
+#define AO_SAMPLES 9 // [4 9 16 25 36 49 64]
 #define AO_MIN_INTENSITY 0.05 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
 
 #define GTAO_THRESHOLD 0.1 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
@@ -200,12 +200,7 @@ float calcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
         depthDifference += weight * normalFactor;
     }
 
-    lowp float isFoliage = 1.0 - texture2D(colortex13, UVs).b;
-    lowp float isLeaves = 1.0 - texture2D(colortex12, UVs).g;
-    lowp float isHand = 1.0 - texture2D(colortex12, UVs).b;
-    mediump float aoStrength = mix2(AO_STRENGTH, AO_STRENGTH_PLANT, max(step(isFoliage, 0.5),step(isLeaves, 0.5))) * isHand;
-
-    mediump float ao = 1.0 - pow2(depthDifference / float(total), 0.5) * aoStrength;
+    mediump float ao = 1.0 - pow2(depthDifference / float(total), 0.5) * AO_STRENGTH;
     return clamp(ao, AO_MIN_INTENSITY, 1.0);
 }
 
@@ -253,12 +248,7 @@ float calcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, samp
         ao += smoothstep(GTAO_THRESHOLD, 1.0, occlusionDir);
     }
 
-    lowp float isFoliage = 1.0 - texture2D(colortex13, UVs).b;
-    lowp float isLeaves = 1.0 - texture2D(colortex12, UVs).g;
-    lowp float isHand = 1.0 - texture2D(colortex12, UVs).b;
-    mediump float aoStrength = mix2(AO_STRENGTH, AO_STRENGTH_PLANT, max(step(isFoliage, 0.5),step(isLeaves, 0.5))) * isHand;
-
-    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 1.0) * aoStrength * mix2(0.25, 1.5, isFoliage);
+    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 1.0) * AO_STRENGTH;
     return clamp(ao, GTAO_MIN_INTENSITY, 1.0);
 }
 
@@ -324,12 +314,7 @@ float DHcalcSSAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sa
         depthDifference += weight * normalFactor;
     }
 
-    lowp float isFoliage = 1.0 - texture2D(colortex13, UVs).b;
-    lowp float isLeaves = 1.0 - texture2D(colortex12, UVs).g;
-    lowp float isHand = 1.0 - texture2D(colortex12, UVs).b;
-    mediump float aoStrength = AO_STRENGTH;
-
-    mediump float ao = 1.0 - pow2(depthDifference / float(total), 0.5) * aoStrength;
+    mediump float ao = 1.0 - pow2(depthDifference / float(total), 0.5) * AO_STRENGTH;
     return clamp(ao, AO_MIN_INTENSITY, 1.0);
 }
 
@@ -377,12 +362,7 @@ float DHcalcGTAO(vec2 UVs, vec3 footPos, int kernelSize, sampler2D depthMask, sa
         ao += smoothstep(GTAO_THRESHOLD, 1.0, occlusionDir);
     }
 
-    lowp float isFoliage = 1.0 - texture2D(colortex13, UVs).b;
-    lowp float isLeaves = 1.0 - texture2D(colortex12, UVs).g;
-    lowp float isHand = 1.0 - texture2D(colortex12, UVs).b;
-    mediump float aoStrength = AO_STRENGTH;
-
-    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 1.0) * aoStrength * 1.5;
+    ao = 1.0 - pow2(ao / float(GTAO_NUM_DIRS), 1.0) * AO_STRENGTH * 1.5;
     return clamp(ao, GTAO_MIN_INTENSITY, 1.0);
 }
 

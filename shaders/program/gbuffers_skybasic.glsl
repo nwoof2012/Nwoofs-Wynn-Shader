@@ -344,11 +344,15 @@
             outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.25 + 0.5 * moonGradient);
             outputSunMoon = outputColorMoon.xyzw;
             outputLight = mix2(encodeLight(vec4(starData.a), MAX_LIGHT), vec4(0.0), outputSunMoon.w);
-            gl_FragData[2] = max(outputLight, encodeLight(vec4(moonColor * moonRimGradient, 1.0), MAX_LIGHT));
-            outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
+            #if SUN_STYLE == 1
+                gl_FragData[2] = max(outputLight, encodeLight(vec4(moonColor * moonRimGradient, 1.0), MAX_LIGHT));
+                outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
+            #endif
         } else {
-            gl_FragData[2] = mix2(encodeLight(vec4(starData.a), MAX_LIGHT), encodeLight(outputLight,MAX_LIGHT), smoothstep(0.0, 0.01, outputSunMoon.w));
-            outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, sunGradient);
+            #if SUN_STYLE == 1
+                gl_FragData[2] = mix2(encodeLight(vec4(starData.a), MAX_LIGHT), encodeLight(outputLight,MAX_LIGHT), smoothstep(0.0, 0.01, outputSunMoon.w));
+                outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, sunGradient);
+            #endif
         }
         outputSunMoon *= 1 - rainStrength;
         if(worldTime2%24000 < 12000) {
@@ -383,7 +387,13 @@
 
     flat out vec3 upVec, sunVec;
 
-    const float sunPathRotation = -40.0f;
+    #include "/lib/data/settings.glsl"
+
+    #if SUN_ANGLE == 1
+        const float sunPathRotation = -40.0f;
+    #elif SUN_ANGLE == 0
+        const float sunPathRotation = 0.0f;
+    #endif
 
     #include "/lib/world/timeCycle.glsl"
     uniform mat4 gbufferProjection;

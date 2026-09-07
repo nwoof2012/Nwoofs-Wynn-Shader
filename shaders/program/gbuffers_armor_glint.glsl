@@ -3,6 +3,12 @@
     uniform float frameTimeCounter;
     varying vec2 TexCoords;
 
+    uniform mat4 gbufferModelViewInverse;
+    uniform mat4 gbufferProjectionInverse;
+    uniform mat4 gbufferModelView;
+    uniform mat4 gbufferProjection;
+
+    #include "/lib/optimizationFunctions.glsl"
     #include "/lib/colorFunctions.glsl"
 
     /* RENDERTARGETS:0,2 */

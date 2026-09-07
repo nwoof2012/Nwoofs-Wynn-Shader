@@ -7,7 +7,7 @@
     in float frameTime;
     
     void timeFunctionVert() {
-        timeOfDay = mod(worldTime,24000);
+        timeOfDay = worldTime + fract(frameTime * 20.0);
         quadTime = timeOfDay;
         if(timeOfDay <= 500) {
             timePhase = 3;

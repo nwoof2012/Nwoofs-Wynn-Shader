@@ -2,4 +2,4 @@
 
 #define FRAGMENT_SHADER
 
-#include "program/gbuffers_armor_glint.glsl"
+#include "program/gbuffers_beaconbeam.glsl"

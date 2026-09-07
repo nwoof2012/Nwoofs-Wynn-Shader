@@ -1,16 +1,16 @@
 #if defined FRAGMENT_SHADER && defined COMPOSITE_3
     #if LIGHTING_MODE > 0
-        vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor) {
+        vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor, vec2 uv) {
             vec3 rawLight = LightmapColor.xyz;
 
-            vec3 Normal = texture2D(colortex1, TexCoords).xyz * 2 - 1;
+            vec3 Normal = texture2D(colortex1, uv).xyz * 2 - 1;
 
-            float depthMask = linearizeDepth(texture2D(depthtex0, TexCoords).r,near,far)/far;
+            float depthMask = linearizeDepth(texture2D(depthtex0, uv).r,near,far)/far;
             
             float aoValue = 1.0;
             #if AO > 0
-                aoValue = mix2(fastBilateral(cSampler15,TexCoords,25.0,1.0).z, texture2D(colortex6,TexCoords).z, depthMask);
-                float detectSky = texture2D(colortex5, TexCoords).g;
+                aoValue = mix2(fastBilateral(cSampler15,uv,25.0,1.0).z, texture2D(colortex6,uv).z, depthMask);
+                float detectSky = texture2D(colortex5, uv).g;
                 aoValue = mix2(aoValue, 1.0, detectSky);
                 //aoValue = texture2D(colortex6,TexCoords).z;
             #endif
@@ -25,14 +25,14 @@
             vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
             mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
 
-            vec3 worldPos = screenToFoot(TexCoords,texture2D(depthtex0, TexCoords).x);
+            vec3 worldPos = screenToFoot(uv,texture2D(depthtex0, uv).x);
             vec3 dirFromSun = normalize2(abs(worldSpaceSunPos - 3.5) - abs(worldPos - 3.5));
             
             float sunDist = smoothstep(0.2, 0.5, dirFromSun.b);
 
             float aoLight = MIN_LIGHT * 0.1;
 
-            vec2 lightmap = 1 - texture2D(colortex13, TexCoords).rg;
+            vec2 lightmap = 1 - texture2D(colortex13, uv).rg;
             mediump float isCave = smoothstep(0.0, 0.9, lightmap.g);
 
             //LightmapColor.xyz = mix2((LightmapColor.xyz*4 + NdotL * shadowLerp + Ambient),(NdotL * shadowLerp + Ambient),0.25);
@@ -41,7 +41,8 @@
             LightmapColor.xyz = mix2(LightmapColor.xyz, vec3(AMBIENT_LIGHT_R,AMBIENT_LIGHT_G,AMBIENT_LIGHT_B)*aoLight, 1 - aoValue);
 
             vec3 Diffuse3 = Albedo * LightmapColor.xyz;
-            Diffuse3 = mix2(Diffuse3, LightmapColor.xyz*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(LightmapColor)) * 0.5,1.75),0,0.125));
+            //Diffuse3 = mix2(Diffuse3, LightmapColor.xyz*0.025, clamp(pow2(smoothstep(MIN_LIGHT, 1.0, length(LightmapColor)) * 0.5,1.75),0,0.125));
+
             //vec3 Diffuse4 = mix2(Albedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B) * 0.1,clamp(sunDist, 0, 0.75));
 
             //Diffuse3 = mix2(Diffuse3, Diffuse4, clamp(sunDist, 0, 0.75));
@@ -81,5 +82,39 @@
         vec2 lightUVs = vec2(frameTimeCounter * FLICKER_SPEED);
         vec2 lightNoise = vec2(texture2D(randnoisea, texCoord + lightUVs).r, texture2D(randnoiseb, texCoord + lightUVs).r);
         return light * (1 - mix2(lightNoise.x, lightNoise.y, fract(lightUVs.x)) * FLICKER_INTENSITY);
+    }
+
+    #define GODRAY_SAMPLES 16
+    #define GODRAY_INTENSITY 1.0
+
+    const float godrayDensity = 1.0;
+    const float godrayWeight = 0.01;
+    const float godrayDecay = 0.95;
+
+    vec3 calcGodrays(vec2 uv, vec2 sunScreenPos, vec3 footPos, vec3 worldRight, vec3 sunPos, vec3 sunColor) {
+        vec2 uv2 = uv;
+        vec2 deltaPos = (uv2 - sunScreenPos)/float(GODRAY_SAMPLES) * godrayDensity;
+
+        vec3 color = sunColor;
+
+        float illuminationDecay = 1.0;
+
+        for(int i = 0; i < GODRAY_SAMPLES; i++) {
+            uv2 -= deltaPos;
+
+            vec3 sampleColor = sunColor;
+
+            sampleColor *= illuminationDecay * godrayWeight;
+
+            color += sampleColor;
+
+            illuminationDecay *= godrayDecay;
+        }
+
+        float sunMask = abs(dot(worldRight, sunPos));
+        sunMask /= max((far - length(footPos)) * 0.5,0.01);
+        //sunMask = pow2(sunMask, 2.2);
+        
+        return color/GODRAY_SAMPLES * clamp(1 - sunMask, 0, 1) * GODRAY_INTENSITY;
     }
 #endif
