@@ -2162,9 +2162,9 @@
 
             mediump float isParticle = dhDepthBuffer.r;
 
-            if(waterTest > 0) {
+            /*if(waterTest > 0) {
                 shadowLerp = vec3(1.0);
-            }
+            }*/
             shadowLerp = mix2(shadowLerp, vec3(0.0), rainFactor);
 
             if(isBiomeEnd) {

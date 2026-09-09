@@ -101,37 +101,11 @@
 
             ivec3 voxel_pos_old = origin_voxel_pos + camshift;
             ivec3 voxel_pos_new = origin_voxel_pos;
-            
-            //ivec3 double_buffer_offset_write = mod(frameCounter, 2) == 0? ivec3(0, VOXEL_AREA, 0) : ivec3(0);
-            //ivec3 double_buffer_offset_read = mod(frameCounter, 2) != 0? ivec3(0, VOXEL_AREA, 0) : ivec3(0);
-
-            //voxel_pos_new += double_buffer_offset_write;
-            //voxel_pos_old += double_buffer_offset_read;
 
             uint integerValue = imageLoad(cimage1, origin_voxel_pos).r;
             vec4 emitterColor = decodeLightmap(integerValue);
 
             vec4 lightColor = emitterColor;
-
-            /*ivec3 neighbor = ivec3(1.,0.,0.); //pick neighbor location
-            vec4 light = decodeLight(imageLoad(cimage2, voxel_pos_old+neighbor ), MAX_LIGHT);  //load last frame data
-            vec4 total_light = light-1./15.; //make the effect fade over distance
-
-            neighbor = ivec3(-1.,0.,0.);
-            light = decodeLight(imageLoad(cimage2, voxel_pos_old+neighbor ), MAX_LIGHT);
-            total_light = max(total_light,light-1./15.);
-
-            neighbor = ivec3(0.,0.,1.);
-            light = decodeLight(imageLoad(cimage2, voxel_pos_old+neighbor ), MAX_LIGHT);
-            total_light = max(total_light,light-1./15.);
-
-            neighbor = ivec3(0.,0.,-1.);
-            light = decodeLight(imageLoad(cimage2, voxel_pos_old+neighbor ), MAX_LIGHT);
-            total_light = max(total_light,light-1./15.);
-
-            total_light = max(total_light,vec4(0.0));*/
-
-            //lightColor = max(lightColor, total_light);
 
             for(int i = 0; i < 6; i++) {
                 ivec3 neighborPos = voxel_pos_old + NEIGHBORS[i];

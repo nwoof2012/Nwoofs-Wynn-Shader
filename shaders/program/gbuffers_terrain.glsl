@@ -378,7 +378,7 @@
         vec3 p011 = (vec3(voxel_pos) + vec3(0, 1, 1))/vec3(VOXEL_AREA);
         vec3 p111 = (vec3(voxel_pos) + vec3(1, 1, 1))/vec3(VOXEL_AREA);
 
-        vec3 f = fract(coords);
+        vec3 f = fract(coords + VOXEL_RADIUS);
 
         vec4 c000 = texture3D(tex, p000).rgba;
         vec4 c100 = texture3D(tex, p100).rgba;
@@ -576,7 +576,7 @@
                         }*/
                         //dynLighting /= max(weight,1.0);
                         //lighting *= 25;
-                        dynLighting = decodeLight(lightTrilinear(cSampler2, worldPos, voxel_pos),MAX_LIGHT);
+                        dynLighting = decodeLight(lightTrilinear(cSampler2, foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, voxel_pos),MAX_LIGHT);
                         dynLighting = SoftKneeLight(dynLighting, MAX_LIGHT, 0.7);
                         dynLighting = mix2(dynLighting, max(exp(dynLighting),vec4(0.0)), seFactor);
                         lighting += dynLighting;

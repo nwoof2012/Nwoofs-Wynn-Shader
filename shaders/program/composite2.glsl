@@ -1240,7 +1240,7 @@
                 side * vec3(0.35, 0.45, 0.60) +
                 down * vec3(0.18, 0.16, 0.13);
 
-            finalLight.xyz += hemi * 0.05;
+            //finalLight.xyz += hemi * 0.05;
             /*mediump float lightBlend2 = max(1 - length(shadowLerp),timeBlendFactor);
             if(depth == 1.0 && detectSky == 0.0) lightBlend2 = 0.0;
             finalLight += vec4(mix2(totalSunlight*1.25, ambientLight*shadowBright * 0.75,lightBlend2),1.0);
