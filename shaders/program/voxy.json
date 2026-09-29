@@ -4,8 +4,8 @@
     ",
     "version": 1,
     "excludeLodsFromVanillaDepth": false,
-    "opaqueDrawBuffers": [0,1,2,3,5,6,13],
-    "translucentDrawBuffers": [0,1,2,3,5,6,13],
+    "opaqueDrawBuffers": [0,1,2,3,5,6,13,19],
+    "translucentDrawBuffers": [0,1,2,3,5,6,13,19],
     "blending": { 
         -1: "off", 
         0: "SRC_ALPHA ONE_MINUS_SRC_ALPHA ONE_MINUS_DST_ALPHA ONE"
@@ -15,6 +15,7 @@
         "colortex4",
         "colortex5",
         "vxDepthTexOpaque",
+        "vxDepthTexTrans",
         "noiseb",
         "noisec",
         "water"
@@ -43,6 +44,7 @@
         "isEyeInWater",
         "near",
         "far",
-        "frameCounter"
+        "frameCounter",
+        "caveFactor"
     ]
 }

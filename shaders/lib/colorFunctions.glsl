@@ -109,3 +109,35 @@ vec3 maxLum(vec3 a, vec3 b) {
     
     return b;
 }
+
+vec4 lightTrilinear(sampler3D tex, vec3 coords, ivec3 voxel_pos) {
+    vec3 p000 = vec3(voxel_pos)/vec3(VOXEL_AREA);
+    vec3 p100 = (vec3(voxel_pos) + vec3(1, 0, 0))/vec3(VOXEL_AREA);
+    vec3 p010 = (vec3(voxel_pos) + vec3(0, 1, 0))/vec3(VOXEL_AREA);
+    vec3 p001 = (vec3(voxel_pos) + vec3(0, 0, 1))/vec3(VOXEL_AREA);
+    vec3 p110 = (vec3(voxel_pos) + vec3(1, 1, 0))/vec3(VOXEL_AREA);
+    vec3 p101 = (vec3(voxel_pos) + vec3(1, 0, 1))/vec3(VOXEL_AREA);
+    vec3 p011 = (vec3(voxel_pos) + vec3(0, 1, 1))/vec3(VOXEL_AREA);
+    vec3 p111 = (vec3(voxel_pos) + vec3(1, 1, 1))/vec3(VOXEL_AREA);
+
+    vec3 f = fract(coords + VOXEL_RADIUS);
+
+    vec4 c000 = texture3D(tex, p000).rgba;
+    vec4 c100 = texture3D(tex, p100).rgba;
+    vec4 c010 = texture3D(tex, p010).rgba;
+    vec4 c001 = texture3D(tex, p001).rgba;
+    vec4 c110 = texture3D(tex, p110).rgba;
+    vec4 c101 = texture3D(tex, p101).rgba;
+    vec4 c011 = texture3D(tex, p011).rgba;
+    vec4 c111 = texture3D(tex, p111).rgba;
+
+    vec4 c00 = mix2(c000, c100, f.x);
+    vec4 c01 = mix2(c001, c101, f.x);
+    vec4 c10 = mix2(c010, c110, f.x);
+    vec4 c11 = mix2(c011, c111, f.x);
+    
+    vec4 c0 = mix2(c00, c10, f.y);
+    vec4 c1 = mix2(c01, c11, f.y);
+
+    return mix2(c0, c1, f.z);
+}

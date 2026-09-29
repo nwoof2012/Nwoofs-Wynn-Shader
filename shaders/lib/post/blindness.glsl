@@ -25,7 +25,7 @@ vec3 blindEffect(vec3 color, vec2 uv) {
         worldSpace /= worldSpace.w;
 
         float dist = distance(vec3(0.0), worldSpace.xyz);
-        return mix2(color,vec3(0),smoothstep(minBlindnessDistance, maxBlindDistance, dist));
+        return mix2(color,vec3(0),smoothstep(minBlindnessDistance, maxBlindDistance, dist * blindness));
     } else {
         return color;
     }

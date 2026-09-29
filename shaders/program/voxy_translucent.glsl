@@ -18,6 +18,7 @@ layout(location = 3) out vec4 WRITE_DEPTH;
 layout(location = 4) out vec4 WRITE_WATER;
 layout(location = 5) out vec4 WRITE_DIST;
 layout(location = 6) out vec4 WRITE_LIGHT;
+layout(location = 7) out vec4 WRITE_VOXYDEPTH;
 
 //
 // Provided by Voxy
@@ -145,5 +146,11 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
     WRITE_DIST.y = length(footPos);
     WRITE_DIST.w = 1.0;
 
-    WRITE_LIGHT.rg = parameters.lightMap.xy;
+    float skylightLevel = 1 - parameters.lightMap.y;
+    skylightLevel *= 1 - caveFactor;
+    skylightLevel = 1 - skylightLevel;
+
+    WRITE_LIGHT.rg = vec2(parameters.lightMap.x, skylightLevel);
+
+    WRITE_VOXYDEPTH.rgba = vec4(texture(vxDepthTexOpaque, uv.xy).r, texture(vxDepthTexTrans, uv.xy).r, 0.0, 1.0);
 }

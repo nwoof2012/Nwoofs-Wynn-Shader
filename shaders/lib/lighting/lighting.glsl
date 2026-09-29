@@ -1,4 +1,4 @@
-#if defined FRAGMENT_SHADER && defined COMPOSITE_3
+#if defined FRAGMENT_SHADER && defined COMPOSITE_4
     #if LIGHTING_MODE > 0
         vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor, vec2 uv) {
             vec3 rawLight = LightmapColor.xyz;
@@ -55,7 +55,7 @@
             return mix2(worldColor, specTint, gloss);
         }
     #endif
-#elif defined FRAGMENT_SHADER && defined COMPOSITE_2
+#elif defined FRAGMENT_SHADER && defined COMPOSITE_3
     #define FLICKER_INTENSITY 0.01
     #define FLICKER_SPEED 0.06
 

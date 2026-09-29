@@ -561,6 +561,8 @@ option.GAMMA=§fGamma
 value.GAMMA.2.2=§asRGB
 option.GAMMA.comment=§6Adjust scene gamma correction bias
 
+option.AUTO_EXPOSURE=§eAuto Exposure
+
 option.VIBRANT_MODE=§5Vibrant Mode
 value.VIBRANT_MODE.0=Off
 value.VIBRANT_MODE.1=On

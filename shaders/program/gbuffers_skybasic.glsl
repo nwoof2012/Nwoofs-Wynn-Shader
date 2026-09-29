@@ -44,6 +44,8 @@
 
     uniform float rainStrength;
 
+    uniform float rainFactor;
+
     uniform sampler2D noisetex;
 
     uniform sampler2D depthtex0;
@@ -106,9 +108,9 @@
         mediump float lerpAmount2 = clamp(lerpAmount * 2 - 1, 0, 1);
         vec3 cloudColorA = vec3(CLOUD_COLOR_A_R, CLOUD_COLOR_A_G, CLOUD_COLOR_A_B);
         vec3 cloudColorB = vec3(CLOUD_COLOR_B_R, CLOUD_COLOR_B_G, CLOUD_COLOR_B_B);
-        if(rainStrength > 0.2f && !isBiomeDry) {
-            cloudColorA = mix2(cloudColorA,1/vec3(CLOUD_COLOR_RAIN_A_R, CLOUD_COLOR_RAIN_A_G, CLOUD_COLOR_RAIN_A_B), (rainStrength - 0.2)/0.8);
-            cloudColorB = mix2(cloudColorB,vec3(CLOUD_COLOR_RAIN_B_R, CLOUD_COLOR_RAIN_B_G, CLOUD_COLOR_RAIN_B_B),(rainStrength - 0.2)/0.8);
+        if(rainFactor > 0.0f && !isBiomeDry) {
+            cloudColorA = mix2(cloudColorA,1/vec3(CLOUD_COLOR_RAIN_A_R, CLOUD_COLOR_RAIN_A_G, CLOUD_COLOR_RAIN_A_B), rainFactor);
+            cloudColorB = mix2(cloudColorB,vec3(CLOUD_COLOR_RAIN_B_R, CLOUD_COLOR_RAIN_B_G, CLOUD_COLOR_RAIN_B_B), rainFactor);
         }
         vec3 clouds = pow2(mix2(cloudColorA, cloudColorB, noiseColor.y),vec3(-1.5));
         vec3 cloudSky = mix2(sky,mix2(sky, clouds, noiseColor.y), pow2(1-lerpAmount2, 1/GAMMA));
@@ -128,44 +130,51 @@
     /* DRAWBUFFERS:0521 */
     layout(location = 0) out vec4 outputColor;
 
+    float timeBlendFactor;
+
     void noonFunc(float time, float timeFactor) {
         mediump float dayNightLerp = timeFactor;
-        if(rainStrength < 0.2f || isBiomeDry) {
+        if(rainFactor <= 0.0f || isBiomeDry) {
             currentColorA = dayColorA;
             currentColorB = dayColorB;
         } else {
-            currentColorA = dayColorRainA;
-            currentColorB = dayColorRainB;
+            currentColorA = mix2(dayColorA, dayColorRainA, rainFactor);
+            currentColorB = mix2(dayColorB, dayColorRainB, rainFactor);
         }
+
+        timeBlendFactor = 0.0;
     }
 
     void sunsetFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
-        if(rainStrength < 0.2f || isBiomeDry) {
+        if(rainFactor <= 0.0f || isBiomeDry) {
             currentColorA = mix2(dayColorA, nightColorA, sunsetLerp);
             currentColorB = mix3(dayColorB, transitionColorB, nightColorA, sunsetLerp, 0.5);
         } else {
-            currentColorA = mix2(dayColorRainA, nightColorA, sunsetLerp);
-            currentColorB = mix3(dayColorRainB, transitionColorB, nightColorB, sunsetLerp, 0.5);
+            currentColorA = mix2(mix2(dayColorA, dayColorRainA, rainFactor), nightColorA, sunsetLerp);
+            currentColorB = mix3( mix2(dayColorB, dayColorRainB, rainFactor), transitionColorB, nightColorB, sunsetLerp, 0.5);
         }
+        timeBlendFactor = timeFactor;
     }
 
     void nightFunc(float time, float timeFactor) {
         mediump float dayNightLerp = timeFactor;
         currentColorA = nightColorA;
         currentColorB = nightColorB;
+        timeBlendFactor = 1.0;
     }
 
     void dawnFunc(float time, float timeFactor) {
         mediump float sunsetLerp = timeFactor;
-        if(worldTime <= 500) sunsetLerp = smoothstep(-500.0, 500.0, float(worldTime)); else sunsetLerp = smoothstep(23500.0, 24500.0, float(worldTime));
-        if(rainStrength < 0.2f || isBiomeDry) {
+        //if(worldTime <= 500) sunsetLerp = smoothstep(-500.0, 500.0, float(worldTime)); else sunsetLerp = smoothstep(23500.0, 24500.0, float(worldTime));
+        if(rainFactor <= 0.0f || isBiomeDry) {
             currentColorA = mix2(nightColorA, dayColorA, sunsetLerp);
             currentColorB = mix3(nightColorB, transitionColorB, dayColorB, sunsetLerp, 0.5);
         } else {
-            currentColorA = mix2(nightColorA, dayColorRainA, sunsetLerp);
-            currentColorB = mix3(nightColorB, transitionColorB, dayColorRainB, sunsetLerp, 0.5);
+            currentColorA = mix2(nightColorA, mix2(dayColorA, dayColorRainA, rainFactor), sunsetLerp);
+            currentColorB = mix3(nightColorB, transitionColorB, mix2(dayColorB, dayColorRainB, rainFactor), sunsetLerp, 0.5);
         }
+        timeBlendFactor = 1 - timeFactor;
     }
 
     vec3 getMoonCoords(float scale) {
@@ -340,25 +349,25 @@
         float detectSunMoon = 1 - dot(sunDirection, viewPos.xyz);
         vec4 outputSunMoon = vec4(outputColorSun, 1.0);
         vec4 outputLight = vec4(outputColorSun * smoothstep(0.0, 0.75, sunGradient)*2, smoothstep(0.0, 0.75, sunGradient));
+        float starMask = starData.a * timeBlendFactor;
         if(detectSunMoon > 0.99) {
             outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.25 + 0.5 * moonGradient);
             outputSunMoon = outputColorMoon.xyzw;
-            outputLight = mix2(encodeLight(vec4(starData.a), MAX_LIGHT), vec4(0.0), outputSunMoon.w);
+            outputLight = mix2(encodeLight(vec4(starMask), MAX_LIGHT), vec4(0.0), outputSunMoon.w);
             #if SUN_STYLE == 1
                 gl_FragData[2] = max(outputLight, encodeLight(vec4(moonColor * moonRimGradient, 1.0), MAX_LIGHT));
-                outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w);
+                outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, outputSunMoon.w * (1 - rainFactor));
             #endif
         } else {
             #if SUN_STYLE == 1
-                gl_FragData[2] = mix2(encodeLight(vec4(starData.a), MAX_LIGHT), encodeLight(outputLight,MAX_LIGHT), smoothstep(0.0, 0.01, outputSunMoon.w));
-                outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, sunGradient);
+                gl_FragData[2] = mix2(encodeLight(vec4(starMask), MAX_LIGHT), encodeLight(outputLight,MAX_LIGHT), smoothstep(0.0, 0.01, outputSunMoon.w));
+                outputColor.rgb = mix2(outputColor.rgb, outputSunMoon.xyz, sunGradient * (1 - rainFactor));
             #endif
         }
-        outputSunMoon *= 1 - rainStrength;
         if(worldTime2%24000 < 12000) {
             gl_FragData[3] = vec4(vec3(distToSun * 5.0),1.0);
         }
-        outputColor = mix2(outputColor, vec4(1.0), step(0.5, starData.a));
+        outputColor = mix2(outputColor, vec4(1.0), step(0.5, starMask));
         gl_FragData[1] = vec4(0.0, 1.0, 0.0, 1.0);
 
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(1.0));

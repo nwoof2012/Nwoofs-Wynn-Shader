@@ -24,6 +24,8 @@
     uniform sampler2D depthtex0;
     uniform sampler2D depthtex1;
 
+    uniform sampler3D cSampler4;
+
     uniform mat4 shadowModelView;
     uniform mat4 shadowProjection;
 
@@ -49,12 +51,15 @@
     in vec3 normals_face_world;
 
     in vec3 block_centered_relative_pos;
+    flat in ivec3 voxel_pos;
 
     in vec3 foot_pos;
 
     in vec3 world_pos;
 
     in vec4 at_midBlock2;
+
+    uniform float caveFactor;
 
     in float waterShadingHeight;
 
@@ -85,6 +90,38 @@
         return texXZ + texXY + texZY;
     }
 
+    vec4 lightTrilinear(sampler3D tex, vec3 coords, ivec3 voxel_pos) {
+        vec3 p000 = vec3(voxel_pos)/vec3(VOXEL_AREA);
+        vec3 p100 = (vec3(voxel_pos) + vec3(1, 0, 0))/vec3(VOXEL_AREA);
+        vec3 p010 = (vec3(voxel_pos) + vec3(0, 1, 0))/vec3(VOXEL_AREA);
+        vec3 p001 = (vec3(voxel_pos) + vec3(0, 0, 1))/vec3(VOXEL_AREA);
+        vec3 p110 = (vec3(voxel_pos) + vec3(1, 1, 0))/vec3(VOXEL_AREA);
+        vec3 p101 = (vec3(voxel_pos) + vec3(1, 0, 1))/vec3(VOXEL_AREA);
+        vec3 p011 = (vec3(voxel_pos) + vec3(0, 1, 1))/vec3(VOXEL_AREA);
+        vec3 p111 = (vec3(voxel_pos) + vec3(1, 1, 1))/vec3(VOXEL_AREA);
+
+        vec3 f = fract(coords + VOXEL_RADIUS);
+
+        vec4 c000 = texture3D(tex, p000).rgba;
+        vec4 c100 = texture3D(tex, p100).rgba;
+        vec4 c010 = texture3D(tex, p010).rgba;
+        vec4 c001 = texture3D(tex, p001).rgba;
+        vec4 c110 = texture3D(tex, p110).rgba;
+        vec4 c101 = texture3D(tex, p101).rgba;
+        vec4 c011 = texture3D(tex, p011).rgba;
+        vec4 c111 = texture3D(tex, p111).rgba;
+
+        vec4 c00 = mix2(c000, c100, f.x);
+        vec4 c01 = mix2(c001, c101, f.x);
+        vec4 c10 = mix2(c010, c110, f.x);
+        vec4 c11 = mix2(c011, c111, f.x);
+        
+        vec4 c0 = mix2(c00, c10, f.y);
+        vec4 c1 = mix2(c01, c11, f.y);
+
+        return mix2(c0, c1, f.z);
+    }
+
     /* RENDERTARGETS:0,1,2,3,5,10,15,13*/
 
     void main() {
@@ -96,32 +133,13 @@
         vec3 View = ViewW.xyz / ViewW.w;
         vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
 
-        vec4 albedo = texture2D(texture, TexCoords) * Color;
+        vec4 albedo = vec4(0.0);
 
         vec3 worldNormal = (gbufferModelViewInverse * Normal).xyz;
 
         vec3 bitangent = normalize2(cross(Tangent.xyz, Normal.xyz));
 
         mat3 tbnMatrix = mat3(Tangent.xyz, bitangent.xyz, Normal.xyz);
-
-        #if WATER_STYLE == 1
-            vec3 n = normalize2(worldNormal);
-
-            vec3 an = abs(n);
-            vec2 uvX = world_pos.zy;
-            vec2 uvY = world_pos.xz;
-            vec2 uvZ = world_pos.xy;
-
-            vec2 waterUV =
-                uvX * step(max(an.y, an.z), an.x) +
-                uvY * step(max(an.x, an.z), an.y) +
-                uvZ * step(max(an.x, an.y), an.z);
-
-            vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
-            vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
-
-            vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
-        #endif
 
         vec3 newNormal = Normal.xyz;
 
@@ -134,6 +152,22 @@
             //Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0.0, 1.0f);
 
             #if WATER_STYLE == 1
+                vec3 n = normalize2(worldNormal);
+
+                vec3 an = abs(n);
+                vec2 uvX = world_pos.zy;
+                vec2 uvY = world_pos.xz;
+                vec2 uvZ = world_pos.xy;
+
+                vec2 waterUV =
+                    uvX * step(max(an.y, an.z), an.x) +
+                    uvY * step(max(an.x, an.z), an.y) +
+                    uvZ * step(max(an.x, an.y), an.z);
+
+                vec4 noiseMapA = texture2D(water, (waterUV + ((frameCounter)/90f)*0.5f) * 0.035f);
+                vec4 noiseMapB = texture2D(water, (waterUV - ((frameCounter)/90f)*0.5f) * 0.035f);
+
+                vec4 finalNoise = noiseMapA * noiseMapB * 2 - 1;
                 newNormal = tbnMatrix * finalNoise.xyz;
 
                 newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
@@ -141,7 +175,7 @@
         } else {
             albedo = texture2D(colortex0, TexCoords) * Color;
             //Lightmap = vec4(LightmapCoords.x, LightmapCoords.y, 0f, 1.0f);
-            newNormal = (gbufferModelViewInverse * vec4(newNormal,1.0)).xyz;
+            newNormal = worldNormal;
 
             //albedo.a = min(albedo.a, 0.75f);
         }
@@ -152,7 +186,17 @@
         gl_FragData[4] = vec4(isWaterBlock, 0.0, 0.0, 1.0);
         gl_FragData[5] = vec4(isGlass, 0.0, isStainedGlass, 1.0);
         gl_FragData[6] = vec4(distanceFromCamera, depth.r, waterShadingHeight, 1.0);
-        gl_FragData[7] = vec4(LightmapCoords.xy, 0.0, 1.0);
+        float skylightLevel = 0.0;
+        #if LIGHTING_MODE > 0
+            float skylightLevel2 = 1 - LightmapCoords.y;
+            if(distance(vec3(0.0), foot_pos) > VOXEL_RADIUS - 1) {
+                skylightLevel2 *= 1 - caveFactor;
+            }
+            skylightLevel2 = 1 - skylightLevel;
+            skylightLevel = smoothstep(0, 0.25, lightTrilinear(cSampler4, foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, clamp(voxel_pos, ivec3(0.0), ivec3(VOXEL_AREA))).x) * skylightLevel2;
+            skylightLevel = max(skylightLevel, skylightLevel2);
+        #endif
+        gl_FragData[7] = vec4(LightmapCoords.x, skylightLevel, 0.0, 1.0);
         #if WATER_STYLE == 1
             if(isWaterBlock > 0.1f) return;
         #endif
@@ -221,6 +265,7 @@
     out vec4 lightSourceData;
 
     out vec3 block_centered_relative_pos;
+    flat out ivec3 voxel_pos;
 
     in vec4 at_midBlock;
     attribute vec4 mc_midTexCoord;
@@ -318,6 +363,8 @@
         vec3 view_pos = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
         foot_pos = (gbufferModelViewInverse * vec4(view_pos, 1.0)).xyz;
         world_pos = foot_pos + cameraPosition;
+        block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
+        voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
 
         isWaterBlock = 0f;
 

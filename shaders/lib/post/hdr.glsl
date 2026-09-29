@@ -10,9 +10,15 @@
         return c;
     }
     vec3 calcHDR(vec3 color, float targetLum, float speed, int samples, float sampleRatio) {
-        vec4 dataTex = imageLoad(cimage3, ivec2(0, 0));
-        float previousExposure = decodeDist(dataTex.r, MAX_LIGHT);
-
+        vec4 dataTex = vec4(0.0);
+        float previousExposure = 1.0;
+        #ifdef COMPOSITE_4
+            dataTex = imageLoad(cimage5, ivec2(0, 0));
+            previousExposure = decodeDist(dataTex.r, MAX_LIGHT);
+        #elif COMPOSITE_6
+            dataTex = texture2D(colortex17, texCoord);
+            previousExposure = dot(dataTex, vec3(0.2126, 0.7152, 0.0722));
+        #endif
         float measuredLum = max(previousExposure, 0.0001);
 
         float targetExposure = targetLum / measuredLum;
@@ -29,7 +35,9 @@
 
         float exposure = mix2(previousExposure, targetExposure, clamp(1.0 - exp(-lerpCounter), 0, 1));
 
-        imageStore(cimage3, ivec2(0,0),vec4(encodeDist(exposure, MAX_LIGHT), clamp(lerpCounter, 0, 1), 0.0, 1.0));
+        #ifdef COMPOSITE_4
+            imageStore(cimage5, ivec2(0,0),vec4(encodeDist(exposure, MAX_LIGHT), clamp(lerpCounter, 0, 1), 0.0, 1.0));
+        #endif
 
         vec3 exposedColor = color * exposure;
 

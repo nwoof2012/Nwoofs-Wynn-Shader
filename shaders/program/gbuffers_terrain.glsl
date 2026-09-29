@@ -73,6 +73,8 @@
     varying vec4 Color;
     varying vec2 LightmapCoords;
 
+    uniform float caveFactor;
+
     uniform sampler2D gtexture;
     uniform sampler2D lightmap;
     uniform sampler2D depthtex0;
@@ -82,6 +84,7 @@
 
     uniform usampler3D cSampler1;
     uniform usampler3D cSampler2;
+    uniform sampler3D cSampler4;
 
     uniform ivec2 atlasSize;
     uniform vec3 sunPosition;
@@ -142,6 +145,7 @@
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
     #include "/lib/post/gaussianBlur.glsl"
+    #include "/lib/colorFunctions.glsl"
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
     const float TorchBrightness = 3.0;
@@ -368,38 +372,6 @@
         return mix2(cx0, cx1, f.y);
     }
 
-    vec4 lightTrilinear(sampler3D tex, vec3 coords, ivec3 voxel_pos) {
-        vec3 p000 = vec3(voxel_pos)/vec3(VOXEL_AREA);
-        vec3 p100 = (vec3(voxel_pos) + vec3(1, 0, 0))/vec3(VOXEL_AREA);
-        vec3 p010 = (vec3(voxel_pos) + vec3(0, 1, 0))/vec3(VOXEL_AREA);
-        vec3 p001 = (vec3(voxel_pos) + vec3(0, 0, 1))/vec3(VOXEL_AREA);
-        vec3 p110 = (vec3(voxel_pos) + vec3(1, 1, 0))/vec3(VOXEL_AREA);
-        vec3 p101 = (vec3(voxel_pos) + vec3(1, 0, 1))/vec3(VOXEL_AREA);
-        vec3 p011 = (vec3(voxel_pos) + vec3(0, 1, 1))/vec3(VOXEL_AREA);
-        vec3 p111 = (vec3(voxel_pos) + vec3(1, 1, 1))/vec3(VOXEL_AREA);
-
-        vec3 f = fract(coords + VOXEL_RADIUS);
-
-        vec4 c000 = texture3D(tex, p000).rgba;
-        vec4 c100 = texture3D(tex, p100).rgba;
-        vec4 c010 = texture3D(tex, p010).rgba;
-        vec4 c001 = texture3D(tex, p001).rgba;
-        vec4 c110 = texture3D(tex, p110).rgba;
-        vec4 c101 = texture3D(tex, p101).rgba;
-        vec4 c011 = texture3D(tex, p011).rgba;
-        vec4 c111 = texture3D(tex, p111).rgba;
-
-        vec4 c00 = mix2(c000, c100, f.x);
-        vec4 c01 = mix2(c001, c101, f.x);
-        vec4 c10 = mix2(c010, c110, f.x);
-        vec4 c11 = mix2(c011, c111, f.x);
-        
-        vec4 c0 = mix2(c00, c10, f.y);
-        vec4 c1 = mix2(c01, c11, f.y);
-
-        return mix2(c0, c1, f.z);
-    }
-
     #include "/lib/world/timeCycle.glsl"
 
     /* RENDERTARGETS:0,1,2,13,5,10,6,12*/
@@ -410,198 +382,197 @@
         vec4 albedo = texture2D(gtexture, TexCoords) * vec4(Color.xyz,1.0);
         albedo.xyz = pow2(albedo.xyz, vec3(GAMMA));
 
+        if(albedo.a < 0.1) discard;
+
         mediump float depth = texture2D(depthtex0, TexCoords).r;
         mediump float depth2 = texture2D(depthtex1, TexCoords).r;
+
+        float skylightLevel = 0.0;
         
-        if(albedo.a >= .1 && depth >= 0.1) {
-            vec3 newNormal = Normal;
-            newNormal = (gbufferModelViewInverse * vec4(newNormal, 1.0)).xyz;
+        vec3 newNormal = Normal;
+        newNormal = (gbufferModelViewInverse * vec4(newNormal, 1.0)).xyz;
 
-            albedo.xyz = pow2(albedo.xyz, vec3(1/GAMMA));
-            mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
+        albedo.xyz = pow2(albedo.xyz, vec3(1/GAMMA));
+        mediump float distanceFromCamera = distance(vec3(0), viewSpaceFragPosition);
 
-            float roughness = 0.0;
-            float specStrength = 0.0;
-            float soakFactor = 0.0;
-            
-            #ifdef POM
-                float noiseMap = texture2D(noisec, TexCoords * 16).r;
-                newNormal.xyz *= mix2(0.1, 1.0, noiseMap * smoothstep(0.25,0.75,length(blurAlbedo(TexCoords).xyz)));
-            #endif
-            gl_FragData[0] = albedo;
-            gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
-            #if LIGHTING_MODE == 0
-                gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
+        float roughness = 0.0;
+        float specStrength = 0.0;
+        float soakFactor = 0.0;
+        
+        #ifdef POM
+            float noiseMap = texture2D(noisec, TexCoords * 16).r;
+            newNormal.xyz *= mix2(0.1, 1.0, noiseMap * smoothstep(0.25,0.75,length(blurAlbedo(TexCoords).xyz)));
+        #endif
+        gl_FragData[0] = albedo;
+        gl_FragData[1] = vec4(newNormal * 0.5 + 0.5f, 1.0f);
+        #if LIGHTING_MODE == 0
+            gl_FragData[2] = vec4(LightmapCoords, 0.0f, 1.0f);
 
-                Diffuse = albedo.xyz;
+            Diffuse = albedo.xyz;
 
-                baseColor = currentColor;
-                baseDiffuse = Diffuse;
+            baseColor = currentColor;
+            baseDiffuse = Diffuse;
 
-                baseDiffuseModifier = vec3(0.0);
+            baseDiffuseModifier = vec3(0.0);
 
-                baseFog = vec3(0.0);
+            baseFog = vec3(0.0);
 
-                fogMin = FOG_DAY_DIST_MIN;
-                fogMax = FOG_DAY_DIST_MAX;
+            fogMin = FOG_DAY_DIST_MIN;
+            fogMax = FOG_DAY_DIST_MAX;
 
+            baseFogDistMin = fogMin;
+            baseFogDistMax = fogMax;
+
+            if(worldTime/(timePhase + 1) < 500f) {
                 baseFogDistMin = fogMin;
                 baseFogDistMax = fogMax;
+            }
 
-                if(worldTime/(timePhase + 1) < 500f) {
-                    baseFogDistMin = fogMin;
-                    baseFogDistMax = fogMax;
-                }
+            mediump float fogStart = fogMin;
+            mediump float fogEnd = fogMax;
 
-                mediump float fogStart = fogMin;
-                mediump float fogEnd = fogMax;
+            mediump float fogAmount = (length(view_pos) - fogStart)/(fogEnd - fogStart);
 
-                mediump float fogAmount = (length(view_pos) - fogStart)/(fogEnd - fogStart);
+            mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
 
-                mediump float fogBlend = pow2(smoothstep(0.9,1.0,fogAmount),4.2);
-
-                gl_FragData[6] = vec4(0.0, distanceFromCamera, linearizeDepth(depth, near, far), 1.0);
-            #elif LIGHTING_MODE > 0
-                ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
-                vec3 light_color = vec3(0.0);
-                if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
-                    vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
-                    light_color = bytes.xyz;
-                }
-
-                roughness = matType == 1? STONE_ROUGHNESS : matType == 2? SMOOTH_ROUGHNESS : matType == 3? METAL_ROUGHNESS : NATURAL_ROUGHNESS;
-                specStrength = matType == 1? STONE_SPECULAR : matType == 2? SMOOTH_SPECULAR : matType == 3? METAL_SPECULAR : NATURAL_SPECULAR;
-                soakFactor = matType == 1? STONE_SOAK : matType == 2? SMOOTH_SOAK : matType == 3? METAL_SOAK : NATURAL_SOAK;
-                
-                vec4 lighting = vec4(0.0);
-                vec4 dynLighting = vec4(0.0);
-                float lightBrightness = 0.0;
-
-                vec3 SkyColor = vec3(0.05f, 0.15f, 0.3f);
-                SkyColor = currentColor;
-
-                vec3 currentColor = dayColor;
-
-                Diffuse = albedo.xyz;
-
-                baseColor = currentColor;
-                baseDiffuse = Diffuse;
-
-                baseDiffuseModifier = vec3(0.0);
-
-                baseFog = vec3(0.0);
-
-                #ifdef DISTANT_HORIZONS
-                    gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, dhFarPlane), specStrength, 1.0);
-                #else
-                    gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, far), specStrength, 1.0);
-                #endif
-
-                vec3 lightNormal = vec3(0.0);
-                float NdotL = 1.0;
-
-                vec3 rawLight;
-
-                if(lighting.w <= 0.0 && distance(vec3(0.0), foot_pos) <= VOXEL_RADIUS) {
-                    lowp vec3 block_centered_relative_pos3 = foot_pos +at_midBlock2.xyz/64.0 + vec3(-LIGHT_RADIUS - 1) + fract(cameraPosition);
-
-                    ivec3 voxel_pos3 = ivec3(block_centered_relative_pos3 + VOXEL_RADIUS);
-
-                    int side = 2 * LIGHT_RADIUS;
-                    int totalLightRadius = int(pow2(side, 3));
-
-                    lowp vec3 sphereCoords = vec3(gl_FragCoord.xy, gl_FragCoord.z) - vec3(LIGHT_RADIUS);
-                    
-                    lowp float voxel_open = 1.0;
-
-                    float weight;
-
-                    #if SCENE_AWARE_LIGHTING > 0
-                        /*for (int idx = 0; idx < totalLightRadius; idx++) {
-                            if(isLeaves > 0.5) continue;
-
-                            int x = int(idx / (side * side) - LIGHT_RADIUS);
-                            int y = int(mod(idx/side, side) - LIGHT_RADIUS);
-                            int z = int(mod(idx, side) - LIGHT_RADIUS);
-
-                            if(x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
-
-                            lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
-                            
-                            if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
-
-                            ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
-
-                            uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
-
-                            if(bytes == 0u) continue;
-
-                            if (bytes != 0) {
-                                lowp vec3 world_pos2 = foot_pos + vec3(x, z, y) + cameraPosition;
-                                lowp vec3 world_pos3 = foot_pos + cameraPosition;
-
-                                lowp vec3 foot_pos3 = vec3(0.0);
-                                lowp vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
-
-                                block_centered_relative_pos4 = mat3(gbufferModelView) * block_centered_relative_pos4;
-
-                                lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
-                                NdotL = dot(lightNormal, newNormal);
-
-                                float dist = float((foot_pos + fract(cameraPosition) - block_centered_relative_pos2) * (foot_pos + fract(cameraPosition) - block_centered_relative_pos2));
-                                float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
-                                //lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
-
-                                vec4 light = decodeLightmap(bytes);
-
-                                float intensity = clamp(length(light.xyz)/(MAX_LIGHT*6), 0.0, 1.0);
-
-                                float effectiveRadius = LIGHT_RADIUS * mix2(0.35, 1.0, pow2(intensity, 0.65));
-
-                                float x = clamp(sampleWeight/max(effectiveRadius, 0.001), 0.0, 1.0);
-                                float falloff = exp(-x * x * 3.5) * (1.0 - smoothstep(0.82, 1.0, x));
-
-                                falloff = pow2(falloff, LIGHT_FALLOFF);
-
-                                light.xyz = mix2(light.xyz, light.xyz * vec3(1.08, 0.92, 0.72), x * 0.25);
-
-                                //float weightSampled = smoothstep(LIGHT_RADIUS, 0, sampleWeight);
-
-                                dynLighting += light * falloff * LightmapCoords.x;
-
-                                weight += falloff;
-
-                                //lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
-                            }
-                        }*/
-                        //dynLighting /= max(weight,1.0);
-                        //lighting *= 25;
-                        dynLighting = decodeLight(lightTrilinear(cSampler2, foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, voxel_pos),MAX_LIGHT);
-                        dynLighting = SoftKneeLight(dynLighting, MAX_LIGHT, 0.7);
-                        dynLighting = mix2(dynLighting, max(exp(dynLighting),vec4(0.0)), seFactor);
-                        lighting += dynLighting;
-                    #endif
-                }
-                #if LIGHTING_MODE > 0 && SCENE_AWARE_LIGHTING == 0
-                    lighting = vanillaLight(AdjustLightmap(LightmapCoords));
-                #endif
-                vec4 finalLighting = lighting;
-                float isCave = LightmapCoords.g;
-                gl_FragData[7] = vec4(length(encodeLight(dynLighting,MAX_LIGHT)), 0.0, isLeaves, 1.0);
-                #if LIGHTING_MODE == 1
-                    finalLighting.xyz *= 0.5;
-                #endif
-                vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
-                //if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
-                finalLighting2 = max(finalLighting2, vec4(0.0));
-                finalLighting = mix2(finalLighting*3, finalLighting2 * 0.75, max(1 - step(length(voxel_pos), length(vec2(VOXEL_AREA))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
-                if(isLava > 0.5) gl_FragData[2] = encodeLight(vec4(FireColor * FireBrightness, FireBrightness)/3.25,MAX_LIGHT); else gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);
-                uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
-            #endif
-            gl_FragData[3] = vec4(LightmapCoords, isGrass, 1.0);
+            gl_FragData[6] = vec4(0.0, distanceFromCamera, linearizeDepth(depth, near, far), 1.0);
             gl_FragData[4] = vec4(0.0, 0.0, isReflective, 1.0);
-            gl_FragData[5] = vec4(1.0, encodeDist(roughness,128), 0.0, 1.0);
-        }
+
+            skylightLevel = LightmapCoords.y;
+        #elif LIGHTING_MODE > 0
+            ivec3 voxel_pos = ivec3(block_centered_relative_pos+VOXEL_RADIUS);
+            vec3 light_color = vec3(0.0);
+            if(clamp(voxel_pos,0,VOXEL_AREA) == voxel_pos) {
+                vec4 bytes = unpackUnorm4x8(texture3D(cSampler1,vec3(voxel_pos)/vec3(VOXEL_AREA)).r);
+                light_color = bytes.xyz;
+            }
+
+            roughness = matType == 1? STONE_ROUGHNESS : matType == 2? SMOOTH_ROUGHNESS : matType == 3? METAL_ROUGHNESS : NATURAL_ROUGHNESS;
+            specStrength = matType == 1? STONE_SPECULAR : matType == 2? SMOOTH_SPECULAR : matType == 3? METAL_SPECULAR : NATURAL_SPECULAR;
+            soakFactor = matType == 1? STONE_SOAK : matType == 2? SMOOTH_SOAK : matType == 3? METAL_SOAK : NATURAL_SOAK;
+            
+            vec4 lighting = vec4(0.0);
+            vec4 dynLighting = vec4(0.0);
+            float lightBrightness = 0.0;
+
+            vec3 SkyColor = vec3(0.05f, 0.15f, 0.3f);
+            SkyColor = currentColor;
+
+            vec3 currentColor = dayColor;
+
+            Diffuse = albedo.xyz;
+
+            baseColor = currentColor;
+            baseDiffuse = Diffuse;
+
+            baseDiffuseModifier = vec3(0.0);
+
+            baseFog = vec3(0.0);
+
+            #ifdef DISTANT_HORIZONS
+                gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, dhFarPlane), specStrength, 1.0);
+            #else
+                gl_FragData[6] = vec4(soakFactor, encodeDist(distanceFromCamera, far), specStrength, 1.0);
+            #endif
+
+            vec3 lightNormal = vec3(0.0);
+            float NdotL = 1.0;
+
+            vec3 rawLight;
+            #if SCENE_AWARE_LIGHTING > 0
+                /*for (int idx = 0; idx < totalLightRadius; idx++) {
+                    if(isLeaves > 0.5) continue;
+
+                    int x = int(idx / (side * side) - LIGHT_RADIUS);
+                    int y = int(mod(idx/side, side) - LIGHT_RADIUS);
+                    int z = int(mod(idx, side) - LIGHT_RADIUS);
+
+                    if(x * x + y * y + z * z > LIGHT_RADIUS * LIGHT_RADIUS) continue;
+
+                    lowp vec3 block_centered_relative_pos2 = foot_pos + at_midBlock2.xyz / 64.0 + vec3(x, z, y) + fract(cameraPosition);
+                    
+                    if (distance(vec3(0.0), block_centered_relative_pos2) > VOXEL_RADIUS) continue;
+
+                    ivec3 voxel_pos2 = ivec3(block_centered_relative_pos2 + VOXEL_RADIUS);
+
+                    uint bytes = texture3D(cSampler1, vec3(voxel_pos2) / vec3(VOXEL_AREA)).r;
+
+                    if(bytes == 0u) continue;
+
+                    if (bytes != 0) {
+                        lowp vec3 world_pos2 = foot_pos + vec3(x, z, y) + cameraPosition;
+                        lowp vec3 world_pos3 = foot_pos + cameraPosition;
+
+                        lowp vec3 foot_pos3 = vec3(0.0);
+                        lowp vec3 block_centered_relative_pos4 = block_centered_relative_pos2 - foot_pos;
+
+                        block_centered_relative_pos4 = mat3(gbufferModelView) * block_centered_relative_pos4;
+
+                        lightNormal = normalize2(voxel_pos2 - block_centered_relative_pos2);
+                        NdotL = dot(lightNormal, newNormal);
+
+                        float dist = float((foot_pos + fract(cameraPosition) - block_centered_relative_pos2) * (foot_pos + fract(cameraPosition) - block_centered_relative_pos2));
+                        float sampleWeight = distance(foot_pos + fract(cameraPosition), block_centered_relative_pos2);
+                        //lighting += decodeLightmap(bytes) / (1 + LIGHT_RADIUS * LIGHT_RADIUS * LIGHT_RADIUS * smoothstep(0, LIGHT_RADIUS * LIGHT_RADIUS, sampleWeight*sampleWeight)) * vanillaLight(AdjustLightmap(LightmapCoords));
+
+                        vec4 light = decodeLightmap(bytes);
+
+                        float intensity = clamp(length(light.xyz)/(MAX_LIGHT*6), 0.0, 1.0);
+
+                        float effectiveRadius = LIGHT_RADIUS * mix2(0.35, 1.0, pow2(intensity, 0.65));
+
+                        float x = clamp(sampleWeight/max(effectiveRadius, 0.001), 0.0, 1.0);
+                        float falloff = exp(-x * x * 3.5) * (1.0 - smoothstep(0.82, 1.0, x));
+
+                        falloff = pow2(falloff, LIGHT_FALLOFF);
+
+                        light.xyz = mix2(light.xyz, light.xyz * vec3(1.08, 0.92, 0.72), x * 0.25);
+
+                        //float weightSampled = smoothstep(LIGHT_RADIUS, 0, sampleWeight);
+
+                        dynLighting += light * falloff * LightmapCoords.x;
+
+                        weight += falloff;
+
+                        //lightBrightness = decodeLightmap(bytes).w * clamp(1.0 - blockDist(foot_pos3, block_centered_relative_pos4) / float(LIGHT_RADIUS), 0.0, 1.0) * NdotL;
+                    }
+                }*/
+                //dynLighting /= max(weight,1.0);
+                //lighting *= 25;
+                dynLighting = decodeLight(lightTrilinear(cSampler2, foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, voxel_pos),MAX_LIGHT);
+                dynLighting = SoftKneeLight(dynLighting, MAX_LIGHT, 0.7);
+                dynLighting = mix2(dynLighting, max(exp(dynLighting),vec4(0.0)), seFactor);
+                lighting += dynLighting;
+            #endif
+            #if LIGHTING_MODE > 0 && SCENE_AWARE_LIGHTING == 0
+                lighting = vanillaLight(AdjustLightmap(LightmapCoords));
+            #endif
+            vec4 finalLighting = lighting;
+            //float isCave = LightmapCoords.g;
+            gl_FragData[7] = vec4(length(encodeLight(dynLighting,MAX_LIGHT)), 0.0, isLeaves, 1.0);
+            #if LIGHTING_MODE == 1
+                finalLighting.xyz *= 0.5;
+            #endif
+            vec4 finalLighting2 = vanillaLight(AdjustLightmap(LightmapCoords));
+            //if(isBiomeEnd) finalLighting2 = max(finalLighting2, vec4(SE_MIN_LIGHT * 0.1)); else finalLighting2 = max(finalLighting2, vec4(MIN_LIGHT * 0.1));
+            finalLighting2 = max(finalLighting2, vec4(0.0));
+            finalLighting = mix2(finalLighting*3, finalLighting2 * 0.75, max(1 - step(length(voxel_pos), length(vec2(VOXEL_AREA))), float(1 - smoothstep(0,0.5,finalLighting * 2.0))))/2.25;
+            if(isLava > 0.5) gl_FragData[2] = encodeLight(vec4(FireColor * FireBrightness, FireBrightness)/3.25,MAX_LIGHT); else gl_FragData[2] = encodeLight(finalLighting,MAX_LIGHT);
+            //uint integerValue = packUnorm4x8(vec4(lighting.xyz, lightBrightness));
+            float skylightLevel2 = LightmapCoords.y;
+            if(distance(vec3(0.0), foot_pos) > VOXEL_RADIUS - 1) {
+                skylightLevel = skylightLevel2;
+            } else {
+                skylightLevel = smoothstep(0, 0.25, lightTrilinear(cSampler4, foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, clamp(voxel_pos, ivec3(0.0), ivec3(VOXEL_AREA))).x);
+            }
+            //skylightLevel = skylightLevel2;
+            //skylightLevel *= caveFactor;
+            //skylightLevel = max(skylightLevel, skylightLevel2);
+            //gl_FragData[0] = vec4(vec3(skylightLevel), 1.0);
+            gl_FragData[4] = vec4(0.0, 0.0, isReflective, 1.0);
+        #endif
+        gl_FragData[3] = vec4(LightmapCoords.x, skylightLevel, isGrass, 1.0);
+        gl_FragData[5] = vec4(1.0, encodeDist(roughness,128), encodeDist(specStrength,2), 1.0);
     }
 
 #endif

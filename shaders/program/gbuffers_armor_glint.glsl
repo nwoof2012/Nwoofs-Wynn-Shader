@@ -8,6 +8,8 @@
     uniform mat4 gbufferModelView;
     uniform mat4 gbufferProjection;
 
+    #include "/lib/data/settings.glsl"
+
     #include "/lib/optimizationFunctions.glsl"
     #include "/lib/colorFunctions.glsl"
 
@@ -28,7 +30,7 @@
         vec3 light = texColor.rgb * (0.8 + 0.5 * shimmer) + fallbackGlint * 0.5 * shimmer;
 
         gl_FragData[0] = vec4(color, texColor.a);
-        gl_FragData[1] = vec4(light, 1.0);
+        gl_FragData[1] = vec4(encodeLight(light, MAX_LIGHT), 1.0);
     }
 #endif
 
