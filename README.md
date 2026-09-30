@@ -1,4 +1,4 @@
-![Shader Banner](https://i.ibb.co/d0RpLXdN/Wynn-Shader-Banner.png "Shader Banner")
+![Shader Banner](https://i.ibb.co/fVmWYzgb/Wynn-Shader-Banner2.png "Shader Banner")
 **THIS PROJECT IS CURRENTLY IN BETA. IF YOU ENCOUNTER ANY ERRORS/BUGS, I HIGHLY RECOMMEND REPORTING IT UNDER [ISSUES](https://github.com/nwoof2012/Nwoofs-Wynn-Shader/issues), ESPECIALLY IF NO ONE ELSE HAS YET.**
 
 # About
