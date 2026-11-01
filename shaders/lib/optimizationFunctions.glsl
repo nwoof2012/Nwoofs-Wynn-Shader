@@ -183,6 +183,12 @@ vec3 rightVector(vec3 forward) {
     return normalize2(cross(forward, worldUp));
 }
 
+mat2 rotate2D(float angle) {
+    float s = sin(angle);
+    float c = cos(angle);
+    return mat2(c, -s, s, c);
+}
+
 float cubicBezier(float t, vec2 p1, vec2 p2) {
     // Cubic Bézier curve: P0 = (0,0), P1 = p1, P2 = p2, P3 = (1,1)
     // Solve for y given t (where t is the x-axis progress)

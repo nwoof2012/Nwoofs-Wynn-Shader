@@ -9,8 +9,8 @@
     #define BLOOM
 
     #define BLOOM_QUALITY 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
-    #define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-    #define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+    #define BLOOM_INTENSITY 2.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f]
+    #define BLOOM_THRESHOLD 1.0f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
 
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
@@ -36,6 +36,7 @@
     uniform sampler2D colortex7;
     uniform sampler2D colortex13;
     uniform sampler2D colortex14;
+    uniform sampler2D colortex20;
     uniform mat4 gbufferPreviousModelView;
     uniform mat4 gbufferPreviousProjection;
     uniform mat4 gbufferPreviousModelViewInverse;
@@ -681,7 +682,7 @@
             fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainFactor);
             mediump float fogRain = mix3(FOG_DAY_RAIN_INTENSITY, FOG_SUNSET_RAIN_INTENSITY, FOG_NIGHT_RAIN_INTENSITY, sunsetLerp, 0.5) * FOG_RAIN_MULTIPLIER;
             mediump float fogCurveRain = mix3(FOG_DAY_RAIN_CURVE, FOG_SUNSET_RAIN_CURVE, FOG_NIGHT_RAIN_CURVE, sunsetLerp, 0.5);
-        #elif FOG_STYLE == 2
+        #elif FOG_STYLE == 2 || FOG_STYLE == 3
             mediump vec3 fogAlbedoDry = mix2(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), sunsetLerp);
             vec3 fogAlbedoWet = mix2(vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), sunsetLerp);
             fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainFactor);
@@ -768,7 +769,7 @@
             fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainFactor);
             mediump float fogRain = mix3(FOG_DAY_RAIN_INTENSITY, FOG_SUNSET_RAIN_INTENSITY, FOG_NIGHT_RAIN_INTENSITY, sunsetLerp, 0.5) * FOG_RAIN_MULTIPLIER;
             mediump float fogCurveRain = mix3(FOG_DAY_RAIN_CURVE, FOG_SUNSET_RAIN_CURVE, FOG_NIGHT_RAIN_CURVE, 1 - sunsetLerp, 0.5);
-        #elif FOG_STYLE == 2
+        #elif FOG_STYLE == 2 || FOG_STYLE == 3
             mediump vec3 fogAlbedoDry = mix2(vec3(FOG_DAY_R, FOG_DAY_G, FOG_DAY_B), vec3(FOG_NIGHT_R, FOG_NIGHT_G, FOG_NIGHT_B), 1 - sunsetLerp);
             vec3 fogAlbedoWet = mix2(vec3(FOG_DAY_RAIN_R, FOG_DAY_RAIN_G, FOG_DAY_RAIN_B), vec3(FOG_NIGHT_RAIN_R, FOG_NIGHT_RAIN_G, FOG_NIGHT_RAIN_B), 1 - sunsetLerp);
             fogAlbedo = mix2(fogAlbedoDry, fogAlbedoWet, rainFactor);
@@ -1507,7 +1508,7 @@
 
                             mediump float fogFactor = clamp(baseFog * heightDensity, 0.0, min(fogIntensity, 1.0));
                             Diffuse.xyz = calcFogColor(viewPos, sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
-                        #elif FOG_STYLE == 2
+                        #elif FOG_STYLE == 2 || FOG_STYLE == 3
                             fogAlbedo = mix2(fogAlbedo, vec3(FOG_CAVE_R, FOG_CAVE_G, FOG_CAVE_B), isCave);
                             fogDistMin = mix2(fogDistMin, FOG_CAVE_DIST_MIN,isCave);
                             fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
@@ -1564,7 +1565,7 @@
 
                             mediump float fogFactor = clamp(baseFog * heightDensity, 0.0, min(fogIntensity, 1.0));
                             Diffuse.xyz = calcFogColor(viewPos, sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
-                        #elif FOG_STYLE == 2
+                        #elif FOG_STYLE == 2 || FOG_STYLE == 3
                             fogAlbedo = mix2(fogAlbedo, vec3(FOG_CAVE_R, FOG_CAVE_G, FOG_CAVE_B), isCave);
                             fogDistMin = mix2(fogDistMin, FOG_CAVE_DIST_MIN,isCave);
                             fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
@@ -1619,7 +1620,7 @@
 
                         mediump float fogFactor = clamp(baseFog * heightDensity, 0.0, min(fogIntensity, 1.0));
                         Albedo.xyz = calcFogColor(viewPos, sunPosition, Albedo.xyz, pow2(fogAlbedo,vec3(1/2.2)), vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
-                    #elif FOG_STYLE == 2
+                    #elif FOG_STYLE == 2 || FOG_STYLE == 3
                         fogAlbedo = mix2(fogAlbedo, vec3(FOG_CAVE_R, FOG_CAVE_G, FOG_CAVE_B), isCave);
                         fogDistMin = mix2(fogDistMin, FOG_CAVE_DIST_MIN,isCave);
                         fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);
@@ -1724,7 +1725,7 @@
 
                 mediump float fogFactor = clamp(baseFog * heightDensity, 0.0, min(fogIntensity, 1.0));
                 Diffuse.xyz = calcFogColor(viewPos, sunPosition, Diffuse.xyz, fogAlbedo, vec3(VL_COLOR_R, VL_COLOR_G, VL_COLOR_B), fogFactor);
-            #elif FOG_STYLE == 2
+            #elif FOG_STYLE == 2 || FOG_STYLE == 3
                 fogAlbedo = mix2(fogAlbedo, vec3(FOG_CAVE_R, FOG_CAVE_G, FOG_CAVE_B), isCave);
                 fogDistMin = mix2(fogDistMin, FOG_CAVE_DIST_MIN,isCave);
                 fogDistMax = mix2(fogDistMax, FOG_CAVE_DIST_MAX,isCave);

@@ -21,28 +21,28 @@
     uniform int frameCounter;
 
     const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
-    const float TorchBrightness = 5.0;
+    const float TorchBrightness = 2.0;
     const float TorchFalloff = 0.88;
     const vec3 GlowstoneColor = vec3(1.0f, 0.93f, 0.5f);
-    const float GlowstoneBrightness = 5.0;
+    const float GlowstoneBrightness = 2.0;
     const float GlowstoneFalloff = 0.88;
     const vec3 LampColor = vec3(1.0f, 0.75f, 0.4f);
-    const float LampBrightness = 5.0;
+    const float LampBrightness = 2.0;
     const float LampFalloff = 0.88;
     const vec3 LanternColor = vec3(0.8f, 1.0f, 1.0f);
-    const float LanternBrightness = 5.0;
+    const float LanternBrightness = 2.0;
     const float LanternFalloff = 0.88;
     const vec3 RedstoneColor = vec3(1.0f, 0.0f, 0.0f);
-    const float RedstoneBrightness = 5.0;
+    const float RedstoneBrightness = 2.0;
     const float RedstoneFalloff = 0.88;
     const vec3 RodColor = vec3(1.0f, 1.0f, 1.0f);
-    const float RodBrightness = 5.0;
+    const float RodBrightness = 2.0;
     const float RodFalloff = 0.88;
     const vec3 PortalColor = vec3(0.75f, 0.0f, 1.0f);
-    const float PortalBrightness = 5.0;
+    const float PortalBrightness = 2.0;
     const float PortalFalloff = 0.88;
     const vec3 FireColor = vec3(1.0f, 0.5f, 0.08f);
-    const float FireBrightness = 5.0;
+    const float FireBrightness = 2.0;
     const float FireFalloff = 0.88;
 
     vec4 decodeLightmap(uint lightmap) {

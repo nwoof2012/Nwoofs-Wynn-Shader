@@ -38,6 +38,9 @@
     uniform bool isBiomeNether;
     uniform bool isBiomeDry;
 
+    uniform float seFactor;
+    uniform float corruptionFactor;
+
     uniform sampler2D colortex11;
 
     uniform sampler2D moon;
@@ -129,8 +132,12 @@
 
     /* DRAWBUFFERS:0521 */
     layout(location = 0) out vec4 outputColor;
+    layout(location = 1) out vec4 skyBuffer;
+    layout(location = 2) out vec4 outputLight;
+    layout(location = 3) out vec4 outputNormal;
 
     float timeBlendFactor;
+    float sunsetBlendFactor;
 
     void noonFunc(float time, float timeFactor) {
         mediump float dayNightLerp = timeFactor;
@@ -155,6 +162,7 @@
             currentColorB = mix3( mix2(dayColorB, dayColorRainB, rainFactor), transitionColorB, nightColorB, sunsetLerp, 0.5);
         }
         timeBlendFactor = timeFactor;
+        sunsetBlendFactor = 1.0 - abs(sunsetLerp * 2 - 1);
     }
 
     void nightFunc(float time, float timeFactor) {
@@ -175,7 +183,10 @@
             currentColorB = mix3(nightColorB, transitionColorB, mix2(dayColorB, dayColorRainB, rainFactor), sunsetLerp, 0.5);
         }
         timeBlendFactor = 1 - timeFactor;
+        sunsetBlendFactor = 1.0 - abs(sunsetLerp * 2 - 1);
     }
+
+    #include "/lib/colorFunctions.glsl"
 
     vec3 getMoonCoords(float scale) {
         vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
@@ -228,7 +239,7 @@
     #include "/lib/world/timeCycle.glsl"
     #include "/lib/misc/buffers.glsl"
 
-    void main() {
+    /*void main() {
         vec3 pos = screenToView(vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0));
         vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 
@@ -373,6 +384,90 @@
         imageStore(cimage11, ivec2(gl_FragCoord.xy/vec2(viewWidth, viewHeight) * imageSize(cimage11)), vec4(1.0));
 
         gl_FragData[3] = vec4(transformedDir * 0.5 + 0.5, 1.0);
+    }*/
+
+    void main() {
+        timeFunctionFrag();
+        // Define UV coordinates
+        vec2 texCoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+        
+        // Define coordinate spaces
+        vec2 ndc = texCoord * 2.0 - 1.0;
+        vec4 clip = vec4(ndc, 1.0, 1.0);
+        vec4 viewPos = gbufferProjectionInverse * clip;
+        viewPos.xyz /= viewPos.w;
+        vec3 viewDir = normalize2(viewPos.xyz);
+        vec3 footPos = (gbufferModelViewInverse * viewPos).rgb;
+        vec3 footDir = normalize2(footPos);
+        
+        // Sample noise for oldschool clouds
+        #ifdef SHADER_CLOUDS
+            vec4 noiseA = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0) * vec2(1.0/CLOUD_SCALE_A) + vec2(timeOfDay/6000 * CLOUD_SPEED_A, 0f));
+            vec4 noiseB = texture2D(noisetex,transformedDir.st * vec2(0.25, 1.0) * vec2(1.0/CLOUD_SCALE_B) - vec2(timeOfDay/6000 * CLOUD_SPEED_B, 0f));
+            vec4 noise = mix2(vec4(0f), noiseB, noiseA.g);
+        #else
+            vec4 noise = vec4(0.0);
+        #endif
+
+        // Define sun coordinates
+        vec3 sunDir = normalize2(sunPosition);
+        vec3 sunWorldPos = (gbufferModelViewInverse * vec4(sunPosition, 1.0)).xyz;
+        vec3 sunWorldDir = normalize2(sunWorldPos);
+
+        // Define moon coordinates
+        vec3 moonDir = normalize2(moonPosition);
+        vec3 moonWorldPos = (gbufferModelViewInverse * vec4(moonPosition,1.0)).xyz;
+        vec3 moonWorldDir = normalize2(moonWorldPos);
+        
+        // Define sky color
+        vec3 skyColorA = getSkyColorA(timeBlendFactor, viewPos.xyz);
+        vec3 skyColorB = getSkyColorB(timeBlendFactor, viewPos.xyz);
+        vec3 skyColor = calcSkyColor(viewDir, skyColorA, skyColorB, noise);
+
+        // Define sun color/gradient
+        vec3 sunColor = vec3(1.0, 0.8, 0.7);
+        vec3 sunColor2 = vec3(1.0, 0.7, 0.5);
+        float sunMaxDistance = 0.135;
+        float sunAngle = acos(clamp(dot(viewDir, sunDir), -1.0, 1.0));
+        float sunGradient = 1.0 - smoothstep(0.0, sunMaxDistance, sunAngle);
+        vec4 outputColorSun = vec4(mix2(sunColor2, sunColor, sunGradient), sunGradient);
+
+        float sunEdge = pow2(sunGradient,1/9.5);
+
+        //outputColorSun.w *= sunEdge;
+
+        // Define moon color/gradient
+        float moonMaxDistance = 0.08;
+        float moonRimLightDistance = 0.12;
+        vec3 moonColor = vec3(1.0, 1.0, 1.1);
+        float moonAngle = acos(clamp(dot(viewDir, moonDir), -1.0, 1.0));
+        float moonGradient = 1.0 - smoothstep(0.0, moonMaxDistance, moonAngle);
+        vec4 outputColorMoon = texture2D(moon,getMoonCoords(1).xy).xyzw;
+        
+        float moonEdge = pow2(moonGradient,1/9.5);
+
+        outputColorMoon.xyz = mix2(outputColorMoon.xyz, vec3(0.8, 0.9, 1.0), 0.25 + 0.5 * moonGradient) * max(moonEdge,0.25);
+
+        // Sun/moon detection
+        float detectSunMoon = 1 - dot(sunDir, viewPos.xyz);
+
+        float starMask = starData.a * timeBlendFactor;
+
+        if(detectSunMoon > 0.99) {
+            float moonAlpha = outputColorMoon.w * smoothstep(0.0, 0.1, moonEdge) * (1 - rainFactor);
+            skyColor = mix2(skyColor, outputColorMoon.xyz, moonAlpha);
+            vec4 moonlight = mix2(vec4(starMask), vec4(0.0), moonAlpha);
+            outputLight = encodeLight(moonlight, MAX_LIGHT);
+        } else {
+            skyColor = mix2(skyColor, outputColorSun.xyz, outputColorSun.w * sunEdge);
+            vec4 sunlight = vec4(outputColorSun.xyz, 1 - rainFactor) * outputColorSun.w;
+            sunlight = mix2(vec4(starMask), sunlight, sunlight.w);
+            outputLight = encodeLight(sunlight, MAX_LIGHT);
+        }
+
+        outputColor = vec4(pow2(skyColor,vec3(1/2.2)),1.0);
+        outputNormal = vec4(footDir * 0.5 + 0.5, 1.0);
+        skyBuffer = vec4(0.0, 1.0, 0.0, 1.0);
     }
 #endif
 

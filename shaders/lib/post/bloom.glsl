@@ -1,8 +1,10 @@
 #define BLOOM
 
 #define BLOOM_QUALITY 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64]
-#define BLOOM_INTENSITY 1.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f]
-#define BLOOM_THRESHOLD 0.7f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+#define BLOOM_INTENSITY 2.0f // [0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f 2.1f 2.2f 2.3f 2.4f 2.5f 2.6f 2.7f 2.8f 2.9f 3.0f]
+#define BLOOM_THRESHOLD 1.0f // [0.0f 0.1f 0.2f 0.3f 0.4f 0.5f 0.6f 0.7f 0.8f 0.9f 1.0f 1.1f 1.2f 1.3f 1.4f 1.5f 1.6f 1.7f 1.8f 1.9f 2.0f]
+
+#define BLOOM_SCALE 4 // [1 2 4 10 20 50 100]
 
 #if LIGHTING_MODE > 0
     vec2 vogelDisk(int i, int count) {
@@ -98,17 +100,21 @@
         return vec4(outLight, brightness * 150);
     }
 
-    vec4 bloom(sampler2D lightTex, vec2 uv) {
+    vec4 bloom(sampler2D lightTex, vec2 uv, float centerSky, vec3 skyInfluenceColor) {
         vec2 resolution = vec2(1080/viewHeight * viewWidth, 1080);
 
+        vec2 invResolution = 1.0/resolution;
+
         float radius = 16.0;
-        vec2 texel = radius / resolution;
+        vec2 texel = radius * invResolution;
 
-        vec3 baseLightColor = decodeLight(texture2D(colortex2, uv).xyz,MAX_LIGHT);
+        vec3 baseLightColor = decodeLight(texture2D(lightTex, uv).xyz, MAX_LIGHT);
 
-        vec3 lightColor = baseLightColor;
+        vec3 lightColor = vec3(0.0);
 
         float totalWeight = 0.0;
+
+        float totalLuma = 0.0;
 
         for(int i = 0; i < BLOOM_QUALITY; i++) {
             vec2 vogel = vogelDisk(i, BLOOM_QUALITY);
@@ -119,15 +125,50 @@
 
             float x = t * radius;
 
-            float weight = 1 - exp(-x * x * 0.001);
+            float weight = exp(-x * x * 0.001);
 
-            vec3 lightSample = decodeLight(texture2D(lightTex, uv + offsetPos).xyz,MAX_LIGHT);
+            float sampleSky = texture2D(colortex5, uv + offsetPos).g;
 
-            lightColor += lightSample * weight;
+            vec2 samplePixel = vogel * radius;
+
+            vec2 pixelFloor = floor(samplePixel);
+
+            vec2 f = fract(samplePixel);
+
+            vec2 o_00 = pixelFloor * invResolution;
+            vec2 o_10 = (pixelFloor + vec2(1.0, 0.0)) * invResolution;
+            vec2 o_01 = (pixelFloor + vec2(0.0, 1.0)) * invResolution;
+            vec2 o_11 = (pixelFloor + vec2(1.0)) * invResolution;
+
+            vec3 l_00 = decodeLight(texture2D(lightTex, uv + o_00).xyz,MAX_LIGHT);
+            vec3 l_10 = decodeLight(texture2D(lightTex, uv + o_10).xyz,MAX_LIGHT);
+            vec3 l_01 = decodeLight(texture2D(lightTex, uv + o_01).xyz,MAX_LIGHT);
+            vec3 l_11 = decodeLight(texture2D(lightTex, uv + o_11).xyz,MAX_LIGHT);
+
+            vec3 l_0 = mix2(l_00, l_10, f.x);
+            vec3 l_1 = mix2(l_01, l_11, f.x);
+
+            vec3 lightSample = mix2(l_0, l_1, f.y);
+
+            float sampleLuma = luminance(lightSample);
+
+            lightSample = clamp(lightSample,0,1);
+
+            //float bloomMask = smoothstep(BLOOM_THRESHOLD, BLOOM_THRESHOLD * 1.5, sampleLuma);
+
+            if(centerSky != sampleSky) {
+                lightColor += texture2D(colortex0, uv + offsetPos).xyz * weight;
+                //weight *= 0.1;
+            } else {
+                lightColor += lightSample * weight;
+            }
+            //lightColor += lightSample * weight;
             totalWeight += weight;
+            totalLuma += sampleLuma;
         }
 
-        lightColor /= BLOOM_QUALITY;
+        lightColor /= max(totalWeight, 1e-6);
+        totalLuma /= max(totalWeight, 1e-6);
 
         float blurLuma = luminance(lightColor);
 

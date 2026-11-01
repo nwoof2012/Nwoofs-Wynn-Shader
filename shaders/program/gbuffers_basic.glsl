@@ -38,6 +38,8 @@
 
     uniform sampler3D cSampler2;
 
+    layout (rgba8) uniform image3D cimage2;
+
     uniform int worldTime;
 
     vec3 currentColor;
@@ -250,7 +252,7 @@
 
         #if LIGHTING_MODE > 0
             vec4 vanilla = vanillaLight(vec2(AdjustLightmap(LightmapCoords)) * vec2(0.1, 1.0));
-            vec4 dynLighting = decodeLight(lightTrilinear(cSampler2, foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, voxel_pos), MAX_LIGHT) * LightmapCoords.x;
+            vec4 dynLighting = decodeLight(lightTrilinear(cSampler2,foot_pos + fract(cameraPosition) - block_centered_relative_pos + 0.5, voxel_pos), MAX_LIGHT) * LightmapCoords.x;
             vec4 lighting = mix2(pow2(vanilla * 0.5f,vec4(0.25f)),vec4(vec3(0.0),1.0),1 - clamp(length(max(vanilla.xyz,vec3(0.0))),0,0.5));
             lighting = max(lighting, dynLighting);
             if(isBiomeEnd) lighting.xyz = min(lighting.xyz, vec3(SE_MIN_LIGHT)); else lighting.xyz = min(lighting.xyz, vec3(MIN_LIGHT));

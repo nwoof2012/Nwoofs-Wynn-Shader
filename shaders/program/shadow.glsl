@@ -22,7 +22,7 @@
     layout (rgba8) uniform image3D cimage2;
     uniform usampler3D cSampler1;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
@@ -66,7 +66,7 @@
 
     uniform mat4 shadowModelViewInverse;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
@@ -91,8 +91,10 @@
             vec3 block_centered_relative_pos = foot_pos +at_midBlock.xyz/64.0 + fract(cameraPosition);
             ivec3 voxel_pos = ivec3(block_centered_relative_pos + VOXEL_RADIUS);
             
+            uint voxel_data = 0;
+
             #if SCENE_AWARE_LIGHTING > 0
-                uint voxel_data = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
+                voxel_data = mc_Entity.x == 10005? 1 : mc_Entity.x == 10006? 2 : mc_Entity.x == 10007? 3 : mc_Entity.x == 10008? 4 : mc_Entity.x == 10009? 5 : mc_Entity.x == 10010? 6 : mc_Entity.x == 10012? 7 : mc_Entity.x == 10013? 8 : 0;
             #endif
 
             vec2 LightmapCoords = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.st;

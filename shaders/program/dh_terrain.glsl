@@ -60,7 +60,7 @@
     uniform float dhFarPlane;
 
     #include "/lib/includes2.glsl"
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
     #include "/lib/optimizationFunctions.glsl"
 
     /* RENDERTARGETS:0,2,6,5,1,12,15,13 */
@@ -417,7 +417,7 @@
 
 #ifdef VERTEX_SHADER
     #include "/lib/includes2.glsl"
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #define PATH_TRACING_GI 0 // [0 1]
 

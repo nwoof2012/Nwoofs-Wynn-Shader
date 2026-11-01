@@ -95,6 +95,7 @@ option.FOG_STYLE=§fFog Style
 value.FOG_STYLE.0=§cOff
 value.FOG_STYLE.1=§aBasic
 value.FOG_STYLE.2=§6Fancy
+value.FOG_STYLE.3=§6§lVolumetric
 
 option.FOG_DAY_R=§cRed
 option.FOG_DAY_G=§aGreen
@@ -246,6 +247,9 @@ option.BLOOM_INTENSITY.comment=§9Brightness of Bloom effect
 
 option.BLOOM_THRESHOLD=§eBloom Threshold
 option.BLOOM_THRESHOLD.comment=§9Adjusts the light level at which bloom is enabled§7/§9disabled
+
+option.DESATURATION_BASE = §7Base Desaturation Amount
+option.DESATURATION_BASE.comment = §aAdjusts how much the scene is desaturated
 
 option.WATER_REFRACTION=§9Water Refraction
 option.WATER_REFRACTION.comment = §6Distorts light as it passes through water
@@ -656,6 +660,15 @@ value.DEBUG_MODE.14=§fDiffuse Final
 option.PARTICLE_RAIN_SUPPORT=§bParticle Rain Support
 option.PARTICLE_RAIN_SUPPORT.comment=§6Patches particle light rendering to work better with Particle Rain
 
+option.AURORA_BOREALIS=§dEnabled
+option.AURORA_BOREALIS.comment=§aToggles Aurora Borealis visibility at night
+
+option.AURORA_PURPLE_BRIGHTNESS=§eBrightness §7(§dPurple§7)
+suffix.AURORA_PURPLE_BRIGHTNESS=x
+
+option.AURORA_GREEN_BRIGHTNESS=§eBrightness §7(§aGreen§7)
+suffix.AURORA_GREEN_BRIGHTNESS=x
+
 option.TEMPERATURE_COLOR=§fTemperature§7-§fBased Color
 
 option.SUN_TEMP=§eSun Temperature
@@ -763,6 +776,8 @@ screen.ANTIALIASING = §aAntialiasing
 screen.DEBUG = §fDebug Mode
 
 screen.MISC = §6Miscellaneous
+
+screen.AURORA = §dAurora Borealis
 
 
 screen.LIGHTING_COLORS = §6Light Colors

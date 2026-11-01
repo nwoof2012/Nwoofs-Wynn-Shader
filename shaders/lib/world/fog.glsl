@@ -1,5 +1,7 @@
 #define CLOUD_BASE 120.0
-#define CLOUD_TOP 400.0
+#define CLOUD_TOP 220.0
+
+#define VOLUMETRIC_FOG_SAMPLES 8 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32]
 
 float cloudShadows(vec3 worldPos, vec3 sunDir) {
     float cloudCoverage = texture2D(colortex14, TexCoords).y;
@@ -97,6 +99,89 @@ vec3 volumetricFog(vec3 rayDir, vec3 worldPos, float maxDist, vec3 sunColor, vec
     scattering *= cloudCoverage;
 
     return scattering;
+}
+
+float getVolumetricFogDensity(vec3 pos) {
+    vec3 uvw = pos * 0.1 + vec3(frameTimeCounter * 0.02, 0.0, frameTimeCounter * 0.01);
+    
+    float noise = texture2D(noiseb, uvw.xz).r;
+    float heightFade = smoothstep(5.0, -2.0, pos.y); 
+    
+    return max(0.0, noise * heightFade * 0.15);
+}
+
+float HenyeyGreenstein(float cosTheta, float g) {
+    float g2 = g * g;
+    return (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
+}
+
+vec3 calcVolumetricFog(vec3 albedo, vec3 fogAlbedo, vec3 sunColor, vec3 skyColor, float density, vec3 worldPos, vec3 viewPos) {
+    vec3 rayOrigin = vec3(0.0);
+    vec3 rayDir = viewPos;
+    float rayLength = length(rayDir);
+    rayDir = normalize2(rayDir);
+
+    float stepSize = rayLength/float(VOLUMETRIC_FOG_SAMPLES);
+    vec3 currentPos = rayOrigin;
+
+    vec3 fogAccum = vec3(0.0);
+    float transmittance = 1.0;
+
+    vec3 illuminatedFogColor = fogAlbedo * 2.5; 
+
+    float detectSky = texture2D(colortex5, TexCoords).g;
+    
+    vec3 sunDir = normalize2(sunPosition);
+    float cosTheta = dot(rayDir, sunDir);
+    float phase = HenyeyGreenstein(cosTheta, 0.4) * (1.0 - rainFactor);
+
+    vec3 fogAmbient = skyColor * (0.5 + 0.5 * mistwoodsFactor);
+    vec3 directSunLight = sunColor * phase;
+
+    vec3 totalLight = fogAmbient + directSunLight;
+
+    float groundLevel = 64.0;
+    float heightFalloff = 0.04;
+
+    for(int i = 0; i < VOLUMETRIC_FOG_SAMPLES; i++) {
+        if(transmittance < 0.01) continue;
+        
+        vec3 currentFootPos = (gbufferModelViewInverse * vec4(currentPos,1.0)).xyz;
+        float currentWorldY = cameraPosition.y + currentFootPos.y;
+
+        vec3 relative_pos = currentFootPos +at_midBlock2.xyz/64.0 + fract(cameraPosition);
+
+        float localHeightDensity = density * exp(-(currentWorldY - groundLevel) * heightFalloff);
+
+        float stepTransmittance = exp(-localHeightDensity * stepSize);
+        
+        vec3 stepScattering = (fogAlbedo * totalLight) * (1.0 - stepTransmittance);
+
+        fogAccum += stepScattering * transmittance;
+        transmittance *= stepTransmittance;
+
+        currentPos += rayDir * stepSize;
+    }
+
+    float fogFactor = 0.0;
+
+    if(detectSky >= 1.0) {
+        fogFactor = mix2(smoothstep(0.5, 1.0, 1 - dot(Normal, vec3(0.0, 1.0, 0.0))), 1.0, mistwoodsFactor);
+        fogFactor = mix2(fogFactor, smoothstep(0.25, 0.5, 1 - dot(Normal, vec3(0.0, 1.0, 0.0))), seFactor);
+        
+        vec3 attenuatedSky = albedo * transmittance;
+
+        vec3 finalSkyFog = max(attenuatedSky + fogAccum, fogAlbedo);
+        //finalSkyFog = mix2(finalSkyFog, pow2(fogAccum * 0.25,vec3(1/2.2)) + 0.25, seFactor);
+        
+        //return mix2(albedo, finalSkyFog, fogFactor);
+        fogAccum = mix2(finalSkyFog, fogAccum * 0.6, seFactor);
+        fogAccum = mix2(fogAccum, pow2(fogAccum,vec3(1/2.2)), mistwoodsFactor);
+    } else {
+        fogFactor = 1.0 - exp(-smoothstep(fogDistMin, fogDistMax, length(viewPos)) * density);
+    }
+
+    return mix2(albedo, fogAccum, fogFactor);
 }
 
 #define FOG_LIGHT_SAMPLE_DIAMETER sqrt(FOG_LIGHT_SAMPLES)

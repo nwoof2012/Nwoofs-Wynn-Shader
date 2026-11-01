@@ -1,4 +1,4 @@
-#define CLOUD_STEPS 12 // [3 4 6 8 12 16]
+#define CLOUD_STEPS 8 // [3 4 6 8 12 16]
 
 #define CLOUD_BASE 120.0
 #define CLOUD_TOP 220.0

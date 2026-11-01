@@ -70,7 +70,7 @@
 
     in float isStainedGlass;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"
@@ -278,7 +278,7 @@
 
     out float isStainedGlass;
 
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #include "/lib/includes2.glsl"
     #include "/lib/optimizationFunctions.glsl"

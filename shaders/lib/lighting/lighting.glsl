@@ -1,9 +1,16 @@
 #if defined FRAGMENT_SHADER && defined COMPOSITE_4
     #if LIGHTING_MODE > 0
-        vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor, vec2 uv) {
-            vec3 rawLight = LightmapColor.xyz;
+        float specFactor(vec3 viewPos, vec3 lightPos, vec3 normal, float shine, float intensity) {
+            vec3 R = reflect(lightPos, normal);
 
-            vec3 Normal = texture2D(colortex1, uv).xyz * 2 - 1;
+            float spec = pow2(max(dot(viewPos, R),0.0),shine);
+
+            return spec * intensity;
+        }
+        vec3 calcLighting(vec3 Albedo, vec4 LightmapColor, int isDistant, float minLight, float maxLight, vec3 foot_pos, vec3 shadowLerp, float timeBlendFactor, vec2 uv) {
+            //vec3 rawLight = LightmapColor.xyz;
+
+            //vec3 Normal = texture2D(colortex1, uv).xyz * 2 - 1;
 
             float depthMask = linearizeDepth(texture2D(depthtex0, uv).r,near,far)/far;
             
@@ -22,13 +29,13 @@
 
             //if(isBiomeEnd) LightmapColor.xyz *= 0.25;
             
-            vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
-            mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
+            //vec3 worldSpaceSunPos = (gbufferModelViewInverse * vec4(sunPosition,1.0)).xyz;
+            //mediump float NdotL = max(dot(Normal, normalize2(worldSpaceSunPos)), 0.2f);
 
-            vec3 worldPos = screenToFoot(uv,texture2D(depthtex0, uv).x);
+            /*vec3 worldPos = screenToFoot(uv,texture2D(depthtex0, uv).x);
             vec3 dirFromSun = normalize2(abs(worldSpaceSunPos - 3.5) - abs(worldPos - 3.5));
             
-            float sunDist = smoothstep(0.2, 0.5, dirFromSun.b);
+            float sunDist = smoothstep(0.2, 0.5, dirFromSun.b);*/
 
             float aoLight = MIN_LIGHT * 0.1;
 
@@ -55,7 +62,7 @@
             return mix2(worldColor, specTint, gloss);
         }
     #endif
-#elif defined FRAGMENT_SHADER && defined COMPOSITE_3
+#elif defined FRAGMENT_SHADER && defined COMPOSITE_2
     #define FLICKER_INTENSITY 0.01
     #define FLICKER_SPEED 0.06
 

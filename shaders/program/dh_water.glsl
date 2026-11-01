@@ -1,5 +1,5 @@
 #ifdef FRAGMENT_SHADER
-    #include "/lib/globalDefines.glsl"
+    #include "/lib/data/settings.glsl"
 
     #define WATER_REFRACTION
     #define WATER_FOAM

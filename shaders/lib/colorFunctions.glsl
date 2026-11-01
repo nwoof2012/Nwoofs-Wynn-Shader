@@ -141,3 +141,121 @@ vec4 lightTrilinear(sampler3D tex, vec3 coords, ivec3 voxel_pos) {
 
     return mix2(c0, c1, f.z);
 }
+
+vec3 getSkyColorA(float timeBlendFactor, vec3 viewPos) {
+    vec3 outputColor = vec3(0.0);
+
+    vec3 dayColor = vec3(SKY_DAY_A_R,SKY_DAY_A_G,SKY_DAY_A_B);
+    vec3 nightColor = vec3(SKY_NIGHT_A_R,SKY_NIGHT_A_G,SKY_NIGHT_A_B);
+    vec3 sunsetColor = vec3(SKY_SUNSET_A_R,SKY_SUNSET_A_G,SKY_SUNSET_A_B);
+
+    vec3 dayColorRain = vec3(SKY_DAY_RAIN_A_R, SKY_DAY_RAIN_A_G, SKY_DAY_RAIN_A_B);
+    //vec3 nightColorRain = vec3(SKY_NIGHT_RAIN_A_R, SKY_NIGHT_RAIN_A_G, SKY_NIGHT_RAIN_A_B);
+    //vec3 sunsetColorRain = vec3(SKY_SUNSET_RAIN_A_R, SKY_SUNSET_RAIN_A_G, SKY_SUNSET_RAIN_A_B);
+
+    if(rainFactor > 0.0) {
+        dayColor = mix2(dayColor, dayColorRain, rainFactor);
+        //nightColor = mix2(nightColor, nightColorRain, rainFactor);
+        //sunsetColor = mix2(nightColor, sunsetColorRain, rainFactor);
+    }
+
+    vec3 dayColorSe = vec3(SKY_SE_DAY_A_R,SKY_SE_DAY_A_G,SKY_SE_DAY_A_B);
+    vec3 nightColorSe = vec3(SKY_SE_NIGHT_A_R,SKY_SE_NIGHT_A_G,SKY_SE_NIGHT_A_B);
+    vec3 sunsetColorSe = vec3(SKY_SE_SUNSET_A_R, SKY_SE_SUNSET_A_G, SKY_SE_SUNSET_A_B);
+
+    if(seFactor > 0.0) {
+        dayColor = mix2(dayColor, dayColorSe, seFactor);
+        nightColor = mix2(nightColor, nightColorSe, seFactor);
+        sunsetColor = mix2(nightColor, sunsetColorSe, seFactor);
+    }
+    
+    vec3 dayColorCorrupt = vec3(SKY_CORRUPTION_DAY_A_R,SKY_CORRUPTION_DAY_A_G,SKY_CORRUPTION_DAY_A_B);
+    vec3 nightColorCorrupt = vec3(SKY_CORRUPTION_NIGHT_A_R,SKY_CORRUPTION_NIGHT_A_G,SKY_CORRUPTION_NIGHT_A_B);
+    vec3 sunsetColorCorrupt = vec3(SKY_CORRUPTION_SUNSET_A_R,SKY_CORRUPTION_SUNSET_A_G,SKY_CORRUPTION_SUNSET_A_B);
+
+    if(corruptionFactor > 0.0) {
+        dayColor = mix2(dayColor, dayColorCorrupt, corruptionFactor);
+        nightColor = mix2(nightColor, nightColorCorrupt, corruptionFactor);
+        sunsetColor = mix2(nightColor, sunsetColorCorrupt, corruptionFactor);
+    }
+
+    if(timeBlendFactor == 0.0) {
+        outputColor = dayColor;
+    }
+    else if(timeBlendFactor == 1.0) {
+        outputColor = nightColor;
+    }
+    else {
+        outputColor = mix2(dayColor, nightColor, timeBlendFactor);
+
+        vec3 viewDir = normalize2(viewPos);
+        vec3 sunDir = normalize2(sunPosition);
+
+        float viewDotSun = dot(viewDir, sunDir);
+
+        float phase = pow2(0.5 + 0.5 * viewDotSun, 4.0);
+
+        outputColor = mix2(outputColor, sunsetColor, phase * sunsetBlendFactor);
+    }
+
+    return outputColor;
+}
+
+vec3 getSkyColorB(float timeBlendFactor, vec3 viewPos) {
+    vec3 outputColor = vec3(0.0);
+
+    vec3 dayColor = vec3(SKY_DAY_B_R,SKY_DAY_B_G,SKY_DAY_B_B);
+    vec3 nightColor = vec3(SKY_NIGHT_B_R,SKY_NIGHT_B_G,SKY_NIGHT_B_B);
+    vec3 sunsetColor = vec3(SKY_SUNSET_B_R,SKY_SUNSET_B_G,SKY_SUNSET_B_B);
+
+    vec3 dayColorRain = vec3(SKY_DAY_RAIN_B_R, SKY_DAY_RAIN_B_G, SKY_DAY_RAIN_B_B);
+    //vec3 nightColorRain = vec3(SKY_NIGHT_RAIN_B_R, SKY_NIGHT_RAIN_B_G, SKY_NIGHT_RAIN_B_B);
+    //vec3 sunsetColorRain = vec3(SKY_SUNSET_RAIN_B_R, SKY_SUNSET_RAIN_B_G, SKY_SUNSET_RAIN_B_B);
+
+    if(rainFactor > 0.0) {
+        dayColor = mix2(dayColor, dayColorRain, rainFactor);
+        //nightColor = mix2(nightColor, nightColorRain, rainFactor);
+        //sunsetColor = mix2(nightColor, sunsetColorRain, rainFactor);
+    }
+
+    vec3 dayColorSe = vec3(SKY_SE_DAY_B_R,SKY_SE_DAY_B_G,SKY_SE_DAY_B_B);
+    vec3 nightColorSe = vec3(SKY_SE_NIGHT_B_R,SKY_SE_NIGHT_B_G,SKY_SE_NIGHT_B_B);
+    vec3 sunsetColorSe = vec3(SKY_SE_SUNSET_B_R, SKY_SE_SUNSET_B_G, SKY_SE_SUNSET_B_B);
+
+    if(seFactor > 0.0) {
+        dayColor = mix2(dayColor, dayColorSe, seFactor);
+        nightColor = mix2(nightColor, nightColorSe, seFactor);
+        sunsetColor = mix2(nightColor, sunsetColorSe, seFactor);
+    }
+    
+    vec3 dayColorCorrupt = vec3(SKY_CORRUPTION_DAY_B_R,SKY_CORRUPTION_DAY_B_G,SKY_CORRUPTION_DAY_B_B);
+    vec3 nightColorCorrupt = vec3(SKY_CORRUPTION_NIGHT_B_R,SKY_CORRUPTION_NIGHT_B_G,SKY_CORRUPTION_NIGHT_B_B);
+    vec3 sunsetColorCorrupt = vec3(SKY_CORRUPTION_SUNSET_B_R,SKY_CORRUPTION_SUNSET_B_G,SKY_CORRUPTION_SUNSET_B_B);
+
+    if(corruptionFactor > 0.0) {
+        dayColor = mix2(dayColor, dayColorCorrupt, corruptionFactor);
+        nightColor = mix2(nightColor, nightColorCorrupt, corruptionFactor);
+        sunsetColor = mix2(nightColor, sunsetColorCorrupt, corruptionFactor);
+    }
+
+    if(timeBlendFactor == 0.0) {
+        outputColor = dayColor;
+    }
+    else if(timeBlendFactor == 1.0) {
+        outputColor = nightColor;
+    }
+    else {
+        outputColor = mix2(dayColor, nightColor, timeBlendFactor);
+
+        vec3 viewDir = normalize2(viewPos);
+        vec3 sunDir = normalize2(sunPosition);
+
+        float viewDotSun = dot(viewDir, sunDir);
+
+        float phase = pow2(0.5 + 0.5 * viewDotSun, 4.0);
+
+        outputColor = mix2(outputColor, sunsetColor, phase * sunsetBlendFactor);
+    }
+
+    return outputColor;
+}
